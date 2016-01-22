@@ -1,0 +1,12 @@
+graph{
+
+vhg [shape="box", color="blue"]
+vhg--a[color="blue"];
+
+a--b;
+b--c;
+c--d;
+a--d;
+c--e;
+
+}

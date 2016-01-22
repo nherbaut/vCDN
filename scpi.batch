@@ -1,0 +1,4 @@
+read optim.zpl
+optimize
+write solution solutions.data
+q
