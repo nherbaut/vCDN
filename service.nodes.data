@@ -1,4 +1,6 @@
-s	0
-vhg	10
-vcdn	20
+s	0	
+lb	0
+vhg1	10
+vhg2	10
+vcdn	50
 CDN	0

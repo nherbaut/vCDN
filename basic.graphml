@@ -18,18 +18,19 @@
 				<data key="d42">100</data>
 				</edge>
             <edge source="1" target="2">
-				<data key="d42">60</data>
+				<data key="d42">100</data>
 				</edge>
             <edge source="1" target="3">
-				<data key="d42">60</data>
+				<data key="d42">100</data>
 				</edge>
-            <edge source="2" target="4"><data key="d42">55</data>
+            <edge source="2" target="4">
+				<data key="d42">100</data>
 				</edge>
             <edge source="3" target="4">
-				<data key="d42">55</data>
+				<data key="d42">100</data>
 				</edge>
             <edge source="4" target="5">
-				<data key="d42">80</data>
+				<data key="d42">100</data>
 				</edge>
             <edge source="4" target="6"><data key="d42">200</data>
 				</edge>
