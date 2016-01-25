@@ -44,7 +44,7 @@ else:
     cdn = int(args.cdn)
 
 # edges = [(e.node1.id, e.node2.id, e.attributes()["d42"].value,max(5+np.random.normal(10, 5, 1)[0],0)) for e in g.edges() if "d42" in e.attributes()]
-edges = [(e.node1.id, e.node2.id, max(rs.normal(100, 60, 1)[0], 0), max(rs.normal(10, 5, 1)[0], 0)) for e in g.edges()]
+edges = [(e.node1.id, e.node2.id, max(rs.normal(100, 30, 1)[0], 0), max(rs.normal(10, 5, 1)[0], 0)) for e in g.edges()]
 nodes = set([n.id for n in g.nodes()])
 nodesdict = {}
 for l in nodes:

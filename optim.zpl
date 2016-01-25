@@ -39,6 +39,13 @@ var w binary;
 #						(y[u,v,a,b] * delays[u,v] )+
 #					sum <u,v> in Et:
 #						(y[u,v,a,b] * delayst[u,v])) ;
+
+maximize cost: 	
+				sum <a,b> in tuplePath:(
+					sum <u,v> in E:
+						((bw[u,v]-(y[u,v,a,b] * bwS[a,b] ))/(0.1+bw[u,v]))+
+					sum <u,v> in Et:
+					((bw[v,u]-(y[u,v,a,b] * bwS[a,b] ))/(0.1+bw[v,u])));
 						
 
 subto fc:

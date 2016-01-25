@@ -8,3 +8,4 @@ fi
 scip -b ./scpi.batch
 ./plotsol.py 
 cat ./substrate.dot |dot -Tpdf -osol.pdf
+echo "seed=$1"
