@@ -97,39 +97,49 @@ y_{u,v}^{i,j}+y_{v,u}^{i,j} \leq 1, \forall (u,v) \in E, \forall (i,j) \in E^{S}
 		s
 \end{equation}
 
- \begin{multicols}{2}[\textbf{Example for a two column text}]
-    \blindtext
-  \end{multicols}
-
-  \begin{multicols}{3}[\textbf{Example for a three column text}]
-    \blindtext
-  \end{multicols}
   
-
 \begin{table}[htbp]\caption{Notations}
 \begin{center}% used the environment to augment the vertical space
 % between the caption and the table
-\begin{tabular}{r c p{10cm} }
+\begin{tabular}{r c p{4cm} | r c p{4cm} }
 \toprule{}
 
+$\mathscr{M}$ & $\triangleq$ & maps a service graph $G^{S}=(N^{S},E^{S})$ to a substrate graph $G=(N,E)$.
+& $\mathscr{P}^{S}(i,j)$ & $\triangleq$ & the set of edges $e\in E^{S}$ that links $i \in N^{S}$ to $j \in N^{S}$\\
+
+$\mathscr{P}^{S}_{\mathscr{M}}(i,j)$ & $\triangleq$ & the set of edges $e\in E$ that links $u$ to $v$ with $i \xrightarrow{\mathscr{M}} u$ and $j \xrightarrow{\mathscr{M}} v$&
+$\mathscr{D}_{\mathscr{M}}(i,j)$ & $\triangleq$ & the total substrate delay for mapping $\mathscr{M}$ for $(i,j) \in E^{S}$ \\
+
+$\mathscr{T}$ & $\triangleq$ & the set of terminal nodes of the service chain.&
+$i \xrightarrow{\mathscr{M}} u$ & $\triangleq$ & network function $i\in N^{S}$ is mapped to the $u\in N$ for mapping $\mathscr{M}$ \\
 
 $y_{u,v}^{i,j}$ & $=$ & \(
 	\left \{
-		\begin{array}{rl}
-			1,  & \text{if link $(i,j) \in E^{S}$ is mapped on substrate link $(a,b)\in E$} \\
+		\begin{array}{p{0.5cm}p{2.5cm}}
+			1,  & if link $(i,j) \in E^{S}$ \\ & is mapped on substrate link $(a,b)\in E$ \\
+			0,  & \text{otherwise} 
+		\end{array}
+	\right.\)&
+
+
+
+$x^{i}_{u} $ & $=$ & \(
+	\left \{
+		\begin{array}{p{0.5cm}p{3.5cm}}
+			1,  & \text{if $i \xrightarrow{\mathscr{M}} u$} \\
 			0,  & \text{otherwise} 
 		\end{array}
 	\right.\)\\
+	
+$d_{a,b}$ & $\triangleq$ & the delay for edge $(a,b)\in E$ &
+$d^{S}_{i,j}$& $\triangleq$ & the maximum delay on $(i,j) \in E^{S}$ admissible for chain $G^{S}$.\\
 
-$d_{a,b}$ & $\triangleq$ & the delay for edge $(a,b)\in E$\\
-$\mathscr{D}_{\mathscr{M}}(i,j)$ & $\triangleq$ & the total substrate delay for mapping $\mathscr{M}$ for $(i,j) \in E^{S}$ \\
-$\mathscr{T}$ & $\triangleq$ & the set of terminal nodes of the chain.\\
-$s$ & $\triangleq$ & the starting node of the chain.\\
-$i \xrightarrow{\mathscr{M}} u$ & $\triangleq$ & the network function $i\in N^{S}$ is mapped to the substrate node $u\in N$ for mapping $\mathscr{M}$ \\
+$b^{S}_{i,j}$& $\triangleq$ & the required bandwidth on $(i,j) \in E^{S}$ for chain $G^{S}$'s operation.&
+$b_{u,v}$& $\triangleq$ & the available bandwidth on edge $(u,v) \in E$  of the substrate\\
 
-$\mathscr{P}^{S}(i,j)$ & $\triangleq$ & path from $i$ to $j$ is the set of edges $e\in E^{S}$ that links $i \in N^{S}$ to $j \in N^{S}$\\
+& & & $s$ & $\triangleq$ & the starting node of the service chain.\\
 
-$\mathscr{P}^{S}_{\mathscr{M}}(i,j)$ & $\triangleq$ & mapped path from i to j is the set of edges $e\in E$ that links $u$ to $v$ with $i \xrightarrow{\mathscr{M}} u$ and $j \xrightarrow{\mathscr{M}} v$\\
+
 
 
 \bottomrule
