@@ -6,6 +6,16 @@
 ]{algotel}
 \usepackage[latin1]{inputenc}
 \usepackage{ mathrsfs }
+\usepackage{mathtools}  
+\usepackage{amsmath}
+\usepackage{relsize}
+\usepackage{lmodern}
+\usepackage{slantsc}
+\usepackage{amssymb}
+\usepackage{tabulary}
+\usepackage{booktabs}
+\usepackage{multicol}
+\usepackage{blindtext}
 \usepackage[francais]{babel}
 \author{Nicolas Herbaut\addressmark{1}\addressmark{2}\thanks{The work performed for this paper has been partially funded by the FP7 IP T-NOVA European Project (Grant Agreement 619520) and the FUI French National Project DVD2C}{\ }
   \and Daniel Négru\addressmark{1}}
@@ -26,7 +36,7 @@
 
 \begin{abstract}
 La consommation de videos "over the top" a changé la donne pour les acteurs du monde de la livraison de contenu. La chaine de valeur a glissé progressivement en faveur des fournisseurs de contenus et des réseaux de livraison de contenu et au détriment des fournisseurs d'accès.
-Notre contribution propose un nouveau modèle de collaboration entre ces différents acteurs par la création d'une plateforme où sont déployées des chaînes de service de distribution de contenu. Nous étudions en particuliers les solutions de placement de ces fonctions réseaux sur un substrat de serveur virtualisés au sein d'un réseau SDN.
+Notre contribution propose un nouveau modèle de collaboration entre ces différents acteurs par la création d'une plateforme où sont déployées des chaînes de service de distribution de contenu. Nous étudions en particuliers les solutions de placement de ces fonctions réseaux sur un substrat de serveur virtualisés au sein d'un réseau respectant l'approche Software Defined Network (SDN) dans lequel sont déployées des infrastructures de virtualisation de fonction réseau (NFV).
 \end{abstract}
 
 \section{Introduction}
@@ -34,10 +44,99 @@ Notre contribution propose un nouveau modèle de collaboration entre ces différen
 
 \section{Model}
 
-\[
-\max_{x \in \mathscr{T} }{\mathscr{D}_{s,x}}=\sum_{(a,b)\in\mathscr{D}^{\mathscr{M}}}
-\]
+minimize
 
+\begin{equation} \label{eq1}
+\begin{split}
+\max_{
+\!\mathsmaller{x \in \mathscr{T} }}{\mathscr{D}(s,x)} 
+											 &=\max_{\!\mathsmaller{x \in \mathscr{T}} }{
+			\sum_{
+			\!\mathsmaller{
+			(i,j)\in\mathscr{P}^{S}(s,x)
+			}
+			}{\mathscr{D}_{\mathscr{M}}(i,j)}}\\
+											&=\max_{x \in \mathscr{T} }{
+			\sum_{
+			\!\mathsmaller{
+			(i,j)\in\mathscr{P}^{S}(s,x)
+			}
+			}}{\quad\sum_{
+			\!\mathsmaller{
+			{(a,b)\in\mathscr{P}^{S}_{\mathscr{M}}(i,j)}
+			}
+			}{d_{a,b}\times y_{a,b}^{i,j}}}\\
+\end{split}	
+\end{equation}
+
+\begin{equation}
+		\sum_{u\in N} x_u^{i}=1, \forall i \in N^{S}
+\end{equation}
+
+
+\begin{equation}
+	\sum_{i \in N^{S} } x_{j}^{i} \times c_{i}^{S} \leq c_{u}, \forall u \in N		
+\end{equation}
+
+\begin{equation}
+	\sum_{(i,j)\in E^{S}}{y_{u,v}^{i,j}\times b_{i,j}^{S}} \leq b_{u,v}, \forall (u,v) \in E
+\end{equation}
+
+\begin{equation}
+	y_{u,v}^{i,j}\times d_{u,v} \leq d_{i,j}^{S}, \forall (u,v) \in E, \forall (i,j) \in E^{S}
+\end{equation}
+
+
+\begin{equation}
+\sum_{v \in N}{y_{u,v}^{i,j}-y_{v,u}^{i,j}} = x_{u}^{i}-x_{u}^{j}, \forall (i,j) \in E^{S}, \forall u \in N
+\end{equation}
+
+
+\begin{equation}
+y_{u,v}^{i,j}+y_{v,u}^{i,j} \leq 1, \forall (u,v) \in E, \forall (i,j) \in E^{S}
+		s
+\end{equation}
+
+ \begin{multicols}{2}[\textbf{Example for a two column text}]
+    \blindtext
+  \end{multicols}
+
+  \begin{multicols}{3}[\textbf{Example for a three column text}]
+    \blindtext
+  \end{multicols}
+  
+
+\begin{table}[htbp]\caption{Notations}
+\begin{center}% used the environment to augment the vertical space
+% between the caption and the table
+\begin{tabular}{r c p{10cm} }
+\toprule{}
+
+
+$y_{u,v}^{i,j}$ & $=$ & \(
+	\left \{
+		\begin{array}{rl}
+			1,  & \text{if link $(i,j) \in E^{S}$ is mapped on substrate link $(a,b)\in E$} \\
+			0,  & \text{otherwise} 
+		\end{array}
+	\right.\)\\
+
+$d_{a,b}$ & $\triangleq$ & the delay for edge $(a,b)\in E$\\
+$\mathscr{D}_{\mathscr{M}}(i,j)$ & $\triangleq$ & the total substrate delay for mapping $\mathscr{M}$ for $(i,j) \in E^{S}$ \\
+$\mathscr{T}$ & $\triangleq$ & the set of terminal nodes of the chain.\\
+$s$ & $\triangleq$ & the starting node of the chain.\\
+$i \xrightarrow{\mathscr{M}} u$ & $\triangleq$ & the network function $i\in N^{S}$ is mapped to the substrate node $u\in N$ for mapping $\mathscr{M}$ \\
+
+$\mathscr{P}^{S}(i,j)$ & $\triangleq$ & path from $i$ to $j$ is the set of edges $e\in E^{S}$ that links $i \in N^{S}$ to $j \in N^{S}$\\
+
+$\mathscr{P}^{S}_{\mathscr{M}}(i,j)$ & $\triangleq$ & mapped path from i to j is the set of edges $e\in E$ that links $u$ to $v$ with $i \xrightarrow{\mathscr{M}} u$ and $j \xrightarrow{\mathscr{M}} v$\\
+
+
+\bottomrule
+\end{tabular}
+\end{center}
+\label{tab:TableOfNotationForMyResearch}
+\end{table}
 
 
 \nocite{}
