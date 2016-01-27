@@ -1,0 +1,40 @@
+<?xml version="1.0" ?>
+    <graphml>
+
+        <graph edgedefault="directed" id="">
+            <node id="s">
+				<data key="d1">0</data>
+				</node>
+				
+            <node id="1"/>
+            <node id="2"/>
+            <node id="3"/>
+            <node id="4"/>
+            <node id="5"/>
+            <node id="6"/>
+            <node id="7"/>
+            
+            <edge source="s" target="1">
+				<data key="d42">100</data>
+				</edge>
+            <edge source="1" target="2">
+				<data key="d42">100</data>
+				</edge>
+            <edge source="1" target="3">
+				<data key="d42">100</data>
+				</edge>
+            <edge source="2" target="4">
+				<data key="d42">100</data>
+				</edge>
+            <edge source="3" target="4">
+				<data key="d42">100</data>
+				</edge>
+            <edge source="4" target="5">
+				<data key="d42">100</data>
+				</edge>
+            <edge source="4" target="6"><data key="d42">200</data>
+				</edge>
+            <edge source="4" target="7"><data key="d42">200</data>
+				</edge>
+        </graph>
+    </graphml>

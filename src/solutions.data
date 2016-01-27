@@ -1,15 +1,10 @@
 solution status: optimal solution found
-objective value:                              5.32647
+objective value:                             7.358993
 x$0$s                                               1 	(obj:0)
-x$1$vhg                                             1 	(obj:0)
-x$1$vcdn                                            1 	(obj:0)
-x$30$CDN                                            1 	(obj:0)
-y$0$1$s$vhg                                         1 	(obj:5.32647)
-y$1$33$vhg$CDN                                      1 	(obj:0)
+x$31$CDN                                            1 	(obj:0)
+x$34$vhg                                            1 	(obj:0)
+x$34$vcdn                                           1 	(obj:0)
+y$0$34$s$vhg                                        1 	(obj:7.358993)
 y$2$31$vhg$CDN                                      1 	(obj:0)
-y$3$30$vhg$CDN                                      1 	(obj:0)
-y$4$3$vhg$CDN                                       1 	(obj:0)
 y$32$2$vhg$CDN                                      1 	(obj:0)
-y$33$34$vhg$CDN                                     1 	(obj:0)
-y$31$4$vhg$CDN                                      1 	(obj:0)
 y$34$32$vhg$CDN                                     1 	(obj:0)
