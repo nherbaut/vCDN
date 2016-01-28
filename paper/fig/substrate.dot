@@ -9,11 +9,11 @@ u3->0;
 u4->0;
 u5->0;
 u6->0;
-cpu10->2[weight=0];
+cpu10->2[weight=1];
 cpu10[label="10 vcore\n1TB RAM\n30TB HDD"];
-cpu11->3[weight=0];
+cpu11->3[weight=1];
 cpu11[label="60 vcore\n5TB RAM\n10TB HDD"];
-cpu12->6[weight=0];
+cpu12->6[weight=1];
 cpu12[label="15 vcore\n3TB RAM\n20TB HDD"];
 0 [label="P",shape=box,color=black,width=1.000000,fontsize=20,color=azure3,style=filled];
 1 [label="P",shape=box,color=black,width=1.000000,fontsize=20,color=azure3,style=filled];
@@ -28,9 +28,9 @@ cpu12[label="15 vcore\n3TB RAM\n20TB HDD"];
  1->3 [ label="0.8 Gbps", penwidth="4",  fontsize=20];
  2->4 [ label="0.5 Gbps", penwidth="4",  fontsize=20];
  3->4 [ label="1.2 Gbps", penwidth="3",  fontsize=20];
- 4->6 [ label="104", penwidth="3",  fontsize=20];
- 5->7 [ label="122", penwidth="3",  fontsize=20];
- 4->5 [ label="113", penwidth="3",  fontsize=20];
+ 4->6 [ label="2.5 Gbps", penwidth="3",  fontsize=20];
+ 5->7 [ label="3.0 Gbps", penwidth="3",  fontsize=20];
+ 4->5 [ label="1 Gbps", penwidth="3",  fontsize=20];
 
 }
 
