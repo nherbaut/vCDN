@@ -17,11 +17,16 @@
 \usepackage{multicol}
 \usepackage{blindtext}
 \usepackage[francais]{babel}
+
+\newcommand{\exedout}{%
+  \rule{0.8\textwidth}{0.5\textwidth}%
+}
+
 \author{Nicolas Herbaut\addressmark{1}\addressmark{2}\thanks{The work performed for this paper has been partially funded by the FP7 IP T-NOVA European Project (Grant Agreement 619520) and the FUI French National Project DVD2C}{\ }
   \and Daniel Négru\addressmark{1}}
 
 
-\title[]{	Déploiement d'un chaine de service de livraison de contenu multimedia sur une infrastructure d'opérateur basée sur SDN-NFV}
+\title[]{Déploiement d'un chaine de service de livraison de contenu multimedia sur une infrastructure d'opérateur basée sur SDN-NFV}
 
 \address{\addressmark{1}Univ. Bordeaux, LaBRI, UMR 5800, F-33400 Talence, France
 \addressmark{2}Viotech Communications, Versaille, France
@@ -29,7 +34,7 @@
 }
 
 
-\keywords{SDN, NFV, Service Chaining, Content Delivery}
+\keywords{SDN, NFV, Service Chaining, Content Delivery, CDN ISP Collaboration}
 
 \begin{document}
 \maketitle
@@ -40,7 +45,50 @@ Notre contribution propose un nouveau modèle de collaboration entre ces différen
 \end{abstract}
 
 \section{Introduction}
-\cite{xu_analysis_2006} is cool.
+Real-time entertainment (video and audio streaming) is the number one service on the current Internet: it accounts for 68.90\% of the Downstream Peak Period Traffic in North America in Q2 2015  \cite{sandvine_2015}. As the Internet was not originally designed for streaming high quality video, delivering this massive amount of content is a challenging task. 
+
+One solution to mitigate those issues is to use Content Delivery Networks (CDN). 
+CDNs have been created to improve network performance for end-users while at the same time limiting the need for Content Providers (CP) to own an infrastructure \cite{pathan2014cloud}.
+By deploying servers in strategic locations, CDN Providers assign users to a close-by server, thus reducing hop count and avoiding congestion occurrences.
+
+In this very competitive market, the majority of ISPs are being kicked out of the video delivery value chain and is struggling to minimize the drop in their revenues \cite{wulf_carrier_2010}.  However, even if their role in the delivery part is challenged by CDNs, ISPs still hold a valuable asset: they manage the whole network, i.e., the complete routing process end-to-end. 
+
+The envisioned solution is a collaboration model around a Virtualized Infrastructure.
+Some technical initiatives have started building open source platforms for Network Function Virtualization (NFV) and its complementary technology, Software Defined Networks (SDN).
+Its multi-tenant nature and the formation of a business ecosystem around the ETSI proposal~\cite{network_2013} allows a NFV platform to play a key role in the technical integration of different actors bringing added value functionalities.
+Leveraging this approach, we propose a solution where ISPs can host, provision and manage an NFV infrastructure supporting a large variety of services while CDNs can bring their specific know-how in terms of content delivery on top of them through a virtual CDN (vCDN) network function.
+It is a win-win approach since CDNs can expand their coverage dynamically without buying new servers and ISPs can increase their revenue by billing them while reducing inter-AS traffic.
+
+
+
+\section{A distributed NFV/SDN platform for virtual CDN deployment in the ISP's network\label{sec:proposal}}
+
+\begin{figure}
+\centering
+\begin{minipage}{0.45\textwidth}
+\centering
+	\includegraphics[width=1\textwidth]{fig/overlay.pdf}
+	\caption{ISP's Virtualized Network
+    \label{fig:overlay}}
+\end{minipage}\hfill
+\begin{minipage}{0.45\textwidth}
+\centering
+	\includegraphics[width=1\textwidth]{fig/proposal.pdf}
+	\caption{ vCDN deployed in ISP Network 
+    \label{fig:vcdninisp}}
+\end{minipage}
+\end{figure}
+
+
+
+\begin{figure}
+	\center
+	\includegraphics[width=1\textwidth]{fig/results.pdf}
+	\caption{ Simulation
+    \label{fig:vcdninisp}
+    }
+\end{figure}
+
 
 \section{Model}
 
@@ -151,7 +199,7 @@ $b_{u,v}$& $\triangleq$ & the available bandwidth on edge $(u,v) \in E$  of the 
 
 \nocite{}
 \bibliographystyle{alpha}
-\bibliography{vnf}
+\bibliography{algobib}
 
 
 

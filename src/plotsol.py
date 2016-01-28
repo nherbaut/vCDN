@@ -33,12 +33,13 @@ with open("solutions.data", "r") as sol:
             continue
 
 with open("substrate.dot", 'w') as f:
-    f.write("digraph{rankdir=LR;\n\n\n\n subgraph{\n\nedge[dir=none];\n")
+    f.write("digraph{rankdir=LR;\n\n\n\n subgraph{\n\n\n")
 
     avgcpu = reduce(lambda x,y: float(x)+float(y),nodesdict.values(),0.0)/len(nodesdict)
 
     for node in nodesdict.items():
-        f.write("%s [label=%2.2f,shape=box,color=black,width=%f];\n"%(node[0],float(node[1]),float(node[1])/avgcpu))
+        #f.write("%s [label=%2.2f,shape=box,color=black,width=%f];\n"%(node[0],float(node[1]),min	(1,float(node[1])/avgcpu)))
+        f.write("%s [label=%2.2f,shape=box,color=black,width=%f,fontsize=20];\n"%(node[0],float(node[1]),min	(1,float(node[1])/avgcpu)))
 
     avgbw = [float(edge[2]) for edge in edges]
     avgbw = sum(avgbw) / len(avgbw)
@@ -46,17 +47,17 @@ with open("substrate.dot", 'w') as f:
     avgdelay = reduce(lambda x,y: float(x)+float(y[3]),edges,0.0)/len(edge)
     for edge in edges:
         availbw = float(edge[2])
-        f.write("%s->%s [ label=\"%d\", penwidth=\"%d\", minlen=\"%d\"];\n " % (edge[0], edge[1], float(edge[2]), 1+3*availbw/avgbw,2*(1+float(edge[3])/avgdelay)))
+        f.write("%s->%s [ label=\"%d\", penwidth=\"%d\", minlen=\"%d\", fontsize=20];\n " % (edge[0], edge[1], float(edge[2]), 1+3*availbw/avgbw,2*(1+float(edge[3])/avgdelay)))
 
     for node in nodesSol:
         f.write("%s->%s[color=red];\n" % node)
-        f.write("%s[shape=circle,fillcolor=azure3,style=filled];\n" % node[1])
+        f.write("%s[shape=circle,fillcolor=azure3,style=filled,fontsize=24];\n" % node[1])
 
     f.write("}")
 
     f.write("\nsubgraph{\n edge[color=blue3,weight=0];\n")
     for edge in edgesSol:
-        f.write("%s->%s [ label=\"%s-%s\",fontcolor=blue3 ];\n " % (edge))
+        f.write("%s->%s [ label=\"%s-%s\",fontcolor=blue3 ,fontsize=20,penwidth=3];\n " % (edge))
 
     f.write("}\n\n")
     f.write("}")

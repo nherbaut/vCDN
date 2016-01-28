@@ -1,9 +1,23 @@
-\begin{thebibliography}{XKRC}
+\begin{thebibliography}{WZHB}
 
-\bibitem[XKRC]{xu_analysis_2006}
-Dongyan Xu, Sunil~Suresh Kulkarni, Catherine Rosenberg, and Heung-Keung Chai.
-\newblock Analysis of a {CDN}-p2p hybrid architecture for cost-effective
-  streaming media distribution.
-\newblock 11(4):383--399.
+\bibitem[net13]{network_2013}
+Network functions virtualisation ({NFV}); use cases.
+\newblock Gs nfv 001-v1.1.1, ETSI, 2013.
+
+\bibitem[Pat14]{pathan2014cloud}
+Mukaddim Pathan.
+\newblock Cloud-based content delivery and streaming.
+\newblock {\em Advanced Content Delivery, Streaming, and Cloud Services}, pages
+  1--31, 2014.
+
+\bibitem[san]{sandvine_2015}
+Sandvine - global internet phenomena.
+
+\bibitem[WZHB]{wulf_carrier_2010}
+J.~Wulf, R.~Zarnekow, T.~Hau, and W.~Brenner.
+\newblock Carrier activities in the {CDN} market - an exploratory analysis and
+  strategic implications.
+\newblock In {\em 2010 14th International Conference on Intelligence in Next
+  Generation Networks ({ICIN})}, pages 1--6.
 
 \end{thebibliography}
