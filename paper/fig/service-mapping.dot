@@ -36,9 +36,9 @@ subgraph{
  1->2 [ label="s-vhg",fontcolor=blue3 ,fontsize=20,penwidth=3,style=dashed];
  2->4 [ label="vhg-CDN",fontcolor=blue3 ,fontsize=20,penwidth=3,style=dashed];
  2->4 [ label="vhg-vCDN",fontcolor=blue3 ,fontsize=20,penwidth=3,style=dashed];
- 4->7 [ label="vhg-CDN",fontcolor=blue3 ,fontsize=20,penwidth=3,style=dashed];
- 4->5 [ label="vhg-vCDN",fontcolor=blue3 ,fontsize=20,penwidth=3,style=dashed];
- 5->6 [ label="vhg-vCDN",fontcolor=blue3 ,fontsize=20,penwidth=3,style=dashed];
+ 5->7 [ label="vhg-CDN",fontcolor=blue3 ,fontsize=20,penwidth=3,style=dashed];
+ 4->5 [ label="vhg-CDN",fontcolor=blue3 ,fontsize=20,penwidth=3,style=dashed];
+ 4->6 [ label="vhg-CDN",fontcolor=blue3 ,fontsize=20,penwidth=3,style=dashed];
  }
 
 }

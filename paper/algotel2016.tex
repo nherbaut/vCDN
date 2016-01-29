@@ -87,9 +87,10 @@ In our usecase, vHG can be seen as a transit function able to flag outgoing flow
 vHG can seggregate traffic targetted to vCDN from the one targetted to CDN allowing packets to follow distinct routes with distinct network caracteristics.
 
 The resulting service can now be seen as a Service Chain depicted in Figure~\ref{fig:vhg}.
-The ISPs need to embed the service chain generated from the CDN SLA into their substrate network. This problem is known as Service Chain Embedding \cite{service chain} where we need to map a service graph $G^{S}=(N^{S},E^{S})$ to a substrate graph $G=(N,E)$ representing the real ISP network.
+The ISPs need to embed the service chain generated from the CDN SLA into their substrate network. 
+This problem is known as Service Chain Embedding \cite{service chain} where we need to map a service graph $G^{S}=(N^{S},E^{S})$ to a substrate graph $G=(N,E)$ representing the real ISP network. Figure~\ref{fig:service-mapping} shows such a mapping.
 
-SLAs varies in the amont of physical resources needed and can be very demanding sometimes. In this context, it can be quite challenging for the ISP to map a vNF or a Route to a 
+SLAs varies in the amont of physical resources needed and can be very demanding sometimes. In this context, it can be quite challenging for the ISPs to map a vNF or a Route to their
 
 
 
@@ -132,6 +133,13 @@ SLAs varies in the amont of physical resources needed and can be very demanding 
 \end{minipage}
 \end{figure}
 
+\begin{figure}
+	\center
+	\includegraphics[width=0.95\textwidth]{fig/service-mapping.pdf}
+	\caption{Mapping of a Service Chain
+    \label{fig:service-mapping}
+    }
+\end{figure}
 
 
 \section{Model}
