@@ -51,17 +51,47 @@ One solution to mitigate those issues is to use Content Delivery Networks (CDN).
 CDNs have been created to improve network performance for end-users while at the same time limiting the need for Content Providers (CP) to own an infrastructure \cite{pathan2014cloud}.
 By deploying servers in strategic locations, CDN Providers assign users to a close-by server, thus reducing hop count and avoiding congestion occurrences.
 
-In this very competitive market, the majority of ISPs are being kicked out of the video delivery value chain and is struggling to minimize the drop in their revenues \cite{wulf_carrier_2010}.  However, even if their role in the delivery part is challenged by CDNs, ISPs still hold a valuable asset: they manage the whole network, i.e., the complete routing process end-to-end. 
+In this very competitive market, the majority of ISPs are being kicked out of the video delivery value chain and is struggling to minimize the drop in their revenues \cite{wulf_carrier_2010}.  
+However, even if their business role in the delivery part is challenged by CDNs, ISPs still hold a valuable asset: they can manage the whole network, i.e., the complete routing process end-to-end. 
 
-The envisioned solution is a collaboration model around a Virtualized Infrastructure.
-Some technical initiatives have started building open source platforms for Network Function Virtualization (NFV) and its complementary technology, Software Defined Networks (SDN).
-Its multi-tenant nature and the formation of a business ecosystem around the ETSI proposal~\cite{network_2013} allows a NFV platform to play a key role in the technical integration of different actors bringing added value functionalities.
-Leveraging this approach, we propose a solution where ISPs can host, provision and manage an NFV infrastructure supporting a large variety of services while CDNs can bring their specific know-how in terms of content delivery on top of them through a virtual CDN (vCDN) network function.
+The envisioned solution is a collaboration model for ISP and CDN around a Network Function Virtualization (NFV) architecture.
+We propose a solution where ISPs can manage a NFV infrastructure where CDNs can run their caching software as NFVs through a virtual CDN (vCDN) network function.
 It is a win-win approach since CDNs can expand their coverage dynamically without buying new servers and ISPs can increase their revenue by billing them while reducing inter-AS traffic.
 
+The rest of the paper is organized as follows.
+Section~\ref{sec:architecture} describes the architecture of the solution, while Section~\ref{sec:model} details the model used to optimize the placement of the whole content delivery service. Section~\ref{sec:result} presents the results of the modelization. We conclude the paper in Section~\ref{sec:conclusion}.
+
+\section{A NFV/SDN platform for virtual CDN deployment in the ISP's network\label{sec:architecture}}
+
+In order to overcome the CDN-ISP collaboration challenges, we propose a Virtualized Infrastructure solution capable of matching ISP's connectivity "supply" with the CDN's connectivity "demand", towards a win-win approach.
+
+Our proposal, as depicted in Figure~\ref{fig:overlay}, aims at instantiating a Network Function Virtualization (NFV) platform within the ISP Network capable of hosting, among others, Virtual CDN (vCDN) services. 
+
+This platform is distributed amongst several NFV infrastructure points of presence (NFVI-POP), at the edge of the network. 
+NFVI-POPs contains racks of servers that provide resources (CPU, RAM, HDD) to run virtual Network functions on.
+
+For the network part, we consider using SDN at the ISP level, allowing a virtually centralized management of the control plane.
+By allowing packets to flow along reserved virtual routes throughout the ISP network, the solution allows predictability of both bandwidth and latency between the End-User and the vCDN caching server. 
+
+By allowing compute and network resources beeing allocated to third party on its network, ISPs are capable of contracting Service Level Agreement (SLA) with the CDN to run vCDN.
+
+While an SLA is a good way for CDNs to formulate their business needs, it doesn't specify technically how service is implemented. 
+The canonical representation of Content Delivery Service is depicted Figure~\ref{fig:canonical}, where two distinct flows emerge from the source $s$. On one hand, we have the $s\rightarrow CDN$ flow which represents the traditional path to content delivery: packets flow through the ISP network and reach the seperate CDN network. On the other hand, the $s \rightarrow vCDN$ flow is targetted at an ISP operated POP located within its network.
+The latter flow has tighter network constraints (low delay, high bandwidth) and can hence deliver better quality videos.
+
+While traditionnal DNS redirection methods can be used to decide where to steer trafic, Operators can benefit from an SDN approach to control traffic with more granularity.
+One of the drawback of SDN hovever, is that its southbound interfaces \cite{openflow} only accept L1-L4 rules, limiting greatly the possibilities left by the CDN to choose the righ server.
+To mitigate this issue, we propose using a Virtual Home Gateways (vHG) \cite{vhgpaper}. 
+vHG are virtual appliances that outsource traditional physial Home Gateway's Network Functions to the cloud, leaving a simple L2 bridge on the user premicises \cite{vhg paper}. 
+In our usecase, vHG can be seen as a transit function able to flag outgoing flows according to L5-L7 rules, like HTTP URL for instance.
+vHG can seggregate traffic targetted to vCDN from the one targetted to CDN allowing packets to follow distinct routes with distinct network caracteristics.
+
+The resulting service can now be seen as a Service Chain depicted in Figure~\ref{fig:vhg}.
+The ISPs need to embed the service chain generated from the CDN SLA into their substrate network. This problem is known as Service Chain Embedding \cite{service chain} where we need to map a service graph $G^{S}=(N^{S},E^{S})$ to a substrate graph $G=(N,E)$ representing the real ISP network.
+
+SLAs varies in the amont of physical resources needed and can be very demanding sometimes. In this context, it can be quite challenging for the ISP to map a vNF or a Route to a 
 
 
-\section{A distributed NFV/SDN platform for virtual CDN deployment in the ISP's network\label{sec:proposal}}
 
 \begin{figure}
 \centering
@@ -73,26 +103,40 @@ It is a win-win approach since CDNs can expand their coverage dynamically withou
 \end{minipage}\hfill
 \begin{minipage}{0.45\textwidth}
 \centering
-	\includegraphics[width=1\textwidth]{fig/proposal.pdf}
-	\caption{ vCDN deployed in ISP Network 
-    \label{fig:vcdninisp}}
+	\includegraphics[width=1\textwidth]{fig/sla-service-vne.png}
+	\caption{ From SLA to Service Embedding
+    \label{fig:sla-service-vne}}
+\end{minipage}
+\end{figure}
+
+
+\begin{figure}
+\centering
+\begin{minipage}{0.20\textwidth}
+\centering
+	\includegraphics[width=1\textwidth]{fig/service.pdf}
+	\caption{Service Canonical Representation
+    \label{fig:canonical}}
+\end{minipage}\hfill
+\begin{minipage}{0.335\textwidth}
+\centering
+	\includegraphics[width=1\textwidth]{fig/service_vhg.pdf}
+	\caption{Service implementation using Virtual Home Gateway
+    \label{fig:vhg}}
+\end{minipage}
+\begin{minipage}{0.33\textwidth}
+\centering
+	\includegraphics[width=1\textwidth]{fig/lb-service.pdf}
+	\caption{Transformed service with Load Balanced Home Gateways
+    \label{fig:vhg-lb}}
 \end{minipage}
 \end{figure}
 
 
 
-\begin{figure}
-	\center
-	\includegraphics[width=1\textwidth]{fig/results.pdf}
-	\caption{ Simulation
-    \label{fig:vcdninisp}
-    }
-\end{figure}
-
-
 \section{Model}
 
-minimize
+minimize 
 
 \begin{equation} \label{eq1}
 \begin{split}

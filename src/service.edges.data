@@ -1,5 +1,9 @@
-s	vhg	100	15
-vhg	vcdn    35	40
-vhg	CDN	65	1000
+s	lb	100	15
+lb	vhg1	50	15
+lb	vhg2	50	15
+vhg1	vcdn    17	40
+vhg1	CDN	32	1000
+vhg1	vcdn    18	40
+vhg1	CDN	33	1000
 
 
