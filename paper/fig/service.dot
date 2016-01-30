@@ -2,31 +2,19 @@ digraph{rankdir=LR
  edge[color=blue3,weight=0];
  
  
- s->lb [ label="2 Gpbs", fontcolor=blue3 ,fontsize=20,penwidth=3];
- lb->vhg1 [ label="1 Gpbs", fontcolor=blue3 ,fontsize=20,penwidth=3];
- lb->vhg2 [ label="1 Gpbs", fontcolor=blue3 ,fontsize=20,penwidth=3];
- vhg1->CDN [ label="0.75 Gpbs" , fontcolor=blue3 ,fontsize=20,penwidth=3];
- vhg2->CDN [ label="0.75 Gpbs" , fontcolor=blue3 ,fontsize=20,penwidth=3];
- vhg1->lb2 [ label="0.25 Gpbs" , fontcolor=blue3 ,fontsize=20,penwidth=3];
- vhg2->lb2 [ label="0.25 Gpbs" , fontcolor=blue3 ,fontsize=20,penwidth=3];
- lb2->vCDN1 [ label="0.5 Gpbs", fontcolor=blue3 ,fontsize=20,penwidth=3];
- lb2->vCDN2 [ label="0.5 Gpbs", fontcolor=blue3 ,fontsize=20,penwidth=3];
- lb2->vCDN3 [ label="0.5 Gpbs", fontcolor=blue3 ,fontsize=20,penwidth=3];
+ s
+
  
- vCDN1->vCDN2 [ label="100 Mpbs", fontcolor=blue2 ,fontsize=12,penwidth=1];
- vCDN1->vCDN3 [ label="100 Mpbs", fontcolor=blue2 ,fontsize=12,penwidth=1];
- vCDN2->vCDN3 [ label="100 Mpbs", fontcolor=blue2 ,fontsize=12,penwidth=1];
- vCDN2->vCDN1 [ label="100 Mpbs", fontcolor=blue2 ,fontsize=12,penwidth=1];
- vCDN1->vCDN3 [ label="100 Mpbs", fontcolor=blue2 ,fontsize=12,penwidth=1];
- vCDN3->vCDN2 [ label="100 Mpbs", fontcolor=blue2 ,fontsize=12,penwidth=1];
+ s->CDN [  fontcolor=blue3 ,fontsize=20,penwidth=3,minlen=5];
+ 
+ s->vCDN [  fontcolor=blue3 ,fontsize=20,penwidth=3,minlen=5];
+ 
  
   
 s[shape=circle,fillcolor=azure3,style=filled,fontsize=24];
-vhg1[shape=circle,fillcolor=azure3,style=filled,fontsize=24];
-vhg2[shape=circle,fillcolor=azure3,style=filled,fontsize=24];
-vCDN1[shape=circle,fillcolor=azure1,style=filled,fontsize=16];
-vCDN2[shape=circle,fillcolor=azure1,style=filled,fontsize=16];
-vCDN3[shape=circle,fillcolor=azure1,style=filled,fontsize=16];
+
+
 CDN[shape=circle,fillcolor=azure3,style=filled,fontsize=24];
-lb2[label="lb"];
+vCDN[shape=circle,fillcolor=azure3,style=filled,fontsize=20];
+
  }

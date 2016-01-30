@@ -8,11 +8,13 @@
 \usepackage{ mathrsfs }
 \usepackage{mathtools}  
 \usepackage{amsmath}
+\usepackage{graphicx} % omit 'demo' for real document
 \usepackage{relsize}
 \usepackage{lmodern}
 \usepackage{slantsc}
 \usepackage{amssymb}
 \usepackage{tabulary}
+\usepackage{subcaption}
 \usepackage{booktabs}
 \usepackage{multicol}
 \usepackage{blindtext}
@@ -63,35 +65,9 @@ Section~\ref{sec:architecture} describes the architecture of the solution, while
 
 \section{A NFV/SDN platform for virtual CDN deployment in the ISP's network\label{sec:architecture}}
 
+CDN and ISP do not naturally collaborate.
+They have their own specific problems to solve resulting in conflicting outcomes \cite{jiang_cooperative_2009}.
 In order to overcome the CDN-ISP collaboration challenges, we propose a Virtualized Infrastructure solution capable of matching ISP's connectivity "supply" with the CDN's connectivity "demand", towards a win-win approach.
-
-Our proposal, as depicted in Figure~\ref{fig:overlay}, aims at instantiating a Network Function Virtualization (NFV) platform within the ISP Network capable of hosting, among others, Virtual CDN (vCDN) services. 
-
-This platform is distributed amongst several NFV infrastructure points of presence (NFVI-POP), at the edge of the network. 
-NFVI-POPs contains racks of servers that provide resources (CPU, RAM, HDD) to run virtual Network functions on.
-
-For the network part, we consider using SDN at the ISP level, allowing a virtually centralized management of the control plane.
-By allowing packets to flow along reserved virtual routes throughout the ISP network, the solution allows predictability of both bandwidth and latency between the End-User and the vCDN caching server. 
-
-By allowing compute and network resources beeing allocated to third party on its network, ISPs are capable of contracting Service Level Agreement (SLA) with the CDN to run vCDN.
-
-While an SLA is a good way for CDNs to formulate their business needs, it doesn't specify technically how service is implemented. 
-The canonical representation of Content Delivery Service is depicted Figure~\ref{fig:canonical}, where two distinct flows emerge from the source $s$. On one hand, we have the $s\rightarrow CDN$ flow which represents the traditional path to content delivery: packets flow through the ISP network and reach the seperate CDN network. On the other hand, the $s \rightarrow vCDN$ flow is targetted at an ISP operated POP located within its network.
-The latter flow has tighter network constraints (low delay, high bandwidth) and can hence deliver better quality videos.
-
-While traditionnal DNS redirection methods can be used to decide where to steer trafic, Operators can benefit from an SDN approach to control traffic with more granularity.
-One of the drawback of SDN hovever, is that its southbound interfaces \cite{openflow} only accept L1-L4 rules, limiting greatly the possibilities left by the CDN to choose the righ server.
-To mitigate this issue, we propose using a Virtual Home Gateways (vHG) \cite{vhgpaper}. 
-vHG are virtual appliances that outsource traditional physial Home Gateway's Network Functions to the cloud, leaving a simple L2 bridge on the user premicises \cite{vhg paper}. 
-In our usecase, vHG can be seen as a transit function able to flag outgoing flows according to L5-L7 rules, like HTTP URL for instance.
-vHG can seggregate traffic targetted to vCDN from the one targetted to CDN allowing packets to follow distinct routes with distinct network caracteristics.
-
-The resulting service can now be seen as a Service Chain depicted in Figure~\ref{fig:vhg}.
-The ISPs need to embed the service chain generated from the CDN SLA into their substrate network. 
-This problem is known as Service Chain Embedding \cite{service chain} where we need to map a service graph $G^{S}=(N^{S},E^{S})$ to a substrate graph $G=(N,E)$ representing the real ISP network. Figure~\ref{fig:service-mapping} shows such a mapping.
-
-SLAs varies in the amont of physical resources needed and can be very demanding sometimes. In this context, it can be quite challenging for the ISPs to map a vNF or a Route to their
-
 
 
 \begin{figure}
@@ -110,36 +86,80 @@ SLAs varies in the amont of physical resources needed and can be very demanding 
 \end{minipage}
 \end{figure}
 
+\subsection{High-Level Architecture}
+
+Our proposal, as depicted in Figure~\ref{fig:overlay}, aims at instantiating a Network Function Virtualization (NFV) platform within the ISP Network capable of hosting, among others, Virtual CDN (vCDN) services. 
+
+This platform is distributed amongst several NFV infrastructure points of presence (NFVI-POP), at the edge of the network. 
+NFVI-POPs are datacenters that provide compute resources (CPU, RAM, HDD) to run virtual Network Functions (vNF) on, following an Network Function as a Service (NFaaS) approach.
+
+On top of the compute part, virtual routes are defined between end-users and vCDN instances. 
+This solution masks the underlying network to the CDNs and keep the ISP topology and features secret, following a private Connectivity as a service (CaaS) approach.
+
+By combining and orchestrating both network and compute resources together, the ISPs can resell them to third parties.
+Following this concept, ISPs are capable of proposing Service Level Agreement (SLA) to the CDNs for them to run their vCDNs Network functions.	
+For example, a CDN can contract with an ISP to organize the delivery of 5.000 concurrent streaming sessions in the Bayonne metropolitan area, with HD resolution.
+
+\subsection{Implementing the Content Delivery Service}
+
+While an SLA is a good way for CDNs to formulate their business needs, it doesn't specify technically how ISPs should implement it on their network.
+In this section, we present the translation of the SLA into a Content Delivery Service Chain.
+
+\subsubsection*{The canonical model}
+The canonical representation of Content Delivery Service is depicted Figure~\ref{fig:canonical}, where two distinct flows emerge from the source $s$. 
+On one hand, we have the $s\rightarrow CDN$ flow which represents the traditional path to content delivery: packets flow through the ISP autonomous system (AS) and reach the seperate CDN AS.
+On the other hand, the $s \rightarrow vCDN$ flow is targetted at an NFVI-POP within the ISP AS.
+It is the enhanced distribution path on which the CDN want to apply the SLA. It has tighter network constraints (low delay, high bandwidth) and can hence deliver better quality videos.
+
+\subsubsection*{Leveraging Virtual Home Gateways}
+Traditionnal DNS redirection methods can be used by CDNs to decide to which server steering traffic. 
+As they have a full control of the network, Operators can benefit from an SDN approach to control traffic with more flexibility.
+
+To deploy configuration to network devices, the SDN approach relies on "southbond technologies"  which can be limited in feature.
+Openflow \cite{mckeown2008openflow} is SDN's most used southbound protocol.
+To this day, it only handles logic rules on levels 1 to 4 of the OSI layer model.
+This limits the possibilities left by the CDNs to choose the righ server.
+In fact, relying on the domain name to chose
+
+
+To mitigate this issue, Virtual Home Gateways can be used to enhance content distribution \cite{etsi001}. 
+vHG are virtual appliances that outsource traditional physial Home Gateway's Network Functions to the cloud, leaving a simple L2 bridge on the user premicises \cite{herbaut2015migrating}. 
+In our usecase, vHG can be seen as a transit function able to flag outgoing flows according to L5-L7 rules, like HTTP URL for instance.
+vHG can seggregate traffic targetted to vCDN from the one targetted to CDN allowing packets to follow distinct routes with distinct network caracteristics.
+
+The resulting service can now be seen as a Service Chain depicted in Figure~\ref{fig:vhg}.
+The ISPs need to embed the service chain generated from the CDN SLA into their substrate network. 
+This problem is known as Service Chain Embedding \cite{service chain} where we need to map a service graph $G^{S}=(N^{S},E^{S})$ to a substrate graph $G=(N,E)$ representing the real ISP network. Figure~\ref{fig:service-mapping} shows such a mapping.
+
+SLAs varies in the amont of physical resources needed and can be very demanding sometimes. In this context, it can be quite challenging for the ISPs to map a vNF to a single POP or a Route the resulting traffic though a single route with guaranteed delay.
+To ease embedding into the network, ISP can transform the canonical service into an other form by splitting vNF and routes as shown Figure~\ref{fig:vhg-lb}. 
+As nothing prevent vNFs to be allocated on the same POP, nor routes to be mapped to the same set of edges, the probability of  successful embeding for transformed model is at least equal to the canonical model.
+Having traffic and resource split, however can be easier to allocate on the substrate network.
+
+
+
 
 \begin{figure}
-\centering
-\begin{minipage}{0.20\textwidth}
-\centering
-	\includegraphics[width=1\textwidth]{fig/service.pdf}
-	\caption{Service Canonical Representation
-    \label{fig:canonical}}
-\end{minipage}\hfill
-\begin{minipage}{0.335\textwidth}
-\centering
-	\includegraphics[width=1\textwidth]{fig/service_vhg.pdf}
-	\caption{Service implementation using Virtual Home Gateway
-    \label{fig:vhg}}
-\end{minipage}
-\begin{minipage}{0.33\textwidth}
-\centering
-	\includegraphics[width=1\textwidth]{fig/lb-service.pdf}
-	\caption{Transformed service with Load Balanced Home Gateways
-    \label{fig:vhg-lb}}
-\end{minipage}
+\begin{subfigure}{0.31\textwidth}
+\includegraphics[width=\linewidth]{fig/service.pdf}
+	\caption{Canonical Representation}
+	\label{fig:canonical}
+\end{subfigure}
+\hspace*{\fill} % separation between the subfigures
+\begin{subfigure}{0.31\textwidth}
+\includegraphics[width=\linewidth]{fig/service_chain.pdf}
+	\caption{Implementation using vHG}
+	\label{fig:vhg}
+\hspace*{\fill} % separation between the subfigures
+\end{subfigure}
+\begin{subfigure}{0.31\textwidth}
+\includegraphics[width=\linewidth]{fig/lb-service.pdf}
+	\caption{With Load Balanced vHG}
+	\label{fig:vhg-lb}
+\end{subfigure}
+\caption{Three representations of the same service chain} \label{fig:1}
 \end{figure}
 
-\begin{figure}
-	\center
-	\includegraphics[width=0.95\textwidth]{fig/service-mapping.pdf}
-	\caption{Mapping of a Service Chain
-    \label{fig:service-mapping}
-    }
-\end{figure}
 
 
 \section{Model}
