@@ -32,6 +32,11 @@ Mukaddim Pathan.
 \newblock {\em Advanced Content Delivery, Streaming, and Cloud Services}, pages
   1--31, 2014.
 
+\bibitem[QN15]{quinn2015problem}
+Paul Quinn and Tom Nadeau.
+\newblock Problem statement for service function chaining, rfc 7498.
+\newblock 2015.
+
 \bibitem[san]{sandvine_2015}
 Sandvine - global internet phenomena.
 

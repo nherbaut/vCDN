@@ -1,0 +1,53 @@
+This is BibTeX, Version 0.99d (TeX Live 2013/Debian)
+Capacity: max_strings=35307, hash_size=35307, hash_prime=30011
+The top-level auxiliary file: algotel2016.aux
+The style file: alpha.bst
+Database file #1: algobib.bib
+Warning--entry type for "sandvine_2015" isn't style-file defined
+--line 60 of file algobib.bib
+Warning--to sort, need author or key in sandvine_2015
+Warning--empty year in jiang_cooperative_2009
+Warning--empty journal in quinn2015problem
+Warning--empty year in wulf_carrier_2010
+You've used 8 entries,
+            2543 wiz_defined-function locations,
+            600 strings with 5920 characters,
+and the built_in function-call counts, 3486 in all, are:
+= -- 341
+> -- 179
+< -- 6
++ -- 65
+- -- 65
+* -- 245
+:= -- 553
+add.period$ -- 23
+call.type$ -- 8
+change.case$ -- 56
+chr.to.int$ -- 8
+cite$ -- 13
+duplicate$ -- 138
+empty$ -- 251
+format.name$ -- 73
+if$ -- 724
+int.to.chr$ -- 1
+int.to.str$ -- 0
+missing$ -- 6
+newline$ -- 41
+num.names$ -- 21
+pop$ -- 77
+preamble$ -- 1
+purify$ -- 64
+quote$ -- 0
+skip$ -- 119
+stack$ -- 0
+substring$ -- 159
+swap$ -- 34
+text.length$ -- 6
+text.prefix$ -- 2
+top$ -- 0
+type$ -- 64
+warning$ -- 4
+while$ -- 33
+width$ -- 10
+write$ -- 96
+(There were 5 warnings)

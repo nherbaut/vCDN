@@ -80,8 +80,8 @@ In order to overcome the CDN-ISP collaboration challenges, we propose a Virtuali
 \end{minipage}\hfill
 \begin{minipage}{0.45\textwidth}
 \centering
-	\includegraphics[width=1\textwidth]{fig/sla-service-vne.png}
-	\caption{ From SLA to Service Embedding
+	\includegraphics[width=1\textwidth]{fig/service-mapping.pdf}
+	\caption{ Service Chain Mapping
     \label{fig:sla-service-vne}}
 \end{minipage}
 \end{figure}
@@ -106,7 +106,7 @@ While an SLA is a good way for CDNs to formulate their business needs, it doesn'
 In this section, we present the translation of the SLA into a Content Delivery Service Chain.
 
 \subsubsection*{The canonical model}
-The canonical representation of Content Delivery Service is depicted Figure~\ref{fig:canonical}, where two distinct flows emerge from the source $s$. 
+The canonical representation of Content Delivery Service is depicted Figure~\ref{fig:canonical}, where two distinct flows emerge from the route note $s$. 
 On one hand, we have the $s\rightarrow CDN$ flow which represents the traditional path to content delivery: packets flow through the ISP autonomous system (AS) and reach the seperate CDN AS.
 On the other hand, the $s \rightarrow vCDN$ flow is targetted at an NFVI-POP within the ISP AS.
 It is the enhanced distribution path on which the CDN want to apply the SLA. It has tighter network constraints (low delay, high bandwidth) and can hence deliver better quality videos.
@@ -117,19 +117,22 @@ As they have a full control of the network, Operators can benefit from an SDN ap
 
 To deploy configuration to network devices, the SDN approach relies on "southbond technologies"  which can be limited in feature.
 Openflow \cite{mckeown2008openflow} is SDN's most used southbound protocol.
-To this day, it only handles logic rules on levels 1 to 4 of the OSI layer model.
-This limits the possibilities left by the CDNs to choose the righ server.
-In fact, relying on the domain name to chose
-
+To this day, it can operate only on the levels 1 to 4 of the OSI layer model.
+This limits the possibilities left by the CDNs to choose the righ server, as all the requests sent to a particular domain are resolved by the same DNS request.
 
 To mitigate this issue, Virtual Home Gateways can be used to enhance content distribution \cite{etsi001}. 
 vHG are virtual appliances that outsource traditional physial Home Gateway's Network Functions to the cloud, leaving a simple L2 bridge on the user premicises \cite{herbaut2015migrating}. 
-In our usecase, vHG can be seen as a transit function able to flag outgoing flows according to L5-L7 rules, like HTTP URL for instance.
-vHG can seggregate traffic targetted to vCDN from the one targetted to CDN allowing packets to follow distinct routes with distinct network caracteristics.
+The vHG realize several network functions, but in the present case we will focuse on the routing function.
+In this usecase, the vHG can be seen as a transit function able to flag outgoing flows according to L5-L7 rules, like HTTP URL for instance.
+Hence vHG can seggregate traffic targetted to vCDN from the one targetted to CDN.
+This allows packets to follow distinct routes with distinct network caracteristics.
+For example, for a set of video identified by their URLs, the vHG will route the requests made by the end-users to the given URLs to a vCDN instance following a virtual route with guaranteed bandwidth and maximum delay.
+The remaining requests that don't match any URL are sent to a virtual route with no such guarantees, to the CDN AS.
 
-The resulting service can now be seen as a Service Chain depicted in Figure~\ref{fig:vhg}.
+\subsubsection*{Service Chaining transformation}
+The resulting service can now be modelized as a Service Chain depicted in Figure~\ref{fig:vhg}.
 The ISPs need to embed the service chain generated from the CDN SLA into their substrate network. 
-This problem is known as Service Chain Embedding \cite{service chain} where we need to map a service graph $G^{S}=(N^{S},E^{S})$ to a substrate graph $G=(N,E)$ representing the real ISP network. Figure~\ref{fig:service-mapping} shows such a mapping.
+This problem is known as Service Chain Embedding \cite{quinn2015problem} where we need to map a service graph $G^{S}=(N^{S},E^{S})$ to a substrate graph $G=(N,E)$ representing the real ISP network. Figure~\ref{fig:service-mapping} shows such a mapping.
 
 SLAs varies in the amont of physical resources needed and can be very demanding sometimes. In this context, it can be quite challenging for the ISPs to map a vNF to a single POP or a Route the resulting traffic though a single route with guaranteed delay.
 To ease embedding into the network, ISP can transform the canonical service into an other form by splitting vNF and routes as shown Figure~\ref{fig:vhg-lb}. 
