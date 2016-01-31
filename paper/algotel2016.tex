@@ -16,9 +16,15 @@
 \usepackage{tabulary}
 \usepackage{subcaption}
 \usepackage{booktabs}
+
+\usepackage[boxed,vlined]{algorithm2e}
+\SetKwRepeat{Do}{do}{while}
+\usepackage[toc,page]{appendix}
 \usepackage{multicol}
 \usepackage{blindtext}
 \usepackage[francais]{babel}
+\usepackage{algorithmic}
+
 
 \newcommand{\exedout}{%
   \rule{0.8\textwidth}{0.5\textwidth}%
@@ -71,20 +77,15 @@ In order to overcome the CDN-ISP collaboration challenges, we propose a Virtuali
 
 
 \begin{figure}
-\centering
-\begin{minipage}{0.45\textwidth}
-\centering
-	\includegraphics[width=1\textwidth]{fig/overlay.pdf}
-	\caption{ISP's Virtualized Network
-    \label{fig:overlay}}
-\end{minipage}\hfill
-\begin{minipage}{0.45\textwidth}
-\centering
-	\includegraphics[width=1\textwidth]{fig/service-mapping.pdf}
-	\caption{ Service Chain Mapping
-    \label{fig:sla-service-vne}}
-\end{minipage}
+	\center
+	\includegraphics[width=0.48\textwidth]{fig/overlay.pdf}
+	\caption{ vCDN deployed in ISP Network 
+    \label{fig:overlay}
+    }
 \end{figure}
+
+
+
 
 \subsection{High-Level Architecture}
 
@@ -122,25 +123,12 @@ This limits the possibilities left by the CDNs to choose the righ server, as all
 
 To mitigate this issue, Virtual Home Gateways can be used to enhance content distribution \cite{etsi001}. 
 vHG are virtual appliances that outsource traditional physial Home Gateway's Network Functions to the cloud, leaving a simple L2 bridge on the user premicises \cite{herbaut2015migrating}. 
-The vHG realize several network functions, but in the present case we will focuse on the routing function.
-In this usecase, the vHG can be seen as a transit function able to flag outgoing flows according to L5-L7 rules, like HTTP URL for instance.
-Hence vHG can seggregate traffic targetted to vCDN from the one targetted to CDN.
-This allows packets to follow distinct routes with distinct network caracteristics.
+The vHG realize several network functions, but in the present case we focus on the routing function.
+In this usecase, the vHG can be seen as a transit function able to flag outgoing flows according to L5-L7 rules, for instance HTTP URL matching.
+vHG can therefore seggregate traffic targetted toward vCDN from the one targetted to CDN.
+This enable packets to follow distinct routes with distinct network caracteristics.
 For example, for a set of video identified by their URLs, the vHG will route the requests made by the end-users to the given URLs to a vCDN instance following a virtual route with guaranteed bandwidth and maximum delay.
-The remaining requests that don't match any URL are sent to a virtual route with no such guarantees, to the CDN AS.
-
-\subsubsection*{Service Chaining transformation}
-The resulting service can now be modelized as a Service Chain depicted in Figure~\ref{fig:vhg}.
-The ISPs need to embed the service chain generated from the CDN SLA into their substrate network. 
-This problem is known as Service Chain Embedding \cite{quinn2015problem} where we need to map a service graph $G^{S}=(N^{S},E^{S})$ to a substrate graph $G=(N,E)$ representing the real ISP network. Figure~\ref{fig:service-mapping} shows such a mapping.
-
-SLAs varies in the amont of physical resources needed and can be very demanding sometimes. In this context, it can be quite challenging for the ISPs to map a vNF to a single POP or a Route the resulting traffic though a single route with guaranteed delay.
-To ease embedding into the network, ISP can transform the canonical service into an other form by splitting vNF and routes as shown Figure~\ref{fig:vhg-lb}. 
-As nothing prevent vNFs to be allocated on the same POP, nor routes to be mapped to the same set of edges, the probability of  successful embeding for transformed model is at least equal to the canonical model.
-Having traffic and resource split, however can be easier to allocate on the substrate network.
-
-
-
+The remaining requests that don't match any URL are sent through a virtual route with no such guarantees to the CDN AS.
 
 \begin{figure}
 \begin{subfigure}{0.31\textwidth}
@@ -162,105 +150,179 @@ Having traffic and resource split, however can be easier to allocate on the subs
 \end{subfigure}
 \caption{Three representations of the same service chain} \label{fig:1}
 \end{figure}
+\subsubsection*{Service Chaining transformation}
+
+\begin{figure}
+	\center
+	\includegraphics[width=1\textwidth]{fig/service-mapping.pdf}
+	\caption{ Service Chain Mapping
+    \label{fig:service-mapping}}
+\end{figure}
+The resulting service can now be modelized as a Service Chain depicted in Figure~\ref{fig:vhg}.
+The ISPs need to embed the service chain generated from the CDN SLA into their substrate network. 
+This problem is known as Service Chain Embedding \cite{quinn2015problem} where we need to map a service graph $G^{S}=(N^{S},E^{S})$ to a substrate graph $G=(N,E)$ representing the real ISP network. Figure~\ref{fig:service-mapping} shows such a mapping.
+
+SLAs varies in the amont of physical resources needed and can be very demanding sometimes. In this context, it can be quite challenging for the ISPs to map a vNF to a single POP or to route the resulting traffic though a single route with enough bandwidth.
+To ease embedding into the network, ISP can transform the canonical representation of the service into an other form by splitting vNF and routes as shown Figure~\ref{fig:vhg-lb}. 
+As nothing prevent vNFs to be allocated on the same POP, nor routes to be mapped to the same set of edges, the probability of  successful embeding for transformed model is at least equal to the canonical model.
+Having traffic and resource split, however can be easier to allocate on the substrate network.
 
 
 
-\section{Model}
 
-minimize 
+
+
+\begin{figure}
+\centering
+\begin{minipage}{0.45\textwidth}
+\centering
+\begin{algorithm}[H]
+  \KwData{CDN's provided SLA}
+  \KwResult{A Service Mapping $\mathscr{M}$ for SLA or rejection }
+  $\mathscr{M} \leftarrow \emptyset$ \;
+  $s \leftarrow $ canonical\_service(SLA)\;
+  \Do{ $\mathscr{M} \neq \emptyset$ }{
+      \If{$\nexists~~\mathscr{M} \mid solve(s)$}{
+      $s \leftarrow $ transform($s$)\;
+      }
+    }
+  \caption{How to write algorithms}
+\end{algorithm}
+\end{minipage}\hfill
+\begin{minipage}{0.45\textwidth}
+\centering
+	\includegraphics[width=1\textwidth]{fig/results.pdf}
+	\caption{ Impact of service chain transformation on the rate of successful embedding	
+    \label{fig:sla-service-vne}}
+\end{minipage}
+
+\end{figure}
+
+
+
+\section{Results}
+
+
+
+
+
+\nocite{}
+\bibliographystyle{alpha}
+\bibliography{algobib}
+\pagebreak
+\begin{appendices}
+\section{Mathematical Model}
+
+\subsection{Cost function}
+
+We aim at maximize (\ref{eq1}) which incentive mapping to use the broader links for virtual routes. Note that the $\delta$ variable control for null bandwidth between nodes of the substrate network.
 
 \begin{equation} \label{eq1}
-\begin{split}
-\max_{
-\!\mathsmaller{x \in \mathscr{T} }}{\mathscr{D}(s,x)} 
-											 &=\max_{\!\mathsmaller{x \in \mathscr{T}} }{
 			\sum_{
 			\!\mathsmaller{
 			(i,j)\in\mathscr{P}^{S}(s,x)
 			}
-			}{\mathscr{D}_{\mathscr{M}}(i,j)}}\\
-											&=\max_{x \in \mathscr{T} }{
-			\sum_{
+			}{\quad\sum_{
 			\!\mathsmaller{
-			(i,j)\in\mathscr{P}^{S}(s,x)
+			{(u,v)\in\mathscr{P}^{S}_{\mathscr{M}}(i,j)}
 			}
-			}}{\quad\sum_{
-			\!\mathsmaller{
-			{(a,b)\in\mathscr{P}^{S}_{\mathscr{M}}(i,j)}
-			}
-			}{d_{a,b}\times y_{a,b}^{i,j}}}\\
-\end{split}	
+			}{   \frac{b_{u,v}-(y^{i,j}_{u,v})}{\delta+b_{u,v}}         }}\\
 \end{equation}
+\subsection{Network function location unicity constraint}
 
-\begin{equation}
+Equation~(\ref{eq2}) assures that each network function is allocated only 1 node $u$ in the substrate.
+
+\begin{equation}  \label{eq2}
 		\sum_{u\in N} x_u^{i}=1, \forall i \in N^{S}
 \end{equation}
 
+\subsection{Substrate node constraint}
 
-\begin{equation}
+Equation~(\ref{eq3}) assures that each network function is allocated to a node that match the required capacity $c^{S}_{i}$.
+
+\begin{equation} \label{eq3}
 	\sum_{i \in N^{S} } x_{j}^{i} \times c_{i}^{S} \leq c_{u}, \forall u \in N		
 \end{equation}
 
-\begin{equation}
+\subsection{Substrate edge capacity constraint}
+
+Equation~(\ref{eq4}) assures that for each segment used to map service edge $(i,j)$ has enough bandwidth.
+
+\begin{equation}\label{eq4}
 	\sum_{(i,j)\in E^{S}}{y_{u,v}^{i,j}\times b_{i,j}^{S}} \leq b_{u,v}, \forall (u,v) \in E
 \end{equation}
 
-\begin{equation}
+
+\subsection{Substrate edge delay constraint}
+
+Equation~(\ref{eq5}) assures that each segment used to map service edge $(i,j)$ has a smaller delay that the one needed by the service.
+
+\begin{equation}\label{eq5}
 	y_{u,v}^{i,j}\times d_{u,v} \leq d_{i,j}^{S}, \forall (u,v) \in E, \forall (i,j) \in E^{S}
 \end{equation}
 
+\subsection{Flow conservation constraint}
 
-\begin{equation}
-\sum_{v \in N}{y_{u,v}^{i,j}-y_{v,u}^{i,j}} = x_{u}^{i}-x_{u}^{j}, \forall (i,j) \in E^{S}, \forall u \in N
+Equation~(\ref{eq6}) implement classical flow conservation constraints.
+
+
+\begin{equation}\label{eq6}
+\sum_{v \in N}{y_{u,v}^{i,j}-y_{v,u}^{i,j}} = x_{u}^{i}-x_{u}^{j}, \forall (i,j) \in E^{S}, \forall u \in N / \{u \in  \mathscr{T}\}
 \end{equation}
 
-
-\begin{equation}
+\subsection{Loop Constraints}
+Equation~(\ref{eq7}) assures that there's no loop in the mapped service.
+\begin{equation}\label{eq7}
 y_{u,v}^{i,j}+y_{v,u}^{i,j} \leq 1, \forall (u,v) \in E, \forall (i,j) \in E^{S}
-		s
 \end{equation}
 
+
+\subsection{Loop Constraints}
+Equations~(\ref{eq8})~and~(\ref{eq9}) represents domain constraints.
+\begin{equation}\label{eq8}
+x_{i}^{u}\in\{0,1\}
+\end{equation}
+\begin{equation}\label{eq9}
+y_{u,v}^{i,j}\in\{0,1\}
+\end{equation}
+
+
+
+\section{Mathematical Notations}
   
 \begin{table}[htbp]\caption{Notations}
 \begin{center}% used the environment to augment the vertical space
 % between the caption and the table
-\begin{tabular}{r c p{4cm} | r c p{4cm} }
+\begin{tabular}{r c p{12cm} }
 \toprule{}
 
-$\mathscr{M}$ & $\triangleq$ & maps a service graph $G^{S}=(N^{S},E^{S})$ to a substrate graph $G=(N,E)$.
-& $\mathscr{P}^{S}(i,j)$ & $\triangleq$ & the set of edges $e\in E^{S}$ that links $i \in N^{S}$ to $j \in N^{S}$\\
-
-$\mathscr{P}^{S}_{\mathscr{M}}(i,j)$ & $\triangleq$ & the set of edges $e\in E$ that links $u$ to $v$ with $i \xrightarrow{\mathscr{M}} u$ and $j \xrightarrow{\mathscr{M}} v$&
+$\mathscr{M}$ & $\triangleq$ & maps a service graph $G^{S}=(N^{S},E^{S})$ to a substrate graph $G=(N,E)$.\\
+$\mathscr{P}^{S}(i,j)$ & $\triangleq$ & the set of edges $e\in E^{S}$ that links $i \in N^{S}$ to $j \in N^{S}$\\
+$\mathscr{P}^{S}_{\mathscr{M}}(i,j)$ & $\triangleq$ & the set of edges $e\in E$ that links $u$ to $v$ with $i \xrightarrow{\mathscr{M}} u$ and $j \xrightarrow{\mathscr{M}} v$\\
 $\mathscr{D}_{\mathscr{M}}(i,j)$ & $\triangleq$ & the total substrate delay for mapping $\mathscr{M}$ for $(i,j) \in E^{S}$ \\
 
-$\mathscr{T}$ & $\triangleq$ & the set of terminal nodes of the service chain.&
+$\mathscr{T}$ & $\triangleq$ & the set of terminal nodes of the service chain.\\
 $i \xrightarrow{\mathscr{M}} u$ & $\triangleq$ & network function $i\in N^{S}$ is mapped to the $u\in N$ for mapping $\mathscr{M}$ \\
-
 $y_{u,v}^{i,j}$ & $=$ & \(
 	\left \{
-		\begin{array}{p{0.5cm}p{2.5cm}}
+		\begin{array}{p{0.5cm}p{10cm}}
 			1,  & if link $(i,j) \in E^{S}$ \\ & is mapped on substrate link $(a,b)\in E$ \\
 			0,  & \text{otherwise} 
 		\end{array}
-	\right.\)&
-
-
-
+	\right.\)\\
 $x^{i}_{u} $ & $=$ & \(
 	\left \{
-		\begin{array}{p{0.5cm}p{3.5cm}}
+		\begin{array}{p{0.5cm}p{10cm}}
 			1,  & \text{if $i \xrightarrow{\mathscr{M}} u$} \\
 			0,  & \text{otherwise} 
 		\end{array}
 	\right.\)\\
-	
-$d_{a,b}$ & $\triangleq$ & the delay for edge $(a,b)\in E$ &
+$d_{a,b}$ & $\triangleq$ & the delay for edge $(a,b)\in E$ \\
 $d^{S}_{i,j}$& $\triangleq$ & the maximum delay on $(i,j) \in E^{S}$ admissible for chain $G^{S}$.\\
 
-$b^{S}_{i,j}$& $\triangleq$ & the required bandwidth on $(i,j) \in E^{S}$ for chain $G^{S}$'s operation.&
+$b^{S}_{i,j}$& $\triangleq$ & the required bandwidth on $(i,j) \in E^{S}$ for chain $G^{S}$'s operation.\\
 $b_{u,v}$& $\triangleq$ & the available bandwidth on edge $(u,v) \in E$  of the substrate\\
-
-& & & $s$ & $\triangleq$ & the starting node of the service chain.\\
+$s$ & $\triangleq$ & the starting node of the service chain.\\
 
 
 
@@ -272,10 +334,6 @@ $b_{u,v}$& $\triangleq$ & the available bandwidth on edge $(u,v) \in E$  of the 
 \end{table}
 
 
-\nocite{}
-\bibliographystyle{alpha}
-\bibliography{algobib}
-
-
+\end{appendices}
 
 \end{document}

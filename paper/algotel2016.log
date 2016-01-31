@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013/Debian) (format=pdflatex 2015.4.26)  30 JAN 2016 20:57
+This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013/Debian) (format=pdflatex 2015.4.26)  31 JAN 2016 02:54
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -331,36 +331,82 @@ Package: booktabs 2005/04/14 v1.61803 publication quality tables
 \@lastruleclass=\count111
 \@thisrulewidth=\dimen148
 )
+(./algorithm2e.sty
+Package: algorithm2e 2013/01/06 v5.00 algorithms environments
+\c@AlgoLine=\count112
+\algocf@hangindent=\skip52
+ (/usr/share/texlive/texmf-dist/tex/latex/tools/xspace.sty
+Package: xspace 2009/10/20 v1.13 Space after command names (DPC,MH)
+)
+********************************************************
+Package `algorithm2e' Release 5.1 -- october 19 2015 --
+- algorithm2e-announce@lirmm.fr mailing list for announcement about releases
+- algorithm2e-discussion@lirmm.fr mailing list for discussion about package
+subscribe by emailing sympa@lirmm.fr with 'subscribe <list> <firstname name>'
+- Author: Christophe Fiorio (christophe.fiorio@umontpellier.fr)
+********************************************************
+\skiptotal=\skip53
+\skiplinenumber=\skip54
+\skiprule=\skip55
+\skiphlne=\skip56
+\skiptext=\skip57
+\skiplength=\skip58
+\algomargin=\skip59
+\skipalgocfslide=\skip60
+\algowidth=\dimen149
+\inoutsize=\dimen150
+\inoutindent=\dimen151
+\interspacetitleruled=\dimen152
+\interspacealgoruled=\dimen153
+\interspacetitleboxruled=\dimen154
+\algocf@ruledwidth=\skip61
+\algocf@inoutbox=\box28
+\algocf@inputbox=\box29
+\AlCapSkip=\skip62
+\AlCapHSkip=\skip63
+\algoskipindent=\skip64
+\algocf@nlbox=\box30
+\algocf@hangingbox=\box31
+\algocf@untilbox=\box32
+\algocf@skipuntil=\skip65
+\algocf@capbox=\box33
+\algoheightruledefault=\skip66
+\algoheightrule=\skip67
+\algotitleheightruledefault=\skip68
+\algotitleheightrule=\skip69
+\c@algocfline=\count113
+\c@algocfproc=\count114
+\c@algocf=\count115
+\algocf@algoframe=\box34
+\algocf@algobox=\box35
+) (/usr/share/texlive/texmf-dist/tex/latex/appendix/appendix.sty
+Package: appendix 2009/09/02 v1.2b extra appendix facilities
+\c@@pps=\count116
+\c@@ppsavesec=\count117
+\c@@ppsaveapp=\count118
+)
 (/usr/share/texlive/texmf-dist/tex/latex/tools/multicol.sty
 Package: multicol 2011/06/27 v1.7a multicolumn formatting (FMi)
-\c@tracingmulticols=\count112
-\mult@box=\box28
-\multicol@leftmargin=\dimen149
-\c@unbalance=\count113
-\c@collectmore=\count114
-\doublecol@number=\count115
-\multicoltolerance=\count116
-\multicolpretolerance=\count117
-\full@width=\dimen150
-\page@free=\dimen151
-\premulticols=\dimen152
-\postmulticols=\dimen153
-\multicolsep=\skip52
-\multicolbaselineskip=\skip53
-\partial@page=\box29
-\last@line=\box30
-\mult@rightbox=\box31
-\mult@grightbox=\box32
-\mult@gfirstbox=\box33
-\mult@firstbox=\box34
-\@tempa=\box35
-\@tempa=\box36
-\@tempa=\box37
-\@tempa=\box38
-\@tempa=\box39
-\@tempa=\box40
-\@tempa=\box41
-\@tempa=\box42
+\c@tracingmulticols=\count119
+\mult@box=\box36
+\multicol@leftmargin=\dimen155
+\c@unbalance=\count120
+\c@collectmore=\count121
+\doublecol@number=\count122
+\multicoltolerance=\count123
+\multicolpretolerance=\count124
+\full@width=\dimen156
+\page@free=\dimen157
+\premulticols=\dimen158
+\postmulticols=\dimen159
+\multicolsep=\skip70
+\multicolbaselineskip=\skip71
+\partial@page=\box37
+\last@line=\box38
+\mult@rightbox=\box39
+\mult@grightbox=\box40
+\mult@gfirstbox=\box41
+\mult@firstbox=\box42
 \@tempa=\box43
 \@tempa=\box44
 \@tempa=\box45
@@ -370,39 +416,43 @@ Package: multicol 2011/06/27 v1.7a multicolumn formatting (FMi)
 \@tempa=\box49
 \@tempa=\box50
 \@tempa=\box51
-\c@columnbadness=\count118
-\c@finalcolumnbadness=\count119
-\last@try=\dimen154
-\multicolovershoot=\dimen155
-\multicolundershoot=\dimen156
-\mult@nat@firstbox=\box52
-\colbreak@box=\box53
-\multicol@sort@counter=\count120
+\@tempa=\box52
+\@tempa=\box53
+\@tempa=\box54
+\@tempa=\box55
+\@tempa=\box56
+\@tempa=\box57
+\@tempa=\box58
+\@tempa=\box59
+\c@columnbadness=\count125
+\c@finalcolumnbadness=\count126
+\last@try=\dimen160
+\multicolovershoot=\dimen161
+\multicolundershoot=\dimen162
+\mult@nat@firstbox=\box60
+\colbreak@box=\box61
+\multicol@sort@counter=\count127
 )
 (/usr/share/texlive/texmf-dist/tex/latex/blindtext/blindtext.sty
 Package: blindtext 2012/01/06 V2.0 blindtext-Package
-
-(/usr/share/texlive/texmf-dist/tex/latex/tools/xspace.sty
-Package: xspace 2009/10/20 v1.13 Space after command names (DPC,MH)
-)
-\c@blindtext=\count121
-\c@Blindtext=\count122
-\c@blind@countparstart=\count123
-\blind@countxx=\count124
-\blindtext@numBlindtext=\count125
-\blind@countyy=\count126
-\c@blindlist=\count127
-\c@blindlistlevel=\count128
-\c@blindlist@level=\count129
-\blind@listitem=\count130
-\c@blind@listcount=\count131
-\c@blind@levelcount=\count132
-\blind@mathformula=\count133
-\blind@Mathformula=\count134
-\c@blind@randomcount=\count135
-\c@blind@randommax=\count136
-\c@blind@pangramcount=\count137
-\c@blind@pangrammax=\count138
+\c@blindtext=\count128
+\c@Blindtext=\count129
+\c@blind@countparstart=\count130
+\blind@countxx=\count131
+\blindtext@numBlindtext=\count132
+\blind@countyy=\count133
+\c@blindlist=\count134
+\c@blindlistlevel=\count135
+\c@blindlist@level=\count136
+\blind@listitem=\count137
+\c@blind@listcount=\count138
+\c@blind@levelcount=\count139
+\blind@mathformula=\count140
+\blind@Mathformula=\count141
+\c@blind@randomcount=\count142
+\c@blind@randommax=\count143
+\c@blind@pangramcount=\count144
+\c@blind@pangrammax=\count145
 )
 (/usr/share/texlive/texmf-dist/tex/generic/babel/babel.sty
 Package: babel 2013/12/03 3.9h The Babel package
@@ -412,58 +462,67 @@ Language: frenchb 2013/12/30 v2.6g French support from the babel system
 
 (/usr/share/texlive/texmf-dist/tex/generic/babel/babel.def
 File: babel.def 2013/12/03 3.9h Babel common definitions
-\babel@savecnt=\count139
-\U@D=\dimen157
+\babel@savecnt=\count146
+\U@D=\dimen163
 )
-\FB@interchartokenstateORI=\count140
+\FB@interchartokenstateORI=\count147
 Package babel Info: Making : an active character on input line 244.
 Package babel Info: Making ; an active character on input line 245.
 Package babel Info: Making ! an active character on input line 246.
 Package babel Info: Making ? an active character on input line 247.
-\FB@Mht=\dimen158
-\std@mcc=\count141
-\dec@mcc=\count142
+\FB@Mht=\dimen164
+\std@mcc=\count148
+\dec@mcc=\count149
 
 
 Package frenchb.ldf Warning: Please load the "caption" package
 (frenchb.ldf)                AFTER babel/frenchb; reported on input line 661.
 
-\listindentFB=\skip54
-\labelwidthFB=\skip55
-\leftmarginFB=\skip56
-\parindentFFN=\dimen159
+\listindentFB=\skip72
+\labelwidthFB=\skip73
+\leftmarginFB=\skip74
+\parindentFFN=\dimen165
 )) (/usr/share/texlive/texmf-dist/tex/latex/carlisle/scalefnt.sty)
-(./algotel2016.aux)
+(./algorithmic.sty
+Package: algorithmic 2009/08/24 v0.1 Document Style `algorithmic'
+\c@ALC@unique=\count150
+\c@ALC@line=\count151
+\c@ALC@rem=\count152
+\c@ALC@depth=\count153
+\ALC@tlm=\skip75
+\algorithmicindent=\skip76
+) (./algotel2016.aux)
 \openout1 = `algotel2016.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 41.
-LaTeX Font Info:    ... okay on input line 41.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 41.
-LaTeX Font Info:    ... okay on input line 41.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 41.
-LaTeX Font Info:    ... okay on input line 41.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 41.
-LaTeX Font Info:    ... okay on input line 41.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 41.
-LaTeX Font Info:    ... okay on input line 41.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 41.
-LaTeX Font Info:    ... okay on input line 41.
-LaTeX Font Info:    Try loading font information for OT1+lmr on input line 41.
- (/usr/share/texmf/tex/latex/lm/ot1lmr.fd
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 47.
+LaTeX Font Info:    ... okay on input line 47.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 47.
+LaTeX Font Info:    ... okay on input line 47.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 47.
+LaTeX Font Info:    ... okay on input line 47.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 47.
+LaTeX Font Info:    ... okay on input line 47.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 47.
+LaTeX Font Info:    ... okay on input line 47.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 47.
+LaTeX Font Info:    ... okay on input line 47.
+LaTeX Font Info:    Try loading font information for OT1+lmr on input line 47.
+
+(/usr/share/texmf/tex/latex/lm/ot1lmr.fd
 File: ot1lmr.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
 (/usr/share/texlive/texmf-dist/tex/context/base/supp-pdf.mkii
 [Loading MPS to PDF converter (version 2006.09.02).]
-\scratchcounter=\count143
-\scratchdimen=\dimen160
-\scratchbox=\box54
-\nofMPsegments=\count144
-\nofMParguments=\count145
+\scratchcounter=\count154
+\scratchdimen=\dimen166
+\scratchbox=\box62
+\nofMPsegments=\count155
+\nofMParguments=\count156
 \everyMPshowfont=\toks23
-\MPscratchCnt=\count146
-\MPscratchDim=\dimen161
-\MPnumerator=\count147
-\makeMPintoPDFobject=\count148
+\MPscratchCnt=\count157
+\MPscratchDim=\dimen167
+\MPnumerator=\count158
+\makeMPintoPDFobject=\count159
 \everyMPtoPDFconversion=\toks24
 ) (/usr/share/texlive/texmf-dist/tex/generic/oberdiek/pdftexcmds.sty
 Package: pdftexcmds 2011/11/29 v0.20 Utility functions of pdfTeX for LuaTeX (HO
@@ -515,106 +574,106 @@ e
 ))
 Package caption Info: Begin \AtBeginDocument code.
 Package caption Info: End \AtBeginDocument code.
-LaTeX Info: Redefining \degres on input line 41.
-LaTeX Info: Redefining \dots on input line 41.
-LaTeX Info: Redefining \up on input line 41.
+LaTeX Info: Redefining \degres on input line 47.
+LaTeX Info: Redefining \dots on input line 47.
+LaTeX Info: Redefining \up on input line 47.
 
 
 Package frenchb.ldf Warning: OT1 encoding should not be used for French. 
 (frenchb.ldf)                Add \usepackage[T1]{fontenc} to the preamble
-(frenchb.ldf)                of your document, on input line 41.
+(frenchb.ldf)                of your document, on input line 47.
 
-LaTeX Font Info:    Try loading font information for OT1+lmss on input line 42.
+LaTeX Font Info:    Try loading font information for OT1+lmss on input line 48.
 
 (/usr/share/texmf/tex/latex/lm/ot1lmss.fd
 File: ot1lmss.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
 LaTeX Font Info:    Font shape `OT1/lmss/m/it' in size <20.74> not available
-(Font)              Font shape `OT1/lmss/m/sl' tried instead on input line 42.
-LaTeX Font Info:    Try loading font information for OML+lmm on input line 42.
+(Font)              Font shape `OT1/lmss/m/sl' tried instead on input line 48.
+LaTeX Font Info:    Try loading font information for OML+lmm on input line 48.
 
 (/usr/share/texmf/tex/latex/lm/omllmm.fd
 File: omllmm.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
-LaTeX Font Info:    Try loading font information for OMS+lmsy on input line 42.
+LaTeX Font Info:    Try loading font information for OMS+lmsy on input line 48.
 
 
 (/usr/share/texmf/tex/latex/lm/omslmsy.fd
 File: omslmsy.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
-LaTeX Font Info:    Try loading font information for OMX+lmex on input line 42.
+LaTeX Font Info:    Try loading font information for OMX+lmex on input line 48.
 
 
 (/usr/share/texmf/tex/latex/lm/omxlmex.fd
 File: omxlmex.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <14.4> on input line 42.
+(Font)              <14.4> on input line 48.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <10.95> on input line 42.
+(Font)              <10.95> on input line 48.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <8> on input line 42.
-LaTeX Font Info:    Try loading font information for U+lasy on input line 42.
+(Font)              <8> on input line 48.
+LaTeX Font Info:    Try loading font information for U+lasy on input line 48.
 
 (/usr/share/texlive/texmf-dist/tex/latex/base/ulasy.fd
 File: ulasy.fd 1998/08/17 v2.2e LaTeX symbol font definitions
 )
-LaTeX Font Info:    Try loading font information for OT1+ptm on input line 42.
+LaTeX Font Info:    Try loading font information for OT1+ptm on input line 48.
 
 (/usr/share/texlive/texmf-dist/tex/latex/psnfss/ot1ptm.fd
 File: ot1ptm.fd 2001/06/04 font definitions for OT1/ptm.
 )
 LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <14.4> not available
-(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 42.
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 48.
 LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <10.95> not available
-(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 42.
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 48.
 LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <8> not available
-(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 42.
-LaTeX Font Info:    Try loading font information for U+rsfs on input line 42.
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 48.
+LaTeX Font Info:    Try loading font information for U+rsfs on input line 48.
 
 (/usr/share/texlive/texmf-dist/tex/latex/jknapltx/ursfs.fd
 File: ursfs.fd 1998/03/24 rsfs font definition file (jk)
 )
-LaTeX Font Info:    Try loading font information for U+msa on input line 42.
+LaTeX Font Info:    Try loading font information for U+msa on input line 48.
 
 (/usr/share/texlive/texmf-dist/tex/latex/amsfonts/umsa.fd
 File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 )
-LaTeX Font Info:    Try loading font information for U+msb on input line 42.
+LaTeX Font Info:    Try loading font information for U+msb on input line 48.
 
 (/usr/share/texlive/texmf-dist/tex/latex/amsfonts/umsb.fd
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 )
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <9> on input line 42.
+(Font)              <9> on input line 48.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <7> on input line 42.
+(Font)              <7> on input line 48.
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <5> on input line 42.
+(Font)              <5> on input line 48.
 LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <9> not available
-(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 42.
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 48.
 LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <7> not available
-(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 42.
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 48.
 LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <5> not available
-(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 42.
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 48.
 
-Overfull \hbox (1.50134pt too wide) in paragraph at lines 42--42
+Overfull \hbox (1.50134pt too wide) in paragraph at lines 48--48
 []$[]$\OT1/lmr/m/it/9 Univ. Bor-deaux, La-BRI, UMR 5800, F-33400 Ta-lence, Fran
 ce $[]$Viotech Com-mu-ni-ca-tions, Ver-saille, France 
  []
 
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <6> on input line 42.
+(Font)              <6> on input line 48.
 LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <6> not available
-(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 42.
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 48.
 
-LaTeX Warning: Reference `sec:model' on page 1 undefined on input line 64.
-
-
-LaTeX Warning: Reference `sec:result' on page 1 undefined on input line 64.
+LaTeX Warning: Reference `sec:model' on page 1 undefined on input line 70.
 
 
-LaTeX Warning: Reference `sec:conclusion' on page 1 undefined on input line 64.
+LaTeX Warning: Reference `sec:result' on page 1 undefined on input line 70.
+
+
+LaTeX Warning: Reference `sec:conclusion' on page 1 undefined on input line 70.
 
 
 [1
@@ -623,25 +682,18 @@ LaTeX Warning: Reference `sec:conclusion' on page 1 undefined on input line 64.
 <fig/overlay.pdf, id=18, 531.07675pt x 370.76007pt>
 File: fig/overlay.pdf Graphic file (type pdf)
  <use fig/overlay.pdf>
-Package pdftex.def Info: fig/overlay.pdf used on input line 77.
-(pdftex.def)             Requested size: 192.0548pt x 134.07884pt.
-LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <10> on input line 80.
-LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <7.4> on input line 80.
-LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <10> not available
-(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 80.
-LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <7.4> not available
-(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 80.
-
-<fig/service-mapping.pdf, id=19, 1210.5225pt x 301.125pt>
-File: fig/service-mapping.pdf Graphic file (type pdf)
-
-<use fig/service-mapping.pdf>
-Package pdftex.def Info: fig/service-mapping.pdf used on input line 83.
-(pdftex.def)             Requested size: 192.0548pt x 47.77203pt.
+Package pdftex.def Info: fig/overlay.pdf used on input line 81.
+(pdftex.def)             Requested size: 204.85802pt x 143.01744pt.
 LaTeX Font Info:    Font shape `OT1/lmss/m/it' in size <12> not available
-(Font)              Font shape `OT1/lmss/m/sl' tried instead on input line 89.
+(Font)              Font shape `OT1/lmss/m/sl' tried instead on input line 90.
+LaTeX Font Info:    External font `lmex10' loaded for size
+(Font)              <10> on input line 110.
+LaTeX Font Info:    External font `lmex10' loaded for size
+(Font)              <7.4> on input line 110.
+LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <10> not available
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 110.
+LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <7.4> not available
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 110.
 
 Overfull \vbox (6.88875pt too high) has occurred while \output is active []
 
@@ -650,33 +702,31 @@ Underfull \hbox (badness 10000) has occurred while \output is active
 []
  []
 
-[2 <./fig/overlay.pdf> <./fig/service-mapping.pdf
-
-pdfTeX warning: pdflatex (file ./fig/service-mapping.pdf): PDF inclusion: multi
-ple pdfs with page group included in a single page
->]
-
-LaTeX Warning: Reference `fig:service-mapping' on page 3 undefined on input lin
-e 135.
-
-<fig/service.pdf, id=78, 1209.51875pt x 794.97pt>
+[2 <./fig/overlay.pdf>] <fig/service.pdf, id=70, 1209.51875pt x 794.97pt>
 File: fig/service.pdf Graphic file (type pdf)
- <use fig/service.pdf>
-Package pdftex.def Info: fig/service.pdf used on input line 147.
-(pdftex.def)             Requested size: 132.30426pt x 86.94963pt.
 
-<fig/service_chain.pdf, id=79, 387.4475pt x 289.08pt>
+<use fig/service.pdf>
+Package pdftex.def Info: fig/service.pdf used on input line 135.
+(pdftex.def)             Requested size: 132.30426pt x 86.94963pt.
+ <fig/service_chain.pdf, id=71, 387.4475pt x 289.08pt>
 File: fig/service_chain.pdf Graphic file (type pdf)
 
 <use fig/service_chain.pdf>
-Package pdftex.def Info: fig/service_chain.pdf used on input line 153.
+Package pdftex.def Info: fig/service_chain.pdf used on input line 141.
 (pdftex.def)             Requested size: 132.30426pt x 98.71376pt.
- <fig/lb-service.pdf, id=80, 477.785pt x 337.26pt>
+ <fig/lb-service.pdf, id=72, 477.785pt x 337.26pt>
 File: fig/lb-service.pdf Graphic file (type pdf)
 
 <use fig/lb-service.pdf>
-Package pdftex.def Info: fig/lb-service.pdf used on input line 159.
+Package pdftex.def Info: fig/lb-service.pdf used on input line 147.
 (pdftex.def)             Requested size: 132.30426pt x 93.38748pt.
+
+<fig/service-mapping.pdf, id=73, 1210.5225pt x 301.125pt>
+File: fig/service-mapping.pdf Graphic file (type pdf)
+
+<use fig/service-mapping.pdf>
+Package pdftex.def Info: fig/service-mapping.pdf used on input line 157.
+(pdftex.def)             Requested size: 426.79134pt x 106.16724pt.
 
 Underfull \hbox (badness 10000) has occurred while \output is active
 []
@@ -690,42 +740,17 @@ e pdfs with page group included in a single page
 
 pdfTeX warning: pdflatex (file ./fig/lb-service.pdf): PDF inclusion: multiple p
 dfs with page group included in a single page
->]
-Underfull \hbox (badness 8151) in paragraph at lines 230--231
-[]|\OT1/lmr/m/n/10 maps a ser-vice graph
- []
+> <./fig/service-mapping.pdf
 
+pdfTeX warning: pdflatex (file ./fig/service-mapping.pdf): PDF inclusion: multi
+ple pdfs with page group included in a single page
+>] <fig/results.pdf, id=140, 432.2328pt x 302.32635pt>
+File: fig/results.pdf Graphic file (type pdf)
+ <use fig/results.pdf>
+Package pdftex.def Info: fig/results.pdf used on input line 194.
+(pdftex.def)             Requested size: 192.0548pt x 134.33412pt.
 
-Underfull \hbox (badness 5217) in paragraph at lines 242--243
-[]|\OT1/lmr/m/n/10 is map-ped on
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 242--243
-\OT1/lmr/m/n/10 sub-strate link
- []
-
-
-Overfull \hbox (1.63612pt too wide) in paragraph at lines 239--245
-[]|$[]$| 
- []
-
-
-Overfull \hbox (29.25557pt too wide) in paragraph at lines 249--256
-[]|$[]$| 
- []
-
-
-Underfull \hbox (badness 1859) in paragraph at lines 258--259
-[]|\OT1/lmr/m/n/10 the maxi-mum de-lay on
- []
-
-
-Underfull \hbox (badness 1845) in paragraph at lines 261--262
-[]|\OT1/lmr/m/n/10 the avai-lable band-width
- []
-
-(./algotel2016.bbl
+(./algotel2016.bbl)
 Overfull \vbox (6.88875pt too high) has occurred while \output is active []
 
 
@@ -733,49 +758,63 @@ Underfull \hbox (badness 10000) has occurred while \output is active
 []
  []
 
-[4])
+[4 <./fig/results.pdf>]
 Underfull \hbox (badness 10000) has occurred while \output is active
 []
  []
 
-[5] (./algotel2016.aux)
+[5]
+Overfull \vbox (6.88875pt too high) has occurred while \output is active []
+
+
+Underfull \hbox (badness 10000) has occurred while \output is active
+[]
+ []
+
+[6] (./algotel2016.aux)
 
 LaTeX Warning: There were undefined references.
 
- ) 
+ )
+(\end occurred inside a group at level 1)
+
+### simple group (level 1) entered at line 1061 ({)
+### bottom level 
 Here is how much of TeX's memory you used:
- 5831 strings out of 494958
- 87824 string characters out of 6179213
- 161360 words of memory out of 5000000
- 8877 multiletter control sequences out of 15000+600000
- 85268 words of font info for 105 fonts, out of 8000000 for 9000
+ 6890 strings out of 494958
+ 104102 string characters out of 6179213
+ 193460 words of memory out of 5000000
+ 9924 multiletter control sequences out of 15000+600000
+ 91177 words of font info for 107 fonts, out of 8000000 for 9000
  36 hyphenation exceptions out of 8191
- 42i,30n,40p,507b,424s stack positions out of 5000i,500n,10000p,200000b,80000s
-{/usr/share/texmf/fonts/enc/dvips/lm/lm-mathsy.enc}{/usr/share/texmf/fonts/en
-c/dvips/lm/lm-rm.enc}{/usr/share/texmf/fonts/enc/dvips/lm/lm-mathex.enc}{/usr/s
-hare/texmf/fonts/enc/dvips/lm/lm-mathit.enc}{/usr/share/texmf/fonts/enc/dvips/l
-m/lm-rmsc.enc}</usr/share/texmf/fonts/type1/public/lm/lmbx10.pfb></usr/share/te
-xmf/fonts/type1/public/lm/lmbx9.pfb></usr/share/texmf/fonts/type1/public/lm/lmc
-sc10.pfb></usr/share/texmf/fonts/type1/public/lm/lmex10.pfb></usr/share/texmf/f
-onts/type1/public/lm/lmmi10.pfb></usr/share/texmf/fonts/type1/public/lm/lmmi6.p
-fb></usr/share/texmf/fonts/type1/public/lm/lmmi7.pfb></usr/share/texmf/fonts/ty
-pe1/public/lm/lmr10.pfb></usr/share/texmf/fonts/type1/public/lm/lmr12.pfb></usr
-/share/texmf/fonts/type1/public/lm/lmr6.pfb></usr/share/texmf/fonts/type1/publi
-c/lm/lmr7.pfb></usr/share/texmf/fonts/type1/public/lm/lmr8.pfb></usr/share/texm
-f/fonts/type1/public/lm/lmr9.pfb></usr/share/texmf/fonts/type1/public/lm/lmri10
-.pfb></usr/share/texmf/fonts/type1/public/lm/lmri9.pfb></usr/share/texmf/fonts/
-type1/public/lm/lmss12.pfb></usr/share/texmf/fonts/type1/public/lm/lmsso12.pfb>
-</usr/share/texmf/fonts/type1/public/lm/lmsso17.pfb></usr/share/texmf/fonts/typ
-e1/public/lm/lmsy10.pfb></usr/share/texmf/fonts/type1/public/lm/lmsy6.pfb></usr
-/share/texmf/fonts/type1/public/lm/lmsy7.pfb></usr/share/texlive/texmf-dist/fon
-ts/type1/public/amsfonts/symbols/msam10.pfb></usr/share/texlive/texmf-dist/font
-s/type1/public/rsfs/rsfs10.pfb></usr/share/texlive/texmf-dist/fonts/type1/publi
-c/rsfs/rsfs5.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/rsfs/rsfs7.p
-fb></usr/share/texlive/texmf-dist/fonts/type1/urw/times/utmr8a.pfb>
-Output written on algotel2016.pdf (5 pages, 502251 bytes).
+ 42i,30n,40p,507b,3564s stack positions out of 5000i,500n,10000p,200000b,80000s
+{/usr/share/texmf/fonts/enc/dvips/lm/lm-mathsy.enc}{/usr/share/
+texmf/fonts/enc/dvips/lm/lm-mathit.enc}{/usr/share/texmf/fonts/enc/dvips/lm/lm-
+rm.enc}{/usr/share/texmf/fonts/enc/dvips/lm/lm-mathex.enc}{/usr/share/texmf/fon
+ts/enc/dvips/lm/lm-rmsc.enc}</usr/share/texmf/fonts/type1/public/lm/lmbx10.pfb>
+</usr/share/texmf/fonts/type1/public/lm/lmbx12.pfb></usr/share/texmf/fonts/type
+1/public/lm/lmbx9.pfb></usr/share/texmf/fonts/type1/public/lm/lmcsc10.pfb></usr
+/share/texmf/fonts/type1/public/lm/lmex10.pfb></usr/share/texmf/fonts/type1/pub
+lic/lm/lmmi10.pfb></usr/share/texmf/fonts/type1/public/lm/lmmi6.pfb></usr/share
+/texmf/fonts/type1/public/lm/lmmi7.pfb></usr/share/texmf/fonts/type1/public/lm/
+lmr10.pfb></usr/share/texmf/fonts/type1/public/lm/lmr12.pfb></usr/share/texmf/f
+onts/type1/public/lm/lmr6.pfb></usr/share/texmf/fonts/type1/public/lm/lmr7.pfb>
+</usr/share/texmf/fonts/type1/public/lm/lmr8.pfb></usr/share/texmf/fonts/type1/
+public/lm/lmr9.pfb></usr/share/texmf/fonts/type1/public/lm/lmri10.pfb></usr/sha
+re/texmf/fonts/type1/public/lm/lmri9.pfb></usr/share/texmf/fonts/type1/public/l
+m/lmss12.pfb></usr/share/texmf/fonts/type1/public/lm/lmsso12.pfb></usr/share/te
+xmf/fonts/type1/public/lm/lmsso17.pfb></usr/share/texmf/fonts/type1/public/lm/l
+msy10.pfb></usr/share/texmf/fonts/type1/public/lm/lmsy6.pfb></usr/share/texmf/f
+onts/type1/public/lm/lmsy7.pfb></usr/share/texlive/texmf-dist/fonts/type1/publi
+c/amsfonts/symbols/msam10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public
+/amsfonts/symbols/msbm10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/
+rsfs/rsfs10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/rsfs/rsfs5.pf
+b></usr/share/texlive/texmf-dist/fonts/type1/public/rsfs/rsfs7.pfb></usr/share/
+texlive/texmf-dist/fonts/type1/urw/times/utmr8a.pfb>
+Output written on algotel2016.pdf (6 pages, 543016 bytes).
 PDF statistics:
- 238 PDF objects out of 1000 (max. 8388607)
- 164 compressed objects within 2 object streams
+ 258 PDF objects out of 1000 (max. 8388607)
+ 178 compressed objects within 2 object streams
  0 named destinations out of 1000 (max. 500000)
- 26 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 31 words of extra memory for PDF output out of 10000 (max. 10000000)
 
