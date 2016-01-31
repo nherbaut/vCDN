@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013/Debian) (format=pdflatex 2015.4.26)  31 JAN 2016 02:54
+This is pdfTeX, Version 3.1415926-2.5-1.40.14 (TeX Live 2013/Debian) (format=pdflatex 2015.4.26)  1 FEB 2016 01:05
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -491,7 +491,11 @@ Package: algorithmic 2009/08/24 v0.1 Document Style `algorithmic'
 \c@ALC@depth=\count153
 \ALC@tlm=\skip75
 \algorithmicindent=\skip76
-) (./algotel2016.aux)
+) (./algotel2016.aux
+
+LaTeX Warning: Label `sec:conclusion' multiply defined.
+
+(./appendices.aux))
 \openout1 = `algotel2016.aux'.
 
 LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 47.
@@ -507,8 +511,7 @@ LaTeX Font Info:    ... okay on input line 47.
 LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 47.
 LaTeX Font Info:    ... okay on input line 47.
 LaTeX Font Info:    Try loading font information for OT1+lmr on input line 47.
-
-(/usr/share/texmf/tex/latex/lm/ot1lmr.fd
+ (/usr/share/texmf/tex/latex/lm/ot1lmr.fd
 File: ot1lmr.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
 (/usr/share/texlive/texmf-dist/tex/context/base/supp-pdf.mkii
@@ -666,34 +669,47 @@ LaTeX Font Info:    External font `lmex10' loaded for size
 (Font)              <6> on input line 48.
 LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <6> not available
 (Font)              Font shape `OT1/ptm/b/n' tried instead on input line 48.
+LaTeX Font Info:    External font `lmex10' loaded for size
+(Font)              <10> on input line 69.
+LaTeX Font Info:    External font `lmex10' loaded for size
+(Font)              <7.4> on input line 69.
+LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <10> not available
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 69.
+LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <7.4> not available
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 69.
+LaTeX Font Info:    Calculating math sizes for size <7.4> on input line 69.
+LaTeX Font Info:    External font `lmex10' loaded for size
+(Font)              <5.17996> on input line 69.
+LaTeX Font Info:    External font `lmex10' loaded for size
+(Font)              <3.7> on input line 69.
 
-LaTeX Warning: Reference `sec:model' on page 1 undefined on input line 70.
+LaTeX Font Warning: Font shape `U/lasy/m/n' in size <3.7> not available
+(Font)              size <5> substituted on input line 69.
 
+LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <5.17996> not available
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 69.
+LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <3.7> not available
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 69.
 
-LaTeX Warning: Reference `sec:result' on page 1 undefined on input line 70.
-
-
-LaTeX Warning: Reference `sec:conclusion' on page 1 undefined on input line 70.
-
+LaTeX Font Warning: Font shape `U/rsfs/m/n' in size <3.7> not available
+(Font)              size <5> substituted on input line 69.
 
 [1
 
 {/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}]
-<fig/overlay.pdf, id=18, 531.07675pt x 370.76007pt>
+<fig/overlay.pdf, id=19, 531.07675pt x 370.76007pt>
 File: fig/overlay.pdf Graphic file (type pdf)
  <use fig/overlay.pdf>
-Package pdftex.def Info: fig/overlay.pdf used on input line 81.
-(pdftex.def)             Requested size: 204.85802pt x 143.01744pt.
+Package pdftex.def Info: fig/overlay.pdf used on input line 84.
+(pdftex.def)             Requested size: 192.0548pt x 134.07884pt.
+
+<fig/results.pdf, id=20, 432.2328pt x 302.32635pt>
+File: fig/results.pdf Graphic file (type pdf)
+ <use fig/results.pdf>
+Package pdftex.def Info: fig/results.pdf used on input line 90.
+(pdftex.def)             Requested size: 192.0548pt x 134.33412pt.
 LaTeX Font Info:    Font shape `OT1/lmss/m/it' in size <12> not available
-(Font)              Font shape `OT1/lmss/m/sl' tried instead on input line 90.
-LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <10> on input line 110.
-LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <7.4> on input line 110.
-LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <10> not available
-(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 110.
-LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <7.4> not available
-(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 110.
+(Font)              Font shape `OT1/lmss/m/sl' tried instead on input line 99.
 
 Overfull \vbox (6.88875pt too high) has occurred while \output is active []
 
@@ -702,31 +718,35 @@ Underfull \hbox (badness 10000) has occurred while \output is active
 []
  []
 
-[2 <./fig/overlay.pdf>] <fig/service.pdf, id=70, 1209.51875pt x 794.97pt>
-File: fig/service.pdf Graphic file (type pdf)
+[2 <./fig/overlay.pdf> <./fig/results.pdf
 
-<use fig/service.pdf>
-Package pdftex.def Info: fig/service.pdf used on input line 135.
+pdfTeX warning: pdflatex (file ./fig/results.pdf): PDF inclusion: multiple pdfs
+ with page group included in a single page
+>] <fig/service.pdf, id=79, 1209.51875pt x 794.97pt>
+File: fig/service.pdf Graphic file (type pdf)
+ <use fig/service.pdf>
+Package pdftex.def Info: fig/service.pdf used on input line 146.
 (pdftex.def)             Requested size: 132.30426pt x 86.94963pt.
- <fig/service_chain.pdf, id=71, 387.4475pt x 289.08pt>
+
+<fig/service_chain.pdf, id=80, 387.4475pt x 289.08pt>
 File: fig/service_chain.pdf Graphic file (type pdf)
 
 <use fig/service_chain.pdf>
-Package pdftex.def Info: fig/service_chain.pdf used on input line 141.
+Package pdftex.def Info: fig/service_chain.pdf used on input line 152.
 (pdftex.def)             Requested size: 132.30426pt x 98.71376pt.
- <fig/lb-service.pdf, id=72, 477.785pt x 337.26pt>
+ <fig/lb-service.pdf, id=81, 477.785pt x 337.26pt>
 File: fig/lb-service.pdf Graphic file (type pdf)
 
 <use fig/lb-service.pdf>
-Package pdftex.def Info: fig/lb-service.pdf used on input line 147.
+Package pdftex.def Info: fig/lb-service.pdf used on input line 158.
 (pdftex.def)             Requested size: 132.30426pt x 93.38748pt.
 
-<fig/service-mapping.pdf, id=73, 1210.5225pt x 301.125pt>
+<fig/service-mapping.pdf, id=82, 1138.2525pt x 295.98256pt>
 File: fig/service-mapping.pdf Graphic file (type pdf)
 
 <use fig/service-mapping.pdf>
-Package pdftex.def Info: fig/service-mapping.pdf used on input line 157.
-(pdftex.def)             Requested size: 426.79134pt x 106.16724pt.
+Package pdftex.def Info: fig/service-mapping.pdf used on input line 170.
+(pdftex.def)             Requested size: 341.43436pt x 88.78189pt.
 
 Underfull \hbox (badness 10000) has occurred while \output is active
 []
@@ -740,17 +760,7 @@ e pdfs with page group included in a single page
 
 pdfTeX warning: pdflatex (file ./fig/lb-service.pdf): PDF inclusion: multiple p
 dfs with page group included in a single page
-> <./fig/service-mapping.pdf
-
-pdfTeX warning: pdflatex (file ./fig/service-mapping.pdf): PDF inclusion: multi
-ple pdfs with page group included in a single page
->] <fig/results.pdf, id=140, 432.2328pt x 302.32635pt>
-File: fig/results.pdf Graphic file (type pdf)
- <use fig/results.pdf>
-Package pdftex.def Info: fig/results.pdf used on input line 194.
-(pdftex.def)             Requested size: 192.0548pt x 134.33412pt.
-
-(./algotel2016.bbl)
+>] (./algotel2016.bbl)
 Overfull \vbox (6.88875pt too high) has occurred while \output is active []
 
 
@@ -758,12 +768,17 @@ Underfull \hbox (badness 10000) has occurred while \output is active
 []
  []
 
-[4 <./fig/results.pdf>]
+[4 <./fig/service-mapping.pdf>]
+\openout2 = `appendices.aux'.
+
+ (./appendices.tex
 Underfull \hbox (badness 10000) has occurred while \output is active
 []
  []
 
-[5]
+[5
+
+])
 Overfull \vbox (6.88875pt too high) has occurred while \output is active []
 
 
@@ -771,9 +786,13 @@ Underfull \hbox (badness 10000) has occurred while \output is active
 []
  []
 
-[6] (./algotel2016.aux)
+[6] (./algotel2016.aux (./appendices.aux))
 
-LaTeX Warning: There were undefined references.
+LaTeX Font Warning: Size substitutions with differences
+(Font)              up to 1.3pt have occurred.
+
+
+LaTeX Warning: There were multiply-defined labels.
 
  )
 (\end occurred inside a group at level 1)
@@ -781,17 +800,17 @@ LaTeX Warning: There were undefined references.
 ### simple group (level 1) entered at line 1061 ({)
 ### bottom level 
 Here is how much of TeX's memory you used:
- 6890 strings out of 494958
- 104102 string characters out of 6179213
- 193460 words of memory out of 5000000
- 9924 multiletter control sequences out of 15000+600000
- 91177 words of font info for 107 fonts, out of 8000000 for 9000
+ 6915 strings out of 494958
+ 104498 string characters out of 6179213
+ 191217 words of memory out of 5000000
+ 9943 multiletter control sequences out of 15000+600000
+ 101309 words of font info for 121 fonts, out of 8000000 for 9000
  36 hyphenation exceptions out of 8191
- 42i,30n,40p,507b,3564s stack positions out of 5000i,500n,10000p,200000b,80000s
-{/usr/share/texmf/fonts/enc/dvips/lm/lm-mathsy.enc}{/usr/share/
-texmf/fonts/enc/dvips/lm/lm-mathit.enc}{/usr/share/texmf/fonts/enc/dvips/lm/lm-
-rm.enc}{/usr/share/texmf/fonts/enc/dvips/lm/lm-mathex.enc}{/usr/share/texmf/fon
-ts/enc/dvips/lm/lm-rmsc.enc}</usr/share/texmf/fonts/type1/public/lm/lmbx10.pfb>
+ 42i,30n,40p,507b,3448s stack positions out of 5000i,500n,10000p,200000b,80000s
+{/usr/share/texmf/fonts/enc/dvips/lm/lm-mathit.enc}{/usr/share/
+texmf/fonts/enc/dvips/lm/lm-rm.enc}{/usr/share/texmf/fonts/enc/dvips/lm/lm-math
+ex.enc}{/usr/share/texmf/fonts/enc/dvips/lm/lm-rmsc.enc}{/usr/share/texmf/fonts
+/enc/dvips/lm/lm-mathsy.enc}</usr/share/texmf/fonts/type1/public/lm/lmbx10.pfb>
 </usr/share/texmf/fonts/type1/public/lm/lmbx12.pfb></usr/share/texmf/fonts/type
 1/public/lm/lmbx9.pfb></usr/share/texmf/fonts/type1/public/lm/lmcsc10.pfb></usr
 /share/texmf/fonts/type1/public/lm/lmex10.pfb></usr/share/texmf/fonts/type1/pub
@@ -805,16 +824,16 @@ re/texmf/fonts/type1/public/lm/lmri9.pfb></usr/share/texmf/fonts/type1/public/l
 m/lmss12.pfb></usr/share/texmf/fonts/type1/public/lm/lmsso12.pfb></usr/share/te
 xmf/fonts/type1/public/lm/lmsso17.pfb></usr/share/texmf/fonts/type1/public/lm/l
 msy10.pfb></usr/share/texmf/fonts/type1/public/lm/lmsy6.pfb></usr/share/texmf/f
-onts/type1/public/lm/lmsy7.pfb></usr/share/texlive/texmf-dist/fonts/type1/publi
-c/amsfonts/symbols/msam10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public
-/amsfonts/symbols/msbm10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/
-rsfs/rsfs10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/rsfs/rsfs5.pf
-b></usr/share/texlive/texmf-dist/fonts/type1/public/rsfs/rsfs7.pfb></usr/share/
-texlive/texmf-dist/fonts/type1/urw/times/utmr8a.pfb>
-Output written on algotel2016.pdf (6 pages, 543016 bytes).
+onts/type1/public/lm/lmsy7.pfb></usr/share/texmf/fonts/type1/public/lm/lmsy8.pf
+b></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/symbols/msam10.pfb
+></usr/share/texlive/texmf-dist/fonts/type1/public/rsfs/rsfs10.pfb></usr/share/
+texlive/texmf-dist/fonts/type1/public/rsfs/rsfs5.pfb></usr/share/texlive/texmf-
+dist/fonts/type1/public/rsfs/rsfs7.pfb></usr/share/texlive/texmf-dist/fonts/typ
+e1/urw/times/utmr8a.pfb>
+Output written on algotel2016.pdf (6 pages, 553918 bytes).
 PDF statistics:
- 258 PDF objects out of 1000 (max. 8388607)
- 178 compressed objects within 2 object streams
+ 264 PDF objects out of 1000 (max. 8388607)
+ 182 compressed objects within 2 object streams
  0 named destinations out of 1000 (max. 500000)
  31 words of extra memory for PDF output out of 10000 (max. 10000000)
 

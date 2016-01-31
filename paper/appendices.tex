@@ -1,0 +1,144 @@
+\pagebreak
+\begin{appendices}
+	\section{Service Mapping algorithm}
+	\begin{algorithm}[H]
+  \KwData{CDN's provided SLA}
+  \KwResult{A Service Mapping $\mathscr{M}$ for SLA or rejection }
+  
+  $s \leftarrow $ canonical\_service(SLA)\;
+  \Do{ true }{
+		$\mathscr{M} \leftarrow solve(s)$\;
+      \eIf{$\mathscr{M} = \emptyset $}{
+      $s \leftarrow $ transform($s$)\;
+      \If{$s = \emptyset$}{
+      throw rejection\;
+      }
+      
+      }{ return $\mathscr{M}$ \;}
+    }
+  \caption{Service Mapping algorithm}
+\end{algorithm}
+
+\section{Mathematical Model}
+
+\subsection{Cost function}
+
+We aim at maximize (\ref{eq1}) which incentive mapping to use the broader links for virtual routes. Note that the $\delta$ variable control for null bandwidth between nodes of the substrate network.
+
+\begin{equation} \label{eq1}
+			\sum_{
+			\!\mathsmaller{
+			(i,j)\in\mathscr{P}^{S}(s,x)
+			}
+			}{\quad\sum_{
+			\!\mathsmaller{
+			{(u,v)\in\mathscr{P}^{S}_{\mathscr{M}}(i,j)}
+			}
+			}{   \frac{b_{u,v}-(y^{i,j}_{u,v})}{\delta+b_{u,v}}         }}\\
+\end{equation}
+\subsection{Network function location unicity constraint}
+
+Equation~(\ref{eq2}) assures that each network function is allocated only 1 node $u$ in the substrate.
+
+\begin{equation}  \label{eq2}
+		\sum_{u\in N} x_u^{i}=1, \forall i \in N^{S}
+\end{equation}
+
+\subsection{Substrate node constraint}
+
+Equation~(\ref{eq3}) assures that each network function is allocated to a node that match the required capacity $c^{S}_{i}$.
+
+\begin{equation} \label{eq3}
+	\sum_{i \in N^{S} } x_{j}^{i} \times c_{i}^{S} \leq c_{u}, \forall u \in N		
+\end{equation}
+
+\subsection{Substrate edge capacity constraint}
+
+Equation~(\ref{eq4}) assures that for each segment used to map service edge $(i,j)$ has enough bandwidth.
+
+\begin{equation}\label{eq4}
+	\sum_{(i,j)\in E^{S}}{y_{u,v}^{i,j}\times b_{i,j}^{S}} \leq b_{u,v}, \forall (u,v) \in E
+\end{equation}
+
+
+\subsection{Substrate edge delay constraint}
+
+Equation~(\ref{eq5}) assures that each segment used to map service edge $(i,j)$ has a smaller delay that the one needed by the service.
+
+\begin{equation}\label{eq5}
+	y_{u,v}^{i,j}\times d_{u,v} \leq d_{i,j}^{S}, \forall (u,v) \in E, \forall (i,j) \in E^{S}
+\end{equation}
+
+\subsection{Flow conservation constraint}
+
+Equation~(\ref{eq6}) implement classical flow conservation constraints.
+
+
+\begin{equation}\label{eq6}
+\sum_{v \in N}{y_{u,v}^{i,j}-y_{v,u}^{i,j}} = x_{u}^{i}-x_{u}^{j}, \forall (i,j) \in E^{S}, \forall u \in N / \{u \in  \mathscr{T}\}
+\end{equation}
+
+\subsection{Loop Constraints}
+Equation~(\ref{eq7}) assures that there's no loop in the mapped service.
+\begin{equation}\label{eq7}
+y_{u,v}^{i,j}+y_{v,u}^{i,j} \leq 1, \forall (u,v) \in E, \forall (i,j) \in E^{S}
+\end{equation}
+
+
+\subsection{Domain Constraints}
+Equations~(\ref{eq8})~and~(\ref{eq9}) represents domain constraints.
+\begin{equation}\label{eq8}
+x_{i}^{u}\in\{0,1\}
+\end{equation}
+\begin{equation}\label{eq9}
+y_{u,v}^{i,j}\in\{0,1\}
+\end{equation}
+
+
+\section{Mathematical Notations}
+  
+\begin{table}[htbp]\caption{Notations}
+\begin{center}% used the environment to augment the vertical space
+% between the caption and the table
+\begin{tabular}{r c p{12cm} }
+\toprule{}
+
+$\mathscr{M}$ & $\triangleq$ & maps a service graph $G^{S}=(N^{S},E^{S})$ to a substrate graph $G=(N,E)$.\\
+$\mathscr{P}^{S}(i,j)$ & $\triangleq$ & the set of edges $e\in E^{S}$ that links $i \in N^{S}$ to $j \in N^{S}$\\
+$\mathscr{P}^{S}_{\mathscr{M}}(i,j)$ & $\triangleq$ & the set of edges $e\in E$ that links $u$ to $v$ with $i \xrightarrow{\mathscr{M}} u$ and $j \xrightarrow{\mathscr{M}} v$\\
+$\mathscr{D}_{\mathscr{M}}(i,j)$ & $\triangleq$ & the total substrate delay for mapping $\mathscr{M}$ for $(i,j) \in E^{S}$ \\
+
+$\mathscr{T}$ & $\triangleq$ & the set of terminal nodes of the service chain.\\
+$i \xrightarrow{\mathscr{M}} u$ & $\triangleq$ & network function $i\in N^{S}$ is mapped to the $u\in N$ for mapping $\mathscr{M}$ \\
+$y_{u,v}^{i,j}$ & $=$ & \(
+	\left \{
+		\begin{array}{p{0.5cm}p{10cm}}
+			1,  & if link $(i,j) \in E^{S}$ \\ & is mapped on substrate link $(a,b)\in E$ \\
+			0,  & \text{otherwise} 
+		\end{array}
+	\right.\)\\
+$x^{i}_{u} $ & $=$ & \(
+	\left \{
+		\begin{array}{p{0.5cm}p{10cm}}
+			1,  & \text{if $i \xrightarrow{\mathscr{M}} u$} \\
+			0,  & \text{otherwise} 
+		\end{array}
+	\right.\)\\
+$d_{a,b}$ & $\triangleq$ & the delay for edge $(a,b)\in E$ \\
+$d^{S}_{i,j}$& $\triangleq$ & the maximum delay on $(i,j) \in E^{S}$ admissible for chain $G^{S}$.\\
+
+$b^{S}_{i,j}$& $\triangleq$ & the required bandwidth on $(i,j) \in E^{S}$ for chain $G^{S}$'s operation.\\
+$b_{u,v}$& $\triangleq$ & the available bandwidth on edge $(u,v) \in E$  of the substrate\\
+$s$ & $\triangleq$ & the starting node of the service chain.\\
+
+
+
+
+\bottomrule
+\end{tabular}
+\end{center}
+\label{tab:TableOfNotationForMyResearch}
+\end{table}
+
+
+\end{appendices}
