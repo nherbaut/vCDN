@@ -88,7 +88,7 @@ In order to overcome this collaboration challenges, we propose a solution capabl
 \begin{minipage}{0.45\textwidth}
 \centering
 	\includegraphics[width=1\textwidth]{fig/results.pdf}
-	\caption{ Impact of service chain transformation on the rate of successful embedding	
+	\caption{ Impact of Service Chain transformation on the rate of successful embedding	
     \label{fig:results}} 
 \end{minipage}
 
@@ -113,7 +113,7 @@ For example, a CDN can contract with an ISP to organize the delivery of 5.000 co
 
 \subsection{Implementing the Content Delivery Service}
 
-While an SLA is a good way for CDNs to formulate their business needs, it does not specify technically how ISPs should perform the instantiation it on their network.
+While an SLA is a good way for CDNs to formulate their business needs, it does not specify technically how ISPs should perform the instantiation on their network.
 In this section, we present the translation of the SLA into a Content Delivery Service Chain.
 
 \subsubsection*{The canonical model}
@@ -124,7 +124,7 @@ It is the enhanced distribution path on which the CDN want to apply the SLA. It 
 
 \subsubsection*{Leveraging Virtual Home Gateways}
 CDNs use DNS redirection technique to specify to which server content traffic need to be routed. This application-layer method works with the granularity of domain names.
-ISPs can benefit their full control of the network to switch to an SDN approach bringing more flexibility.
+ISPs can benefit from their full control of the network to switch to an SDN approach bringing more flexibility.
 
 To deploy configuration to network devices, the SDN approach relies on "southbound technologies"  which can be limited in features.
 For instance, Open flow is SDN's most used southbound protocol.
@@ -137,7 +137,7 @@ The vHG regroups several network functions, but in the present use case we focus
 In a content delivery scenario, vHG can be seen as a transit network function able to flag outgoing flows according to L5-L7 rules, like HTTP URL matching.
 vHG can therefore segregate traffic targeted toward vCDN from the one targeted to CDN.
 This enable packets to follow distinct routes with distinct network characteristics.
-For example, let's assure that a set of video files is cached in a vCDN. Each one is identified by its original URLs in the CP name space. 
+For example, let's assume that a set of video files is cached in a vCDN. Each one is identified by its original URLs in the CP name space. 
 Then, the CDN configures the mapping between original video URLs and their corresponding cached version. Finally, the vHG routes the requests made by the end-users the vCDN instance following a virtual route created at service mapping time, with guaranteed bandwidth and delay.
 The remaining requests that don't match any URL are sent through a virtual route with no specific guarantees to the CDN AS.
 
@@ -159,7 +159,7 @@ The remaining requests that don't match any URL are sent through a virtual route
 	\caption{With Load Balanced vHG}
 	\label{fig:vhg-lb}
 \end{subfigure}
-\caption{Three representations of the same service chain} \label{fig:1}
+\caption{Three representations of the same Service Chain} \label{fig:1}
 \end{figure}
 
 
@@ -172,25 +172,25 @@ The remaining requests that don't match any URL are sent through a virtual route
     \label{fig:service-mapping}}
 \end{figure}
 The resulting service can now be modeled as a Service Chain depicted in Figure~\ref{fig:vhg}.
-The ISPs need to embed the service chain generated from the CDN SLA into their substrate network. 
+The ISPs need to embed the Service Chain generated from the CDN SLA into their substrate network. 
 This problem is known as Service Chain Embedding \cite{quinn2015problem} where we need to map a service graph $G^{S}=(N^{S},E^{S})$ to a substrate graph $G=(N,E)$ representing the real ISP network. Figure~\ref{fig:service-mapping} shows such a mapping. 
 
 SLAs varies in the amount of physical resources needed and can be very demanding sometimes. In this context, it can be quite challenging for the ISPs to map a vNF to a single POP or to route the resulting traffic though a single route with enough bandwidth.
-To ease embedding into the network, ISP can transform the canonical representation of the service into an other form by splitting vNF and routes as shown Figure~\ref{fig:vhg-lb} known as path slitting. 
+To ease this embeddings into the network, ISP can transform the canonical representation of the service into an other form by splitting vNFs and routes as shown Figure~\ref{fig:vhg-lb} known as path slitting. 
 As nothing prevent vNFs to be allocated on the same POP, nor routes to be mapped to the same set of edges, the probability of  successful embeding for transformed model is at least equal to the canonical model.
-Having traffic and resource split, however can ease service mapping on the substrate network.
+Having traffic and resource split, however can ease service mapping on the substrate network, as each service and route need less resource for embeding.
 
 \section{Results\label{sec:results}}
 To evaluate our solution, we performed simulation on a real topology retrieved from an open database\footnote{http://www.topology-zoo.org/}.
-We only considered transformation at the VHG level by increasing the number of vHG being load balanced and fairly spiting the traffic between them. Figure~\ref{fig:results} display the results of increasing the number of vHG while  by picking traffic sources and sinks at random in the graph.
-As we can see, splitting the path to vHG increases the probability of a successful embedding, up to a 10\% gain for 4 transformations wrt to the initial service chaining.
+We only considered transformations at the VHG level, by increasing the number of vHGs being load balanced and fairly spiting the traffic between them. Figure~\ref{fig:results} display the results of increasing the number of vHG while   picking traffic sources and sinks at random in the graph.
+As we can see, splitting the path to vHG increases the probability of a successful embedding, up to a 10\% gain for 4 transformations wrt to the initial Service Chaining.
 
 \section{\label{sec:conclusion}Conclusion and future work \label{sec:conclusion}}
-We proposed a design for an ISP NFV collaboration platform in which CDNs can run their delivery functions. We modeled the problem of embedding a content delivery service chain over the ISP network, leveraging innovative network functions.
+We proposed a design for an ISP NFV collaboration platform in which CDNs can run their delivery functions. We modeled the problem of embedding a content delivery Service Chain over the ISP network, leveraging innovative network functions.
 
 By just applying an algorithm that splits the traffic on several vNFs in the chain, we can see that it provides significant increase in the embedding acceptance ratio.
 We plan to improve this algorithm by extracting topology information to help design a better transformation algorithm.
-We are in the process of implementing a proof of concept of our approach in collaboration with an Operator, into which we will measure the performance in terms of peering traffic reduction, increased quality of service for end-users and scalability. Furthermore, deriving an economic model of this new platform will permit us to analytically evaluate how the equilibrium/balance in revenue sharing is reached and a full win-win approach is achieved.
+We are in the process of implementing a proof of concept of our approach in collaboration with an Operator, into which we will measure the performance in terms of peering traffic reduction,  quality of service for end-users and scalability. Furthermore, deriving an economic model of this new platform will permit us to analytically evaluate how the equilibrium/balance in revenue sharing is reached and a full win-win approach is achieved.
 
 
 
