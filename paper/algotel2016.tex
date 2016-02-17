@@ -5,6 +5,9 @@
 %notimes
 ]{algotel}
 \usepackage[latin1]{inputenc}
+\usepackage{draftwatermark}
+\SetWatermarkText{DRAFT}
+\SetWatermarkScale{1}
 \usepackage{ mathrsfs }
 \usepackage{mathtools}  
 \usepackage{amsmath}
@@ -72,7 +75,7 @@ Section~\ref{sec:architecture} describes the architecture of the solution. Secti
 
 CDN and ISP do not naturally collaborate.
 They have their own specific problems to solve resulting in conflicting outcomes \cite{jiang_cooperative_2009}.
-In order to overcome this collaboration challenges, we propose a solution capable of matching ISP's connectivity "supply" with the CDN's connectivity "demand".
+In order to overcome this collaboration challenges, we propose a solution matching ISP's connectivity "supply" with the CDN's connectivity "demand".
 
 
 
@@ -167,7 +170,7 @@ The remaining requests that don't match any URL are sent through a virtual route
 \subsubsection*{Service Chaining transformation}
 \begin{figure}
 	\center
-	\includegraphics[width=.8\textwidth]{fig/service-mapping.pdf}
+	\includegraphics[width=.75\textwidth]{fig/service-mapping.pdf}
 	\caption{ Service Chain Mapping
     \label{fig:service-mapping}}
 \end{figure}
