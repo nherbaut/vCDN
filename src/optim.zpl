@@ -9,8 +9,6 @@ set ES := { read "service.edges.data" as "<1s,2s>"};
 set Path := { read "path.data" as "<1s>"};
 set tuplePath :={ <i> in {1..(card(Path)-1)} : <ord(Path,i,1),ord(Path,i+1,1)>};
 
-
-
 param cpuS[NS] := read "service.nodes.data" as "<1s> 2n";
 param cpu[N] := read "substrate.nodes.data" as "<1s> 2n";
 
@@ -33,19 +31,19 @@ var y [(E union Et) cross ES] binary;
 var w binary;
 
 
-minimize cost: 	
-				sum <a,b> in tuplePath:(
-					sum <u,v> in E:
-						(y[u,v,a,b] * delays[u,v] )+
-					sum <u,v> in Et:
-						(y[u,v,a,b] * delayst[u,v])) ;
+#minimize cost: 	
+#				sum <a,b> in tuplePath:(
+#					sum <u,v> in E:
+#						(y[u,v,a,b] * delays[u,v] )+
+#					sum <u,v> in Et:
+#						(y[u,v,a,b] * delayst[u,v])) ;
 
 #maximize cost: 	
 #				sum <a,b> in tuplePath:(
 #					sum <u,v> in E:
 #						((bw[u,v]-(y[u,v,a,b] * bwS[a,b] ))/(0.1+bw[u,v]))+
 #					sum <u,v> in Et:
-#					((bw[v,u]-(y[u,v,a,b] * bwS[a,b] ))/(0.1+bw[v,u])));
+#						((bw[v,u]-(y[u,v,a,b] * bwS[a,b] ))/(0.1+bw[v,u])));
 						
 
 subto fc:
@@ -91,7 +89,7 @@ subto CDNIn7:
     x[CDN,"CDN"]==1;
     
 subto startisstart:
-    x[starters,"s"]==1;
+    x[starters,"S"]==1;
     
 subto startisstart2:
     sum<v> in NS: x[starters,v]==1;

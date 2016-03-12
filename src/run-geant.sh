@@ -9,7 +9,6 @@ fi
 scip -b ./scpi.batch 
 ./plotsol.py 
 cat ./substrate.dot |dot -Tpdf -osol.pdf
-echo "seed=$1"
 export obf=`cat solutions.data |sed -rn "s/objective value: + ([0-9\.]+)$/\1/p"`
 
 if [ -z $obf ]; then

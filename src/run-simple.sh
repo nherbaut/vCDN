@@ -2,9 +2,9 @@
 
 
 if [ "$#" -ne 1 ]; then
-        ./generate-geant-data.py --file basic.graphml --start 0 --cdn 7 --refresh
+        ./generate-geant-data.py --file basic.graphml --start 0 --cdn 7 
 else
-        ./generate-geant-data.py --seed $1 --file basic.graphml --start 0 --cdn 7 --refresh
+        ./generate-geant-data.py --seed $1 --file basic.graphml --start 0 --cdn 7 
 fi
 
 scip -b ./scpi.batch  

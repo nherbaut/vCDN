@@ -235,14 +235,7 @@
       <data key="d32">21.43333</data>
       <data key="d33">MK</data>
     </node>
-    <node id="21">
-      <data key="d28">1</data>
-      <data key="d29">42.44111</data>
-      <data key="d30">Montenegro</data>
-      <data key="d31">21</data>
-      <data key="d32">19.26361</data>
-      <data key="d33">ME</data>
-    </node>
+
     <node id="22">
       <data key="d28">1</data>
       <data key="d29">47.49801</data>
@@ -283,14 +276,7 @@
       <data key="d32">20.46513</data>
       <data key="d33">RS</data>
     </node>
-    <node id="27">
-      <data key="d28">1</data>
-      <data key="d29">45.81444</data>
-      <data key="d30">Croatia</data>
-      <data key="d31">27</data>
-      <data key="d32">15.97798</data>
-      <data key="d33">HR</data>
-    </node>
+
     <node id="28">
       <data key="d28">1</data>
       <data key="d29">46.05108</data>
@@ -670,22 +656,11 @@
       <data key="d42">2500000000.0</data>
       <data key="d38">0</data>
     </edge>
-    <edge source="21" target="27">
-      <data key="d39">155</data>
-      <data key="d40">155 Mbps</data>
-      <data key="d41">M</data>
-      <data key="d42">155000000.0</data>
-      <data key="d38">0</data>
-    </edge>
     <edge source="22" target="26">
       <data key="d39">10</data>
       <data key="d40">10 Gbps</data>
       <data key="d41">G</data>
       <data key="d42">10000000000.0</data>
-      <data key="d38">0</data>
-    </edge>
-    <edge source="22" target="27">
-      <data key="d37">e19</data>
       <data key="d38">0</data>
     </edge>
     <edge source="22" target="23">
@@ -708,10 +683,6 @@
       <data key="d40">10 Gbps</data>
       <data key="d41">G</data>
       <data key="d42">10000000000.0</data>
-      <data key="d38">0</data>
-    </edge>
-    <edge source="27" target="28">
-      <data key="d37">e20</data>
       <data key="d38">0</data>
     </edge>
     <edge source="28" target="29">
