@@ -20,7 +20,11 @@ with open("substrate.nodes.data", 'r') as f:
             nodesdict[line[0]] = line[1]
 
 with open("solutions.data", "r") as sol:
-    data = sol.read().split("\n")
+    data = sol.read()
+    if "infeasible" in data: 
+      pass
+    else:
+      data = data.split("\n")
     nodesSol = []
     edgesSol = []
     for line in data:
