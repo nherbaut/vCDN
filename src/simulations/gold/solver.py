@@ -1,6 +1,6 @@
 import re
 import subprocess
-
+import os
 from mapping import Mapping
 
 
@@ -8,7 +8,7 @@ def solve(service, substrate):
     service.write()
     substrate.write()
 
-    subprocess.call(["scip", "-b", "./scpi.batch"])
+    subprocess.call(["scip", "-b", "./scpi.batch"],stdout=open(os.devnull, 'wb'))
     # plotting.plotsol()
     # os.subprocess.call(["cat", "./substrate.dot", "|", "dot", "-Tpdf", "-osol.pdf"])
     with open("solutions.data", "r") as sol:

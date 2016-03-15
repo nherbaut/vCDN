@@ -1,3 +1,5 @@
 *.pdf
 substrate*
 .*
+*.pyc
+*.data

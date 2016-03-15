@@ -22,7 +22,7 @@ param bw[E] := read "substrate.edges.data" as "<1s,2s> 3n";
 param bwt[Et] := read "substrate.edges.data" as "<2s,1s> 3n";
 
 param CDN := read "CDN.nodes.data" as "1s" use 1 ;
-param starters := "0";
+param starters := read "starters.nodes.data" as "1s" use 1 ;
 
 
 
