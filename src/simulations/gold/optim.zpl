@@ -85,11 +85,9 @@ subto noloop:
 			y[u, v, i, j] + y[v, u, i,j] <= 1;
 		
 		
-subto CDNIn7:
+subto cdn2cdn:
     x[CDN,"CDN"]==1;
     
-subto startisstart:
+subto start2start:
     x[starters,"S"]==1;
     
-subto startisstart2:
-    sum<v> in NS: x[starters,v]==1;

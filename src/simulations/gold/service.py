@@ -12,9 +12,11 @@ class Edge:
 class Service:
     @classmethod
     def fromSla(cls, sla):
-        return cls(sla.bandwidth, 1,   2* sla.delay / 4.0, 0.35, sla.delay * 100, 2.0 * sla.delay / 4.0,  5, 1,1, sla.start, sla.cdn)
+        return cls(sla.bandwidth, 1, 2 * sla.delay / 4.0, 0.35, sla.delay * 100, 2.0 * sla.delay / 4.0, 5, 1, 1,
+                   sla.start, sla.cdn)
 
-    def __init__(self, sourcebw, vhgcount, vhgdelay, vcdnratio, cdndelay, vcdndelay, vcdncpu, vhgcpu, vcdncount, start, cdn):
+    def __init__(self, sourcebw, vhgcount, vhgdelay, vcdnratio, cdndelay, vcdndelay, vcdncpu, vhgcpu, vcdncount, start,
+                 cdn):
         self.sourcebw = sourcebw
         self.vhgcount = vhgcount
         self.vhgdelay = vhgdelay
@@ -30,12 +32,21 @@ class Service:
         self.nodes = {}
         self.edges = {}
 
-    def relax(self):
-        if self.vcdncount % 2 == 0:
+    def relax(self, relax_vhg=True, relax_vcdn=True):
+        if relax_vhg and relax_vcdn:
+            if self.vcdncount % 2 == 0:
+                self.vcdncount = self.vcdncount + 1
+            else:
+                self.vhgcount = self.vhgcount + 1
+
+        elif relax_vhg:
+            self.vhgcount = self.vhgcount + 1
+        elif relax_vcdn:
             self.vcdncount = self.vcdncount + 1
         else:
-            self.vhgcount = self.vhgcount + 1
+            return False  # norelax
 
+        # overrun
         if self.vcdncount > 4 or self.vhgcount > 4:
             return False
         else:
@@ -45,7 +56,7 @@ class Service:
 
         with open("service.edges.data", "w") as f:
 
-            f.write("S LB %ld 20\n" % self.sourcebw)
+            f.write("S LB %ld 10\n" % self.sourcebw)
             self.edges["S LB"] = Edge(self.sourcebw, 10)
             for i in range(1, int(self.vhgcount) + 1):
                 f.write("LB VHG%d %lf %lf\n" % (i, self.sourcebw / self.vhgcount, self.vhgdelay))
@@ -54,7 +65,7 @@ class Service:
                 f.write("VHG%d CDN %lf %lf\n" % (
                     i, self.sourcebw / self.vhgcount * (1 - self.vcdnratio), self.cdndelay))
                 self.edges["VHG%d CDN" % i] = Edge(self.sourcebw / self.vhgcount * (1 - self.vcdnratio), self.cdndelay)
-                #self.edges["VHG%d CDN" % i] = Edge(0, self.cdndelay)
+                # self.edges["VHG%d CDN" % i] = Edge(0, self.cdndelay)
                 for j in range(1, int(self.vcdncount) + 1):
                     f.write("VHG%d vCDN%d %lf %lf\n" % (i, j,
                                                         self.sourcebw / (

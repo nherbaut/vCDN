@@ -34,10 +34,11 @@ def write_sla(sla, seed=None):
 def generate_random_slas(rs, substrate, count=1000):
     res = []
     for i in range(0, count):
-        bitrate = rs.choice([500000, 1000000, 4000000,8000000])
-        concurent_users = max(rs.normal(10000, 100), 0) + 10
-        time_span = max(rs.normal(100 * 60 * 60, 60 * 60), 0) + 10
+        bitrate = rs.choice([500000, 1000000, 4000000])
+        concurent_users = max(rs.normal(1000, 100), 0) + 10
+        time_span = max(rs.normal(10 * 60 * 60, 60 * 60), 0) + 10
         movie_duration = max(rs.normal(60 * 60, 10 * 60), 0) + 10
+
         start = rs.choice(substrate.nodesdict.keys())
         cdn = rs.choice(substrate.nodesdict.keys())
         res.append(Sla(bitrate, concurent_users, time_span, movie_duration, start, cdn))
