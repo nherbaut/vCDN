@@ -30,7 +30,7 @@ var x[N cross NS] binary;
 var y [(E union Et) cross ES] binary;
 var w binary;
 
-
+do print y;
 #minimize cost: 	
 #				sum <a,b> in tuplePath:(
 #					sum <u,v> in E:

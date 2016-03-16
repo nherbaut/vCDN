@@ -82,12 +82,14 @@ class Service:
             f.write("CDN 0	\n")
             self.nodes["CDN"] = Node(0)
             for j in range(1, int(self.vcdncount) + 1):
-                f.write("vCDN%d	%lf	\n" % (j, self.vcdncpu / self.vcdncount))
-                self.nodes["vCDN%d" % j] = Node(self.vcdncpu / self.vcdncount)
+                #f.write("vCDN%d	%lf	\n" % (j, self.vcdncpu / self.vcdncount))
+                #self.nodes["vCDN%d" % j] = Node(self.vcdncpu / self.vcdncount)
+                f.write("vCDN%d	%lf	\n" % (j, self.vcdncpu ))
+                self.nodes["vCDN%d" % j] = Node(self.vcdncpu )
 
             for i in range(1, int(self.vhgcount) + 1):
                 f.write("VHG%d %lf\n" % (i, self.vhgcpu / self.vhgcount))
-                self.nodes["VHG%d" % i] = Node(self.vhgcpu / self.vhgcount)
+                self.nodes["VHG%d" % i] = Node(float(self.vhgcpu) / self.vhgcount)
 
         with open("CDN.nodes.data", 'w') as f:
             f.write("%s \n" % self.cdn)
