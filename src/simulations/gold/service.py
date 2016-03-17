@@ -34,7 +34,7 @@ class Service:
 
     def relax(self, relax_vhg=True, relax_vcdn=True):
         if relax_vhg and relax_vcdn:
-            if self.vcdncount % 2 == 0:
+            if (self.vcdncount + self.vhgcount) % 2 == 0:
                 self.vcdncount = self.vcdncount + 1
             else:
                 self.vhgcount = self.vhgcount + 1
@@ -88,7 +88,7 @@ class Service:
                 self.nodes["vCDN%d" % j] = Node(self.vcdncpu )
 
             for i in range(1, int(self.vhgcount) + 1):
-                f.write("VHG%d %lf\n" % (i, self.vhgcpu / self.vhgcount))
+                f.write("VHG%d %lf\n" % (i, float(self.vhgcpu) / self.vhgcount))
                 self.nodes["VHG%d" % i] = Node(float(self.vhgcpu) / self.vhgcount)
 
         with open("CDN.nodes.data", 'w') as f:
