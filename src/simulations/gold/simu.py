@@ -23,7 +23,7 @@ rejected_threshold = int(args.threshold)
 sla_count = 10000
 s =  int(args.seed)
 
-for seed in range(s, s + args.count, 1):
+for seed in range(s, s + int(args.count), 1):
 
     res = {}
 
