@@ -8,12 +8,22 @@ import substrate
 from service import Service
 from sla import generate_random_slas
 from solver import solve
+import argparse
 
-rejected_threshold = 150
+parser = argparse.ArgumentParser(description='Process some integers.')
+parser.add_argument('--threshold',  default=100)
+parser.add_argument('--seed',  default=114613154)
+parser.add_argument('--count',  default=5)
+
+
+args = parser.parse_args()
+
+
+rejected_threshold = int(args.threshold)
 sla_count = 10000
-s = 114613154
+s =  int(args.seed)
 
-for seed in range(s, s + 5, 1):
+for seed in range(s, s + args.count, 1):
 
     res = {}
 
