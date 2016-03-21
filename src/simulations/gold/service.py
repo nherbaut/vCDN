@@ -56,16 +56,17 @@ class Service:
 
         with open("service.edges.data", "w") as f:
 
-            f.write("S LB %ld 10\n" % self.sourcebw)
-            self.edges["S LB"] = Edge(self.sourcebw, 10)
+            f.write("S LB %ld 0\n" % self.sourcebw)
+            self.edges["S LB"] = Edge(self.sourcebw, 0)
             for i in range(1, int(self.vhgcount) + 1):
                 f.write("LB VHG%d %lf %lf\n" % (i, self.sourcebw / self.vhgcount, self.vhgdelay))
                 self.edges["LB VHG%d" % i] = Edge(self.sourcebw / self.vhgcount, self.vhgdelay)
 
                 f.write("VHG%d CDN %lf %lf\n" % (
                     i, self.sourcebw / self.vhgcount * (1 - self.vcdnratio), self.cdndelay))
+                #f.write("VHG%d CDN %lf %lf\n" % (                    i, 0, self.cdndelay))
                 self.edges["VHG%d CDN" % i] = Edge(self.sourcebw / self.vhgcount * (1 - self.vcdnratio), self.cdndelay)
-                # self.edges["VHG%d CDN" % i] = Edge(0, self.cdndelay)
+                #self.edges["VHG%d CDN" % i] = Edge(0, self.cdndelay)
                 for j in range(1, int(self.vcdncount) + 1):
                     f.write("VHG%d vCDN%d %lf %lf\n" % (i, j,
                                                         self.sourcebw / (
@@ -82,10 +83,10 @@ class Service:
             f.write("CDN 0	\n")
             self.nodes["CDN"] = Node(0)
             for j in range(1, int(self.vcdncount) + 1):
-                #f.write("vCDN%d	%lf	\n" % (j, self.vcdncpu / self.vcdncount))
-                #self.nodes["vCDN%d" % j] = Node(self.vcdncpu / self.vcdncount)
-                f.write("vCDN%d	%lf	\n" % (j, self.vcdncpu ))
-                self.nodes["vCDN%d" % j] = Node(self.vcdncpu )
+                # f.write("vCDN%d	%lf	\n" % (j, self.vcdncpu / self.vcdncount))
+                # self.nodes["vCDN%d" % j] = Node(self.vcdncpu / self.vcdncount)
+                f.write("vCDN%d	%lf	\n" % (j, self.vcdncpu))
+                self.nodes["vCDN%d" % j] = Node(self.vcdncpu)
 
             for i in range(1, int(self.vhgcount) + 1):
                 f.write("VHG%d %lf\n" % (i, float(self.vhgcpu) / self.vhgcount))

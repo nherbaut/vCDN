@@ -11,7 +11,10 @@ class Substrate:
 
     def __init__(self, edges, nodesdict):
         self.edges = edges
-        self.nodesdict = nodesdict
+        self.nodesdict = nodesdict.copy()
+
+        self.edges_init = sorted(edges, key=lambda x: "%s%s" % (str(x[0]), str(x[1])))
+        self.nodesdict_init = nodesdict
 
     def write(self, edges_file="substrate.edges.data", nodes_file="substrate.nodes.data"):
         edges = self.edges
@@ -25,6 +28,15 @@ class Substrate:
                 node = nodesdict[nodekey]
                 f.write("%s\t%lf\n" % (nodekey, node))
 
+        with open("pc_" + edges_file, 'w') as f:
+            for idx, val in enumerate(sorted(edges, key=lambda x: "%s%s" % (str(x[0]), str(x[1])))):
+                f.write("%s\t%s\t%lf\t%lf\n" % (val[0], val[1], float(val[2])/float(self.edges_init[idx][2])*100, float(val[3])/float(self.edges_init[idx][3])*100))
+
+        with open("pc_" + nodes_file, 'w') as f:
+            for nodekey in sorted(nodesdict.keys()):
+                node = float(nodesdict[nodekey])/float(self.nodesdict_init[nodekey])*100
+                f.write("%s\t%lf\n" % (nodekey, node))
+
     @classmethod
     def fromFile(cls, edges_file="substrate.edges.data", nodes_file="substrate.nodes.data"):
 
@@ -33,13 +45,13 @@ class Substrate:
 
         with open(edges_file, 'r') as f:
             for line in f.read().split("\n"):
-                if len(line)>2:
+                if len(line) > 2:
                     node1, node2, bw, delay = line.split("\t")
                     edges.append((int(node1), int(node2), float(bw), float(delay)))
 
         with open(nodes_file, 'r') as f:
             for line in f.read().split("\n"):
-                if len(line)>2:
+                if len(line) > 2:
                     nodeid, cpu = line.split("\t")
                     nodesdict[int(nodeid)] = float(cpu)
 
@@ -95,7 +107,8 @@ def get_substrate(rs, file='Geant2012.graphml', refresh=True):
     nodesdict = {}
 
     for l in nodes:
-        value = max(rs.normal(100, 20, 1)[0], 0)
+        value = max(rs.normal(50, 5, 1)[0], 0)
+        # value = 50
         nodesdict[l] = value
 
     su = Substrate(edges, nodesdict)

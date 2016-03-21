@@ -3,7 +3,7 @@
 
 import matplotlib.pyplot as plt
 import numpy as np
-
+import time
 import substrate
 from service import Service
 from sla import generate_random_slas
@@ -13,7 +13,7 @@ import argparse
 parser = argparse.ArgumentParser(description='Process some integers.')
 parser.add_argument('--threshold',  default=10)
 parser.add_argument('--seed',  default=114613154)
-parser.add_argument('--count',  default=5)
+parser.add_argument('--count',  default=1)
 
 
 args = parser.parse_args()
@@ -38,7 +38,7 @@ for seed in range(s, s + int(args.count), 1):
         g = open("accepted_sla.txt", "w")
 
         while rejected < rejected_threshold:
-            result.append("%s\t%d" % (su, sla_count - len(slas)))
+
             count_transformation = 0
             sla = slas.pop()
             service = Service.fromSla(sla)
@@ -60,23 +60,37 @@ for seed in range(s, s + int(args.count), 1):
                     # print ("ok! %s transformation:%d\n" % (sla,count_transformation))
                     mapping.save()
                     su.consume_service(service, mapping)
-                    su.write(edges_file="res/%05d-resulting-substrate.edges.data" % (sla_count - len(slas)),
-                             nodes_file="res/%05d-resulting-substrate.nodes.data" % (sla_count - len(slas)))
+                    su.write()
+                    #su.write(edges_file="res/%05d-resulting-substrate.edges.data" % (sla_count - len(slas)),                             nodes_file="res/%05d-resulting-substrate.nodes.data" % (sla_count - len(slas)))
+                    result.append("%s\t%d" % (su, sla_count - len(slas)-rejected))
 
         f.close()
         g.close()
         return result
 
 
+
+    res["none"]=[]
+    res["vcdn"]=[]
+    res["vhg"]=[]
+    res["all"]=[]
+    start=time.time()
     res["none"] = do_simu(False, False)
+    print "s0 in %lf for %d run : %lf" % ((time.time()-start),len(res["none"]),(time.time()-start)/(1+len(res["none"])) )
+    start=time.time()
     res["vhg"] = do_simu(True, False)
+    print "s1 in %lf for %d run : %lf" % ((time.time()-start),len(res["vhg"]),(time.time()-start)/(1+len(res["vhg"])))
+    start=time.time()
     res["vcdn"] = do_simu(False, True)
+    print "s2 in %lf for %d run : %lf" % ((time.time()-start),len(res["vcdn"]),(time.time()-start)/(1+len(res["vcdn"])))
+    start=time.time()
     res["all"] = do_simu(True, True)
+    print "s3 in %lf for %d run : %lf" % ((time.time()-start),len(res["all"]),(time.time()-start)/(1+len(res["all"])))
 
     init_bw = float(res["none"][0].split("\t")[0])
     init_cpu = float(res["none"][0].split("\t")[1])
 
-    init_point = 100
+    init_point = 0
 
     plt.figure(0)
     none = plt.plot([float(x.split("\t")[2]) for x in res["none"]][init_point:],
