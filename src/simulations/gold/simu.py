@@ -11,7 +11,7 @@ from solver import solve
 import argparse
 
 parser = argparse.ArgumentParser(description='Process some integers.')
-parser.add_argument('--threshold',  default=100)
+parser.add_argument('--threshold',  default=10)
 parser.add_argument('--seed',  default=114613154)
 parser.add_argument('--count',  default=5)
 
