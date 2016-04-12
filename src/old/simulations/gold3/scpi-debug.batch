@@ -1,0 +1,6 @@
+read optim.zpl
+
+change minuc
+optimize
+write solution solutions.data
+q
