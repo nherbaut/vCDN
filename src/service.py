@@ -33,6 +33,7 @@ class Service:
         self.edges = {}
 
     def relax(self, relax_vhg=True, relax_vcdn=True):
+        print "relaxation level\t%ld " % (self.vhgcount + self.vcdncount - 2)
         if relax_vhg and relax_vcdn:
             if (self.vcdncount + self.vhgcount) % 2 == 0:
                 self.vhgcount = self.vhgcount + 1
@@ -64,9 +65,9 @@ class Service:
 
                 f.write("VHG%d CDN %lf %lf\n" % (
                     i, self.sourcebw / self.vhgcount * (1 - self.vcdnratio), self.cdndelay))
-                #f.write("VHG%d CDN %lf %lf\n" % (                    i, 0, self.cdndelay))
+                # f.write("VHG%d CDN %lf %lf\n" % (                    i, 0, self.cdndelay))
                 self.edges["VHG%d CDN" % i] = Edge(self.sourcebw / self.vhgcount * (1 - self.vcdnratio), self.cdndelay)
-                #self.edges["VHG%d CDN" % i] = Edge(0, self.cdndelay)
+                # self.edges["VHG%d CDN" % i] = Edge(0, self.cdndelay)
                 for j in range(1, int(self.vcdncount) + 1):
                     f.write("VHG%d vCDN%d %lf %lf\n" % (i, j,
                                                         self.sourcebw / (
@@ -83,8 +84,8 @@ class Service:
             f.write("CDN 0	\n")
             self.nodes["CDN"] = Node(0)
             for j in range(1, int(self.vcdncount) + 1):
-                #f.write("vCDN%d	%lf	\n" % (j, self.vcdncpu / self.vcdncount))
-                #self.nodes["vCDN%d" % j] = Node(self.vcdncpu / self.vcdncount)
+                # f.write("vCDN%d	%lf	\n" % (j, self.vcdncpu / self.vcdncount))
+                # self.nodes["vCDN%d" % j] = Node(self.vcdncpu / self.vcdncount)
                 f.write("vCDN%d	%lf	\n" % (j, self.vcdncpu))
                 self.nodes["vCDN%d" % j] = Node(self.vcdncpu)
 

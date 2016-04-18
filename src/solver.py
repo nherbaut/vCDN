@@ -19,6 +19,7 @@ def solve(service, substrate):
             data = data.split("\n")
         nodesSol = []
         edgesSol = []
+        objective_function=None
         for line in data:
             matches = re.findall("x\$(.*)\$([^ \t]+)", line)
             if (len(matches) > 0):
@@ -28,5 +29,9 @@ def solve(service, substrate):
             if (len(matches) > 0):
                 edgesSol.append(matches[0])
                 continue
+            matches = re.findall("^objective value: *([0-9\.]*)$",line)
+            if (len(matches) > 0):
+                objective_function=float(matches[0])
+                continue
 
-        return Mapping(nodesSol, edgesSol)
+        return Mapping(nodesSol, edgesSol,objective_function)

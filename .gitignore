@@ -3,3 +3,4 @@ substrate*
 .*
 *.pyc
 *.data
+*.pickle

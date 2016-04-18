@@ -6,8 +6,6 @@ set Et := { <u,v> in N cross N with <v,u> in E};
 set ES := { read "service.edges.data" as "<1s,2s>"};
 
 
-set Path := { read "path.data" as "<1s>"};
-set tuplePath :={ <i> in {1..(card(Path)-1)} : <ord(Path,i,1),ord(Path,i+1,1)>};
 
 defset delta(u) := { <v> in N with <u,v> in (E union Et)};
 
@@ -32,20 +30,14 @@ var x[N cross NS] binary;
 var y [(E union Et) cross ES] binary;
 var w binary;
 
-do print y;
-#minimize cost:
-#				sum <a,b> in tuplePath:(
-#				sum <u,v> in E:
-#						(y[u,v,a,b] * delays[u,v] )+
-#					sum <u,v> in Et:
-#						(y[u,v,a,b] * delayst[u,v])) ;
 
-#maximize cost:
-# 				sum <i,j> in ES:(
-#					sum <u,v> in E:
-#						((bw[u,v]-(y[u,v,i,j] * bwS[i,j] ))/(1+bw[u,v]))+
-#				sum <u,v> in Et:
-#						((bw[v,u]-(y[u,v,i,j] * bwS[i,j] ))/(1+bw[v,u])));
+
+maximize cost:
+ 				sum <i,j> in ES:(
+					sum <u,v> in E:
+						((bw[u,v]-(y[u,v,i,j] * bwS[i,j] ))/(1+bw[u,v]))+
+				sum <u,v> in Et:
+						((bw[v,u]-(y[u,v,i,j] * bwS[i,j] ))/(1+bw[v,u])));
 						
 
 subto fc:
