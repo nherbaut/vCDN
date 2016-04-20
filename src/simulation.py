@@ -1,10 +1,9 @@
-from service import Service
 import numpy as np
 import substrate
 import utils
+from service import Service
+from sla import generate_random_slas
 from solver import solve
-
-from src.sla import generate_random_slas
 
 
 def is_cost_function_pathologic(cost_function, objective_function, proactive):
@@ -57,8 +56,7 @@ def do_simu(relax_vhg, relax_vcdn, proactive, seed, sla_count, rejected_threshol
         while mapping is None:
             mapping = solve(service, su)
             if best_objective_function is not None:
-                print
-                "proactive relaxation: %lf\t%lf" % (best_objective_function, mapping.objective_function)
+                print("proactive relaxation: %lf\t%lf" % (best_objective_function, mapping.objective_function))
             if mapping is None:
                 if not service.relax(relax_vhg, relax_vcdn):
                     rejected += 1

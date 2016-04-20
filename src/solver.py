@@ -4,11 +4,15 @@ import os
 from mapping import Mapping
 
 
-def solve(service, substrate):
+def solve(service, substrate,allow_violations=False):
     service.write()
     substrate.write()
+    violations=[]
 
-    subprocess.call(["scip", "-b", "./scpi.batch"],stdout=open(os.devnull, 'wb'))
+    if not allow_violations:
+        subprocess.call(["scip", "-b", "./scpi.batch"],stdout=open(os.devnull, 'wb'))
+    else:
+        subprocess.call(["scip", "-b", "./scpi-debug.batch"],stdout=open(os.devnull, 'wb'))
     # plotting.plotsol()
     # os.subprocess.call(["cat", "./substrate.dot", "|", "dot", "-Tpdf", "-osol.pdf"])
     with open("solutions.data", "r") as sol:
@@ -34,4 +38,9 @@ def solve(service, substrate):
                 objective_function=float(matches[0])
                 continue
 
-        return Mapping(nodesSol, edgesSol,objective_function)
+            matches = re.findall("^(.*)_master",line)
+            if (len(matches) > 0):
+                violations.append(matches[0])
+                continue
+
+        return Mapping(nodesSol, edgesSol,objective_function,violations=violations)

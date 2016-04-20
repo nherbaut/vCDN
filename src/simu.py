@@ -3,8 +3,8 @@
 import argparse
 import pickle
 
-from src.plotting import plot_all_results
-from src.simulation import do_simu
+from plotting import plot_all_results
+from simulation import do_simu
 
 parser = argparse.ArgumentParser(description='Process some integers.')
 parser.add_argument('--threshold', help="the number of failure until the algorithm stops", default=10)
@@ -22,10 +22,11 @@ s = int(args.seed)
 
 for seed in range(s, s + int(args.count), 1):
     res = {}
-    res["vhg"] = do_simu(True, False, False, seed=seed, sla_count=sla_count, rejected_threshold=rejected_threshold,
+    res["vhg"] = do_simu(True, False, True, seed=seed, sla_count=sla_count, rejected_threshold=rejected_threshold,
                          name="vhg")
     res["none"] = do_simu(False, False, False, seed=seed, sla_count=sla_count, rejected_threshold=rejected_threshold,
                           name="none")
+
     res["vcdn"] = do_simu(False, True, False, seed=seed, sla_count=sla_count, rejected_threshold=rejected_threshold,
                           name="vcdn")
     res["all"] = do_simu(True, True, False, seed=seed, sla_count=sla_count, rejected_threshold=rejected_threshold,

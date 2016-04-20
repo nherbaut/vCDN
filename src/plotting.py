@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 import re
-
+import subprocess
 import matplotlib.pyplot as plt
-
+import tempfile
 
 def plot_all_results(init_bw, init_cpu, res, init_point,id):
     plt.figure(0)
@@ -156,14 +156,26 @@ def plotsol():
             f.write("%s->%s [  penwidth=\"%d\", fontsize=20];\n " % (edge[0], edge[1], 3))
 
         for node in nodesSol:
-            f.write("%s->%s[color=red];\n" % node)
-            f.write("%s[shape=circle,fillcolor=azure3,style=filled,fontsize=24];\n" % node[1])
+            if node[1]!="S0":
+                f.write("%s->%s[color=red];\n" % node)
+                f.write("%s[shape=circle,fillcolor=azure3,style=filled,fontsize=24];\n" % node[1])
 
         f.write("}")
 
         f.write("\nsubgraph{\n edge[color=blue3,weight=0];\n")
         for edge in edgesSol:
-            f.write("%s->%s [ style=dashed,label=\"%s-->%s\",fontcolor=blue3 ,fontsize=20,penwidth=3];\n " % (edge))
+            if edge[2]!="S0":
+                f.write("%s->%s [ style=dashed,label=\"%s-->%s\",fontcolor=blue3 ,fontsize=20,penwidth=3];\n " % (edge))
 
         f.write("}\n\n")
         f.write("}")
+
+
+if __name__ == "__main__":
+    plotsol()
+    file=tempfile.mkstemp(".pdf")[1]
+    subprocess.Popen( ["dot", "./substrate.dot" ,"-Tpdf" ,"-o", file]).wait()
+    subprocess.Popen(["xpdf",file]).wait()
+
+
+

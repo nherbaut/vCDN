@@ -593,13 +593,13 @@
       <data key="d42">10000000000.0</data>
       <data key="d38">0</data>
     </edge>
-    <edge source="12" target="20">
+    <!-- <edge source="12" target="20">
       <data key="d39">155</data>
       <data key="d40">155 Mbps</data>
       <data key="d41">M</data>
       <data key="d42">155000000.0</data>
       <data key="d38">0</data>
-    </edge>
+    </edge> -->
     <edge source="12" target="13">
       <data key="d39">10</data>
       <data key="d40">10 Gbps</data>

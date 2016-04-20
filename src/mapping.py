@@ -2,10 +2,11 @@ import pickle
 
 
 class Mapping:
-    def __init__(self, nodesSol, edgesSol,objective_function):
+    def __init__(self, nodesSol, edgesSol,objective_function,violations=[]):
         self.nodesSol = nodesSol
         self.edgesSol = edgesSol
         self.objective_function=objective_function
+        self.violations=violations
 
     def save(self, file="mapping.data"):
         with open(file,"w") as f:

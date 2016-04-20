@@ -22,7 +22,8 @@ param bw[E] := read "substrate.edges.data" as "<1s,2s> 3n";
 param bwt[Et] := read "substrate.edges.data" as "<2s,1s> 3n";
 
 param CDN := read "CDN.nodes.data" as "1s" use 1 ;
-param starters := read "starters.nodes.data" as "1s" use 1 ;
+set starters := {read "starters.nodes.data" as "<1s,2s>"};
+param source := read "starters.nodes.data" as "2s" use 1;
 
 
 
@@ -33,12 +34,17 @@ var w binary;
 
 
 maximize cost:
- 				sum <i,j> in ES:(
-					sum <u,v> in E:
-						((bw[u,v]-(y[u,v,i,j] * bwS[i,j] ))/(1+bw[u,v]))+
+			    sum <u,v> in E:
+					((bw[u,v]-sum <i,j> in ES:(y[u,v,i,j] * bwS[i,j] ))/(bw[u,v]))+
 				sum <u,v> in Et:
-						((bw[v,u]-(y[u,v,i,j] * bwS[i,j] ))/(1+bw[v,u])));
-						
+				    ((bw[v,u]-sum <i,j> in ES:(y[u,v,i,j] * bwS[i,j] ))/(bw[v,u]));
+
+
+#maximize cost:
+#			    sum <u> in N:(
+#			      cpu[u]-sum<i> in NS:(x[u,i]*cpuS[i])/cpu[u]);
+
+
 
 subto fc:
 	forall <j> in NS:
@@ -57,8 +63,6 @@ subto bwSubstrate:
 subto bwtSubstrate:
    forall <u,v> in Et:
        sum<i,j> in ES : (y[u,v,i,j]+y[v,u,i,j]) * bwS[i,j] <= bwt[u,v];
-
-
 
 
 subto delaySubstrate:
@@ -89,6 +93,9 @@ subto noBigloop:
 subto cdn2cdn:
     x[CDN,"CDN"]==1;
     
-subto start2start:
-    x[starters,"S"]==1;
+subto startsource:
+    x[source,"S0"]==1;
     
+subto sources:
+    forall <name,id> in starters:
+        x[id,name]==1;

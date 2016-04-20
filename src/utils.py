@@ -12,7 +12,7 @@ class timed(object):
 
     def __call__(self, relax_vhg, relax_vcdn, proactive, seed, sla_count, rejected_threshold, name):
         res = self.f(relax_vhg, relax_vcdn, proactive, seed, sla_count, rejected_threshold)
-        print
+        print(
         "%s in %lf for %d run : %lf" % (
-            name, time.time() - self.start, len(res), (time.time() - self.start) / (1 + len(res)))
+            name, time.time() - self.start, len(res), (time.time() - self.start) / (1 + len(res))))
         return res
