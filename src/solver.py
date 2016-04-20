@@ -25,11 +25,11 @@ def solve(service, substrate,allow_violations=False):
         edgesSol = []
         objective_function=None
         for line in data:
-            matches = re.findall("x\$(.*)\$([^ \t]+)", line)
+            matches = re.findall("^x\$(.*)\$([^ \t]+)", line)
             if (len(matches) > 0):
                 nodesSol.append(matches[0])
                 continue
-            matches = re.findall("y\$(.*)\$(.*)\$(.*)\$([^ \t]+)", line)
+            matches = re.findall("^y\$(.*)\$(.*)\$(.*)\$([^ \t]+)", line)
             if (len(matches) > 0):
                 edgesSol.append(matches[0])
                 continue

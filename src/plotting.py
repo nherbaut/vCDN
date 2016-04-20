@@ -128,11 +128,11 @@ def plotsol():
         nodesSol = []
         edgesSol = []
         for line in data:
-            matches = re.findall("x\$(.*)\$([^ \t]+)", line)
+            matches = re.findall("^x\$(.*)\$([^ \t]+)", line)
             if (len(matches) > 0):
                 nodesSol.append(matches[0])
                 continue
-            matches = re.findall("y\$(.*)\$(.*)\$(.*)\$([^ \t]+)", line)
+            matches = re.findall("^y\$(.*)\$(.*)\$(.*)\$([^ \t]+)", line)
             if (len(matches) > 0):
                 edgesSol.append(matches[0])
                 continue
@@ -158,8 +158,16 @@ def plotsol():
         for node in nodesSol:
             if node[1]!="S0":
                 f.write("%s->%s[color=red];\n" % node)
-                f.write("%s[shape=circle,fillcolor=azure3,style=filled,fontsize=24];\n" % node[1])
+                if "VHG" in node[1]:
+                    color="azure1"
+                elif "vCDN" in node[1]:
+                    color="azure2"
+                elif "S" in node[1]:
+                    color="green"
+                else :
+                    color="red"
 
+                f.write("%s[shape=circle,fillcolor=%s,style=filled,fontsize=24];\n" % (node[1],color))
         f.write("}")
 
         f.write("\nsubgraph{\n edge[color=blue3,weight=0];\n")

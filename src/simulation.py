@@ -39,10 +39,11 @@ def do_simu(relax_vhg, relax_vcdn, proactive, seed, sla_count, rejected_threshol
     :return: an array of value corresponding to each run of the simulation with the format: substrate\t number of success, number of transforamtion done.
     '''
     count_transformation = 0
-    rs = np.random.RandomState(seed=seed)
+
     result = []
     cost_function = []
     rejected = 0
+    rs = np.random.RandomState(seed=seed)
     su = substrate.get_substrate(rs)
     slas = generate_random_slas(rs, su, sla_count)
 

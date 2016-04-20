@@ -14,7 +14,8 @@ with open("service.pickle","r") as f:
     service=pickle.load(f)
 
 service.vhgcount = int(args.vhg)
-service.vhgcount = int(args.vcdn)
+service.vcdncount = int(args.vcdn)
 
 with open("service.pickle","w") as f:
     pickle.dump(service,f)
+    service.write()
