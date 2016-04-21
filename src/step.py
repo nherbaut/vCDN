@@ -26,7 +26,7 @@ if args.reuse :
     su = Substrate.fromFile()
 else:
     #su=Substrate.fromGraph(rs,'Geant2012.graphml')
-    su=Substrate.fromSpec(3,2,10**12,0.1,1000)
+    su=Substrate.fromSpec(5,5,10**9,0.1,15)
 
 if dry and not os.path.isfile("service.pickle"):
     print("must have a service.pickle to dry-run")
@@ -58,7 +58,7 @@ if not mapping is None:
       su.write()
     mapping.save()
       #os.remove("service.pickle")
-    sys.stdout.write("success\n")
+    sys.stdout.write("success: %e\n"%mapping.objective_function)
     exit(0)
 else:
     sys.stdout.write("failure\n")

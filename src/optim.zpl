@@ -27,9 +27,9 @@ param delaysS[ES] := read "service.edges.data" as "<1s,2s> 4n";
 param bwS[ES] := read "service.edges.data" as "<1s,2s> 3n";
 param bw[E] := read "substrate.edges.data" as "<1s,2s> 3n";
 param bwt[Et] := read "substrate.edges.data" as "<2s,1s> 3n";
-
-
 param source := read "starters.nodes.data" as "2s" use 1;
+param cdn_count := read "cdnmax.data" as "1n" use 1;
+
 
 
 
@@ -90,12 +90,12 @@ subto flowconservation:
 
 
 subto noloop:
-	forall <i,j> in {<i,j> in ES\CDN_LINKS  with i != j}:
+	forall <i,j> in {<i,j> in ES  with i != j}:
 		forall <u,v> in (E union Et):
 			y[u, v, i, j] + y[v, u, i,j] <= 1;
 			
 subto noBigloop:
-	forall <i,j> in {<i,j> in ES\CDN_LINKS  with i != j}:
+	forall <i,j> in {<i,j> in ES  with i != j}:
 		forall <u> in N:
 			sum <v> in delta(u):
 			  y[u,v,i,j] <= 1;
@@ -111,7 +111,7 @@ subto sources:
         x[id,name]==1;
 
 subto only1CDN:
-  sum <i> in (CDN_LABEL) : cdns_var[i] ==1;
+  sum <i> in (CDN_LABEL) : cdns_var[i] ==cdn_count;
 
 subto cdnToNode:
 	forall <i,j> in CDN:
@@ -124,8 +124,8 @@ subto flowconservation_cdn:
 
 subto bwSubstrate_cdn:
    forall <u,v> in E:
-       sum<i,j> in CDN_LINKS: (y[u,v,i,j]+y[v,u,i,j]) * bwS[i,j]/2 <= bw[u,v];
+       sum<i,j> in CDN_LINKS: (y[u,v,i,j]+y[v,u,i,j]) * bwS[i,j]/cdn_count <= bw[u,v];
 
 subto bwtSubstrate_cdn:
    forall <u,v> in Et:
-       sum<i,j> in CDN_LINKS: (y[u,v,i,j]+y[v,u,i,j]) * bwS[i,j]/2 <= bwt[u,v];
+       sum<i,j> in CDN_LINKS: (y[u,v,i,j]+y[v,u,i,j]) * bwS[i,j]/cdn_count <= bwt[u,v];

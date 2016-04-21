@@ -108,6 +108,26 @@ def plot_results_bw(res, init_point, init_bw, init_cpu, id):
 def plotsol():
     edges = []
     nodesdict = {}
+    cdn_candidates=[]
+    starters_candiates=[]
+
+
+    with open("CDN.nodes.data", 'r') as f:
+        data = f.read()
+        for line in data.split("\n"):
+            line = line.split("\t")
+            if len(line) == 2:
+                cdn_candidates.append(line[1])
+
+    with open("starters.nodes.data", 'r') as f:
+        data = f.read()
+        for line in data.split("\n"):
+            line = line.split("\t")
+            if len(line) == 2:
+              starters_candiates.append(line[1])
+
+
+
     with open("substrate.edges.data", 'r') as f:
         data = f.read()
         for line in data.split("\n"):
@@ -138,13 +158,19 @@ def plotsol():
                 continue
 
     with open("substrate.dot", 'w') as f:
-        f.write("digraph{rankdir=LR;\n\n\n\n subgraph{\n\n\n")
+        f.write("graph{rankdir=LR;\n\n\n\n subgraph{\n\n\n")
 
         avgcpu = reduce(lambda x, y: float(x) + float(y), nodesdict.values(), 0.0) / len(nodesdict)
 
+
         for node in nodesdict.items():
-            # f.write("%s [label=%2.2f,shape=box,color=black,width=%f];\n"%(node[0],float(node[1]),min	(1,float(node[1])/avgcpu)))
-            f.write("%s [shape=box,color=black,width=%f,fontsize=20];\n" % (node[0], min(1, float(node[1]) / avgcpu)))
+            if node[0] in starters_candiates:
+                color="green1"
+            elif node[0] in cdn_candidates:
+                color="red1"
+            else:
+                color = "black"
+            f.write("%s [shape=box,color=%s,width=%f,fontsize=15,pos=\"%d,%d\"];\n" % (node[0], color,min(1, float(node[1]) / avgcpu),int(node[0][:2]),int(node[0][-2:])))
 
         avgbw = [float(edge[2]) for edge in edges]
         avgbw = sum(avgbw) / len(avgbw)
@@ -153,11 +179,11 @@ def plotsol():
         for edge in edges:
             availbw = float(edge[2])
             # f.write("%s->%s [ label=\"%d\", penwidth=\"%d\", fontsize=20];\n " % (edge[0], edge[1], float(edge[2]), 1+3*availbw/avgbw))
-            f.write("%s->%s [  penwidth=\"%d\", fontsize=20];\n " % (edge[0], edge[1], 3))
+            f.write("%s--%s [  penwidth=\"%d\", fontsize=15,len=2];\n " % (edge[0], edge[1], 3))
 
         for node in nodesSol:
             if node[1]!="S0":
-                f.write("%s->%s[color=red];\n" % node)
+                f.write("%s--%s[color=red,len=1.5];\n" % node)
                 if "VHG" in node[1]:
                     color="azure1"
                 elif "vCDN" in node[1]:
@@ -167,13 +193,13 @@ def plotsol():
                 else :
                     color="red"
 
-                f.write("%s[shape=circle,fillcolor=%s,style=filled,fontsize=24];\n" % (node[1],color))
+                f.write("%s[shape=circle,fillcolor=%s,style=filled,fontsize=12];\n" % (node[1],color))
         f.write("}")
 
         f.write("\nsubgraph{\n edge[color=blue3,weight=0];\n")
         for edge in edgesSol:
             if edge[2]!="S0":
-                f.write("%s->%s [ style=dashed,label=\"%s-->%s\",fontcolor=blue3 ,fontsize=20,penwidth=3];\n " % (edge))
+                f.write("%s--%s [ style=dashed,label=\"%s-->%s\",fontcolor=blue3 ,fontsize=8,penwidth=1];\n " % (edge))
 
         f.write("}\n\n")
         f.write("}")
@@ -182,8 +208,8 @@ def plotsol():
 if __name__ == "__main__":
     plotsol()
     file=tempfile.mkstemp(".pdf")[1]
-    subprocess.Popen( ["dot", "./substrate.dot" ,"-Tpdf" ,"-o", file]).wait()
-    subprocess.Popen(["xpdf",file]).wait()
+    subprocess.Popen( ["neato", "./substrate.dot" ,"-Tpdf" ,"-o", file]).wait()
+    subprocess.Popen(["evince",file]).wait()
 
 
 

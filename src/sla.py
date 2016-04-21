@@ -11,11 +11,12 @@ def concurrentUsers(t, m, sigma, duration):
 
 
 class Sla:
-    def __init__(self, bitrate, count, time_span, movie_duration, start, cdn):
+    def __init__(self, bitrate, count, time_span, movie_duration, start, cdn,max_cdn_to_use=2):
         self.start = start
         self.cdn = cdn
         self.delay = tcp_win / bitrate * 1000.0
         self.bandwidth = count * bitrate * movie_duration / time_span
+        self.max_cdn_to_use=max_cdn_to_use
 
     def __str__(self):
         return "%d %d %lf %lf" % (self.start, self.cdn, self.delay, self.bandwidth)
@@ -35,21 +36,23 @@ def generate_random_slas(rs, substrate, count=1000):
     res = []
     for i in range(0, count):
         #bitrate = rs.choice([500000, 750000,  1000000, 1500000, 2000000])
-        #bitrate = rs.choice([50000000, 75000000, 25000000])
-        bitrate = 15
-        concurent_users = 10
-        #concurent_users = max(rs.normal(500, 1000), 0) + 10
+        bitrate = rs.choice([50000000, 75000000, 25000000])
+        #bitrate = 15
+        #concurent_users = 10
+        concurent_users = max(rs.normal(500, 1000), 0) + 10
         time_span = max(rs.normal(24 * 60 * 60, 60 * 60), 0)
         movie_duration = max(rs.normal(60 * 60, 10 * 60), 0)
 
         #start_count=rs.choice([2,3,4])
         #end_count=3;
-        start_count=1
-        end_count=1
+        start_count=3
+        end_count=4
+        max_cdn_to_use=2
+
         draws = rs.choice(substrate.nodesdict.keys(), size=start_count+end_count, replace=False)
         start=draws[:-end_count]
         cdn=draws[-end_count:]
 
-        res.append(Sla(bitrate, concurent_users, time_span, movie_duration, start, cdn))
+        res.append(Sla(bitrate, concurent_users, time_span, movie_duration, start, cdn,max_cdn_to_use=max_cdn_to_use))
 
     return res

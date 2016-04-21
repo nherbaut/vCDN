@@ -22,7 +22,7 @@ s = int(args.seed)
 
 for seed in range(s, s + int(args.count), 1):
     res = {}
-    res["vhg"] = do_simu(True, False, True, seed=seed, sla_count=sla_count, rejected_threshold=rejected_threshold,
+    res["vhg"] = do_simu(True, False, False, seed=seed, sla_count=sla_count, rejected_threshold=rejected_threshold,
                          name="vhg")
     res["none"] = do_simu(False, False, False, seed=seed, sla_count=sla_count, rejected_threshold=rejected_threshold,
                           name="none")

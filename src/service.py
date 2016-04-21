@@ -16,10 +16,10 @@ class Service:
     @classmethod
     def fromSla(cls, sla):
         return cls(sla.bandwidth, 1, 1 * sla.delay / 4.0, 0.35, sla.delay * 100, 3 * sla.delay / 4.0, 10, 5, 1,
-                   sla.start, sla.cdn)
+                   sla.start, sla.cdn,sla.max_cdn_to_use)
 
     def __init__(self, sourcebw, vhgcount, vhgdelay, vcdnratio, cdndelay, vcdndelay, vcdncpu, vhgcpu, vcdncount, start,
-                 cdn):
+                 cdn,max_cdn_to_use):
         self.sourcebw = sourcebw
         self.vhgcount = vhgcount
         self.vhgdelay = vhgdelay
@@ -34,6 +34,7 @@ class Service:
         self.cdn = cdn
         self.nodes = {}
         self.edges = {}
+        self.max_cdn_to_use=max_cdn_to_use
 
     def relax(self, relax_vhg=True, relax_vcdn=True):
         print("relaxation level\t%e " % (self.vhgcount + self.vcdncount - 2))
@@ -108,8 +109,12 @@ class Service:
 
         with open("CDN.nodes.data", 'w') as f:
             for index, value in enumerate(self.cdn, start=1):
-                f.write("CDN%d %s \n" % (index,value))
+                f.write("CDN%d\t%s\n" % (index,value))
 
         with open("starters.nodes.data", 'w') as f:
             for index, value in enumerate(self.start, start=1):
-                f.write("S%d %s\n" % (index, value))
+                f.write("S%d\t%s\n" % (index, value))
+
+        with open("cdnmax.data", 'w') as f:
+            f.write("%d"%self.max_cdn_to_use)
+
