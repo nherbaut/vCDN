@@ -4,14 +4,24 @@ set NS	:= {read "service.nodes.data" as "<1s>"};
 set E := { read "substrate.edges.data" as "<1s,2s>"};
 set Et := { <u,v> in N cross N with <v,u> in E};
 set ES := { read "service.edges.data" as "<1s,2s>"};
-set CDN := {read "CDN.nodes.data" as "<1s,2s>"};
-set CDN_LABEL := {read "CDN.nodes.data" as "<1s>"};
-set CDN_LINKS := {<i,j> in ES inter (NS cross CDN_LABEL) with i!=j};
 
+set CDN_ASSIGNED := {read "CDN.nodes.data" as "<1s,2s>"};
+set CDN := {read "CDN.nodes.data" as "<1s>"};
+set CDN_ES := {<i,j> in ES inter (NS cross CDN) with i!=j};
+set VHG := {read "VHG.nodes.data" as "<1s>"};
+set VHG_ES := {<i,j> in ES inter (NS cross VHG) with i!=j};
+set VCDN := {read "VCDN.nodes.data" as "<1s>"};
+set VCDN_ES := {<i,j> in ES inter (NS cross VCDN) with i!=j};
+set S := {read "starters.nodes.data" as "<1s>"};
+set S_ASSIGNED := {read "starters.nodes.data" as "<1s,2s>"};
+set S_ES := {<i,j> in ES inter (NS cross S) with i!=j};
 
+set origin := { "S0" };
 
-
-set starters := {read "starters.nodes.data" as "<1s,2s>"};
+#do forall <i,j> in S_ES do print i," ",j;
+#do forall <i,j> in VHG_ES do print i," ",j;
+#do forall <i,j> in VCDN_ES do print i," ",j;
+#do forall <i,j> in CDN_ES do print i," ",j;
 
 
 defset delta(u) := { <v> in N with <u,v> in (E union Et)};
@@ -24,24 +34,25 @@ param delayst[Et] := read "substrate.edges.data" as "<2s,1s> 4n";
 param delaysS[ES] := read "service.edges.data" as "<1s,2s> 4n";
 
 
+
 param bwS[ES] := read "service.edges.data" as "<1s,2s> 3n";
 param bw[E] := read "substrate.edges.data" as "<1s,2s> 3n";
 param bwt[Et] := read "substrate.edges.data" as "<2s,1s> 3n";
 param source := read "starters.nodes.data" as "2s" use 1;
 param cdn_count := read "cdnmax.data" as "1n" use 1;
-
+param cdnratio := 0.65;
 
 
 
 var x[N cross NS ] binary;
-var x_cdn[N cross CDN_LABEL ] binary;
+var x_cdn[N cross CDN ] binary;
 var y [(E union Et) cross ES ] binary;
 var y_cdn [(E union Et) cross ES ] binary;
 var w binary;
-var cdns_var [CDN_LABEL] binary;
-
-
-
+var cdns_var [CDN] binary;
+var rho[ES] binary;
+var mu[NS] binary;
+var gamma[VHG union VCDN] binary;
 
 
 maximize cost:
@@ -51,81 +62,78 @@ maximize cost:
 				    ((bw[v,u]-sum <i,j> in ES:(y[u,v,i,j] * bwS[i,j] ))/(bw[v,u]));
 
 
-#maximize cost:
-#			    sum <u> in N:(
-#			      cpu[u]-sum<i> in NS:(x[u,i]*cpuS[i])/cpu[u]);
+
+subto noVHGIfNolinkToVHGVCDN:
+    forall <j> in VHG union VCDN:
+       gamma[j] == sum <a,b> in {<aa,bb> in ES with bb==j}: rho[a,b];
+
+subto mappingVHGVCDN:
+	forall <j> in VHG union VCDN:
+		sum<u> in N: x[u,j] == gamma[j];
 
 
 
-subto fc:
-	forall <j> in NS\CDN_LABEL:
-		sum<i> in N: x[i,j]==1;
-		
+subto oneCDNperVHG:
+   forall <vhg> in VHG:
+     sum <vv,cdn> in {<vv,j> in CDN_ES with vv==vhg}: rho[vv,cdn]<=1;
 
-subto popRes:
-	forall <i> in N:
-		sum<j> in NS: x[i,j]*cpuS[j] <= cpu[i];
-		
-		
-subto bwSubstrate:
-   forall <u,v> in E:
-       sum<i,j> in ES\CDN_LINKS: (y[u,v,i,j]+y[v,u,i,j]) * bwS[i,j] <= bw[u,v];
-       
-subto bwtSubstrate:
-   forall <u,v> in Et:
-       sum<i,j> in ES\CDN_LINKS: (y[u,v,i,j]+y[v,u,i,j]) * bwS[i,j] <= bwt[u,v];
+subto onevCDNperVHG:
+   forall <vhg> in VHG:
+     sum <vv,vcdn> in {<vv,j> in VCDN_ES with vv==vhg}: rho[vv,vcdn]<=1;
+
+subto oneVHGperSource:
+   forall <s> in S:
+     sum <i,j> in {<i,j> in ES with i==s}: rho[i,j]==1;
+
+subto rhoSource:
+   forall <i,j> in S_ES: rho[i,j]==1;
 
 
-subto delaySubstrate:
-   	forall <i,j> in ES :
-   	    sum <u,v> in E:
-			y[u,v,i,j]*delays[u,v] <= delaysS[i,j];
 
 
 
 subto flowconservation:
-   forall <i,j> in {<i,j> in ES\CDN_LINKS  with i != j}:
+   forall <i,j> in {<i,j> in ES\CDN_ES  with i != j}:
       forall <u> in N:
-         sum<v> in {<v> in N with <u,v> in (E union Et)}: (y[u, v, i, j] - y[v, u, i,j]) == x[u,i]-x[u,j];
+         sum<v> in {<v> in N with <u,v> in (E union Et)}:
+                    (y[u, v, i, j] - y[v, u, i,j]) == x[u,i]-x[u,j];
+
+subto flowconservation_cdn:
+   forall <i,j> in {<i,j> in CDN_ES  with i != j}:
+      forall <u> in N:
+         sum<v> in {<v> in N with <u,v> in (E union Et)}: (y[u, v, i, j] - y[v, u, i,j]) *cdns_var[j]==( (x[u,i]-x[u,j])*cdns_var[j]);
+
+subto startsource:
+    forall <o> in origin:
+        x[source,o]==1;
+
+subto sources:
+    forall <name,id> in S_ASSIGNED:
+        x[id,name]==1;
+
+subto onlyXCDN:
+  sum <i> in (CDN) :
+    cdns_var[i] ==cdn_count;
+
+subto cdnToNode:
+	forall <i,j> in CDN_ASSIGNED:
+		x[j,i]==cdns_var[i];
+
+
+subto popRes:
+	forall <i> in N:
+    	sum<j> in NS: x[i,j]*cpuS[j] <= cpu[i];
 
 
 subto noloop:
 	forall <i,j> in {<i,j> in ES  with i != j}:
 		forall <u,v> in (E union Et):
 			y[u, v, i, j] + y[v, u, i,j] <= 1;
-			
+
 subto noBigloop:
 	forall <i,j> in {<i,j> in ES  with i != j}:
 		forall <u> in N:
 			sum <v> in delta(u):
 			  y[u,v,i,j] <= 1;
-		
-		
-		
 
-subto startsource:
-    x[source,"S0"]==1;
-    
-subto sources:
-    forall <name,id> in starters:
-        x[id,name]==1;
 
-subto only1CDN:
-  sum <i> in (CDN_LABEL) : cdns_var[i] ==cdn_count;
-
-subto cdnToNode:
-	forall <i,j> in CDN:
-		x[j,i]==cdns_var[i];
-
-subto flowconservation_cdn:
-   forall <i,j> in {<i,j> in CDN_LINKS  with i != j}:
-      forall <u> in N:
-         sum<v> in {<v> in N with <u,v> in (E union Et)}: (y[u, v, i, j] - y[v, u, i,j]) *cdns_var[j]==( (x[u,i]-x[u,j])*cdns_var[j]);
-
-subto bwSubstrate_cdn:
-   forall <u,v> in E:
-       sum<i,j> in CDN_LINKS: (y[u,v,i,j]+y[v,u,i,j]) * bwS[i,j]/cdn_count <= bw[u,v];
-
-subto bwtSubstrate_cdn:
-   forall <u,v> in Et:
-       sum<i,j> in CDN_LINKS: (y[u,v,i,j]+y[v,u,i,j]) * bwS[i,j]/cdn_count <= bwt[u,v];

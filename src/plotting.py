@@ -193,7 +193,7 @@ def plotsol():
                 else :
                     color="red"
 
-                f.write("%s[shape=circle,fillcolor=%s,style=filled,fontsize=12];\n" % (node[1],color))
+                f.write("%s[shape=circle,fillcolor=%s,style=filled,fontsize=10];\n" % (node[1],color))
         f.write("}")
 
         f.write("\nsubgraph{\n edge[color=blue3,weight=0];\n")

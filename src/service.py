@@ -15,11 +15,21 @@ class Edge:
 class Service:
     @classmethod
     def fromSla(cls, sla):
-        return cls(sla.bandwidth, 1, 1 * sla.delay / 4.0, 0.35, sla.delay * 100, 3 * sla.delay / 4.0, 10, 5, 1,
-                   sla.start, sla.cdn,sla.max_cdn_to_use)
+        return cls(sourcebw=sla.bandwidth,
+                   vhgcount=1,
+                   vhgdelay=1 * sla.delay / 4.0,
+                   vcdnratio=0.35,
+                   cdndelay=sla.delay * 100,
+                   vcdndelay=3 * sla.delay / 4.0,
+                   vcdncpu=10,
+                   vhgcpu=10,
+                   vcdncount=1,
+                   start=sla.start,
+                   cdn=sla.cdn,
+                   max_cdn_to_use=sla.max_cdn_to_use)
 
     def __init__(self, sourcebw, vhgcount, vhgdelay, vcdnratio, cdndelay, vcdndelay, vcdncpu, vhgcpu, vcdncount, start,
-                 cdn,max_cdn_to_use):
+                 cdn, max_cdn_to_use):
         self.sourcebw = sourcebw
         self.vhgcount = vhgcount
         self.vhgdelay = vhgdelay
@@ -34,7 +44,7 @@ class Service:
         self.cdn = cdn
         self.nodes = {}
         self.edges = {}
-        self.max_cdn_to_use=max_cdn_to_use
+        self.max_cdn_to_use = max_cdn_to_use
 
     def relax(self, relax_vhg=True, relax_vcdn=True):
         print("relaxation level\t%e " % (self.vhgcount + self.vcdncount - 2))
@@ -67,23 +77,24 @@ class Service:
             for i in range(1, int(self.vhgcount) + 1):
                 for index, value in enumerate(self.start, start=1):
                     f.write("S%d VHG%d %e %e\n" % (
-                    index, i, self.sourcebw / self.vhgcount / float(len(self.start)), self.vhgdelay))
-                    self.edges["S%d VHG%d" % (index, i)] = Edge(self.sourcebw / self.vhgcount / float(len(self.start)),
-                                                                self.vhgdelay)
+                        index, i, self.sourcebw, self.vhgdelay))
+                    self.edges["S%d VHG%d" % (index, i)] = Edge(self.sourcebw, self.vhgdelay)
 
                 for index, value in enumerate(self.cdn, start=1):
-                    f.write("VHG%d CDN%d %e %e\n" % (i, index,self.sourcebw / self.vhgcount * (1 - self.vcdnratio), self.cdndelay))
-                    self.edges["VHG%d CDN%d" % (i,index)] = Edge(self.sourcebw / self.vhgcount * (1 - self.vcdnratio), self.cdndelay)
-
-
+                    f.write("VHG%d CDN%d %e %e\n" % (i, index, self.sourcebw * (1 - self.vcdnratio), self.cdndelay))
+                    self.edges["VHG%d CDN%d" % (i, index)] = Edge(self.sourcebw * (1 - self.vcdnratio), self.cdndelay)
 
                 for j in range(1, int(self.vcdncount) + 1):
-                    f.write("VHG%d vCDN%d %e %e\n" % (i, j,
-                                                      self.sourcebw / (
-                                                          self.vhgcount * self.vcdncount) * self.vcdnratio,
-                                                      self.vcdndelay))
-                    self.edges["VHG%d vCDN%d" % (i, j)] = Edge(self.sourcebw / (
-                        self.vhgcount * self.vcdncount) * self.vcdnratio, self.vcdndelay)
+                    f.write("VHG%d vCDN%d %e %e\n" % (i, j, self.sourcebw * self.vcdnratio, self.vcdndelay))
+                    self.edges["VHG%d vCDN%d" % (i, j)] = Edge(self.sourcebw * self.vcdnratio, self.vcdndelay)
+
+        with open("VHG.nodes.data", "w") as f:
+            for i in range(1, int(self.vhgcount) + 1):
+                f.write("VHG%d\n" % i)
+
+        with open("VCDN.nodes.data", "w") as f:
+            for i in range(1, int(self.vcdncount) + 1):
+                f.write("vCDN%d\n" % i)
 
         with open("service.nodes.data", "w") as f:
             f.write("S0 0	\n")
@@ -92,29 +103,25 @@ class Service:
                 f.write("S%d 0	\n" % index)
                 self.nodes["S%d" % index] = Node(0)
 
-
             for index, value in enumerate(self.cdn, start=1):
                 f.write("CDN%d 0\n" % index)
-                self.nodes["CDN%d"%index] = Node(0)
+                self.nodes["CDN%d" % index] = Node(0)
 
             for j in range(1, int(self.vcdncount) + 1):
-                # f.write("vCDN%d	%e	\n" % (j, self.vcdncpu / self.vcdncount))
-                # self.nodes["vCDN%d" % j] = Node(self.vcdncpu / self.vcdncount)
                 f.write("vCDN%d	%e	\n" % (j, self.vcdncpu))
                 self.nodes["vCDN%d" % j] = Node(self.vcdncpu)
 
             for i in range(1, int(self.vhgcount) + 1):
-                f.write("VHG%d %e\n" % (i, float(self.vhgcpu) / self.vhgcount))
-                self.nodes["VHG%d" % i] = Node(float(self.vhgcpu) / self.vhgcount)
+                f.write("VHG%d %e\n" % (i, float(self.vhgcpu)))
+                self.nodes["VHG%d" % i] = Node(float(self.vhgcpu))
 
         with open("CDN.nodes.data", 'w') as f:
             for index, value in enumerate(self.cdn, start=1):
-                f.write("CDN%d\t%s\n" % (index,value))
+                f.write("CDN%d\t%s\n" % (index, value))
 
         with open("starters.nodes.data", 'w') as f:
             for index, value in enumerate(self.start, start=1):
                 f.write("S%d\t%s\n" % (index, value))
 
         with open("cdnmax.data", 'w') as f:
-            f.write("%d"%self.max_cdn_to_use)
-
+            f.write("%d" % self.max_cdn_to_use)
