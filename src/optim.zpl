@@ -22,7 +22,7 @@ set VCDN_INCOMING_LINKS := {<i,j> in ES inter (NS cross VCDN_LABEL)};
 set STARTERS_MAPPING := {read "starters.nodes.data" as "<1s,2s>"};
 set STARTERS_LABEL := {read "starters.nodes.data" as "<1s>"};
 set STARTERS_OUTGOING_LINKS := {<i,j> in ES inter (STARTERS_LABEL cross NS) with i!=j};
-
+set STARTERS_INCOMING_LINKS := {<i,j> in ES inter (NS cross STARTERS_LABEL ) with i!=j};
 
 defset delta(u) := { <v> in N with <u,v> in (E union Et)};
 
@@ -49,7 +49,16 @@ var y [(E union Et) cross ES ] binary;
 var y_cdn [(E union Et) cross ES ] binary;
 var w binary;
 var cdns_var [CDN_LABEL] binary;
+var rho[ES] binary;
+var gamma[NS] binary;
 
+subto gammaMustHave:
+  forall <i> in STARTERS_LABEL  union {"S0"}:
+    gamma[i]==1;
+
+subto rhoMustHave:
+  forall <i,j> in STARTERS_INCOMING_LINKS  union STARTERS_OUTGOING_LINKS:
+   rho[i,j]==1;
 
 
 
