@@ -51,13 +51,9 @@ maximize cost:
 				    ((bw[v,u]-sum <i,j> in ES:(y[u,v,i,j] * bwS[i,j] ))/(bw[v,u]));
 
 
-#maximize cost:
-#			    sum <u> in N:(
-#			      cpu[u]-sum<i> in NS:(x[u,i]*cpuS[i])/cpu[u]);
 
 
-
-subto fc:
+subto everyNodeIsMapped:
 	forall <j> in NS\CDN_LABEL:
 		sum<i> in N: x[i,j]==1;
 		
