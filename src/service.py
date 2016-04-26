@@ -118,3 +118,11 @@ class Service:
         with open("cdnmax.data", 'w') as f:
             f.write("%d"%self.max_cdn_to_use)
 
+
+        with open("VHG.nodes.data", 'w') as f:
+            for index in range(1,self.vhgcount+1):
+                f.write("VHG%d\n"%index)
+
+        with open("VCDN.nodes.data", 'w') as f:
+            for index in range(1,self.vcdncount+1):
+                    f.write("vCDN%d\n"%index)

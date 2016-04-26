@@ -9,9 +9,19 @@ set CDN_LABEL := {read "CDN.nodes.data" as "<1s>"};
 set CDN_LINKS := {<i,j> in ES inter (NS cross CDN_LABEL) with i!=j};
 
 
+set VHG_LABEL := {read "VHG.nodes.data" as "<1s>"};
+set VHG_INCOMING_LINKS := {<i,j> in ES inter (NS cross VHG_LABEL) with i!=j};
+set VHG_OUTGOING_LINKS := {<i,j> in ES inter (VHG_LABEL cross NS) with i!=j};
 
 
-set starters := {read "starters.nodes.data" as "<1s,2s>"};
+set VCDN_LABEL := {read "VCDN.nodes.data" as "<1s>"};
+set VCDN_INCOMING_LINKS := {<i,j> in ES inter (NS cross VCDN_LABEL)};
+
+
+
+set STARTERS_MAPPING := {read "starters.nodes.data" as "<1s,2s>"};
+set STARTERS_LABEL := {read "starters.nodes.data" as "<1s>"};
+set STARTERS_OUTGOING_LINKS := {<i,j> in ES inter (STARTERS_LABEL cross NS) with i!=j};
 
 
 defset delta(u) := { <v> in N with <u,v> in (E union Et)};
