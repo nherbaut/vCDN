@@ -46,8 +46,8 @@ def generate_random_slas(rs, substrate, count=1000):
         #start_count=rs.choice([2,3,4])
         #end_count=3;
         start_count=2
-        end_count=2
-        max_cdn_to_use=2
+        end_count=1
+        max_cdn_to_use=1
 
         draws = rs.choice(substrate.nodesdict.keys(), size=start_count+end_count, replace=False)
         start=draws[:-end_count]

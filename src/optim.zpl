@@ -54,24 +54,69 @@ var cdns_var [CDN_LABEL] binary;
 
 
 
-maximize cost:
-			    sum <u,v> in E:
-					((bw[u,v]-sum <i,j> in ES:(y[u,v,i,j] * bwS[i,j] ))/(bw[u,v]))+
-				sum <u,v> in Et:
-				    ((bw[v,u]-sum <i,j> in ES:(y[u,v,i,j] * bwS[i,j] ))/(bw[v,u]));
+#maximize cost:
+#			    sum <u,v> in E:
+#					((bw[u,v]-sum <i,j> in ES:(y[u,v,i,j] * bwS[i,j] ))/(bw[u,v]))+
+#				sum <u,v> in Et:
+#				    ((bw[v,u]-sum <i,j> in ES:(y[u,v,i,j] * bwS[i,j] ))/(bw[v,u]));
+
+
+
+minimize cost:
+
+                sum<u,v,i,j> in (E union Et) cross ES: y[u,v,i,j];
 
 
 
 
 subto everyNodeIsMapped:
-	forall <j> in NS\CDN_LABEL:
+	forall <j> in NS\CDN_LABEL\VHG_LABEL:
 		sum<i> in N: x[i,j]==1;
-		
+
+
+subto VHGAreMappedInMax1Node:
+   forall <i> in VHG_LABEL:
+     sum <u> in N:
+       x[u,i] <= 1;
+
+subto AtLeastOneVHG:
+   sum <i> in VHG_LABEL:
+     sum <u> in N:
+       x[u,i]>=1;
+
+subto NoMoreVHGThanSource:
+   sum <i> in VHG_LABEL:      sum <u> in N:        x[u,i]   <=
+    sum <i> in STARTERS_LABEL:      sum <u> in N:        x[u,i];
+
+subto NoMoreVCDNThanVHG:
+   sum <i> in VCDN_LABEL:      sum <u> in N:        x[u,i]   <=
+    sum <i> in VHG_LABEL:      sum <u> in N:        x[u,i];
+
+
+subto NoMoreCDNThanVHG:
+   sum <i> in CDN_LABEL:      sum <u> in N:        x[u,i]   <=
+    sum <i> in VHG_LABEL:      sum <u> in N:        x[u,i];
+
+#subto onVHGPerSource:
+#  forall <i> in STARTERS_LABEL:
+#     forall <uu,vv> in { <uu,vv> in (E union Et) }:
+#      vif x[uu,i]==1 then
+#        sum <ii,jj> in { <ii,jj> in ES with ii!=i}:
+#            y[uu,vv,ii,jj]==1
+#      end;
+
+
+subto oneVhgPerSource:
+    forall <s,u> in STARTERS_MAPPING:
+      sum <uu,vv,ii,jj> in { <uu,vv,ii,jj> in (E union Et) cross ES with uu==u and ii==s}:
+        y[uu,vv,ii,jj]<=1;
+
+
 
 subto popRes:
 	forall <i> in N:
 		sum<j> in NS: x[i,j]*cpuS[j] <= cpu[i];
-		
+
 		
 subto bwSubstrate:
    forall <u,v> in E:
@@ -90,21 +135,21 @@ subto delaySubstrate:
 
 
 subto flowconservation:
-   forall <i,j> in {<i,j> in ES\CDN_LINKS  with i != j}:
+   forall <i,j> in {<i,j> in ES\CDN_LINKS }:
       forall <u> in N:
          sum<v> in {<v> in N with <u,v> in (E union Et)}: (y[u, v, i, j] - y[v, u, i,j]) == x[u,i]-x[u,j];
 
 
-subto noloop:
-	forall <i,j> in {<i,j> in ES  with i != j}:
-		forall <u,v> in (E union Et):
-			y[u, v, i, j] + y[v, u, i,j] <= 1;
+#subto noloop:
+#	forall <i,j> in {<i,j> in ES  with i != j}:
+#		forall <u,v> in (E union Et):
+#			y[u, v, i, j] + y[v, u, i,j] <= 1;
 			
-subto noBigloop:
-	forall <i,j> in {<i,j> in ES  with i != j}:
-		forall <u> in N:
-			sum <v> in delta(u):
-			  y[u,v,i,j] <= 1;
+#subto noBigloop:
+#	forall <i,j> in {<i,j> in ES  with i != j}:
+#		forall <u> in N:
+#			sum <v> in delta(u):
+#			  y[u,v,i,j] <= 1;
 		
 		
 		
@@ -113,7 +158,7 @@ subto startsource:
     x[source,"S0"]==1;
     
 subto sources:
-    forall <name,id> in starters:
+    forall <name,id> in STARTERS_MAPPING:
         x[id,name]==1;
 
 subto only1CDN:
