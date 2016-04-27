@@ -16,13 +16,20 @@ set S := {read "starters.nodes.data" as "<1s>"};
 set S_ASSIGNED := {read "starters.nodes.data" as "<1s,2s>"};
 set S_ES := {<i,j> in ES inter (NS cross S) with i!=j};
 
-set origin := { "S0" };
+set VHG_LABEL := {read "VHG.nodes.data" as "<1s>"};
+set VHG_INCOMING_LINKS := {<i,j> in ES inter (NS cross VHG_LABEL) with i!=j};
+set VHG_OUTGOING_LINKS := {<i,j> in ES inter (VHG_LABEL cross NS) with i!=j};
 
-#do forall <i,j> in S_ES do print i," ",j;
-#do forall <i,j> in VHG_ES do print i," ",j;
-#do forall <i,j> in VCDN_ES do print i," ",j;
-#do forall <i,j> in CDN_ES do print i," ",j;
 
+set VCDN_LABEL := {read "VCDN.nodes.data" as "<1s>"};
+set VCDN_INCOMING_LINKS := {<i,j> in ES inter (NS cross VCDN_LABEL)};
+
+
+
+set STARTERS_MAPPING := {read "starters.nodes.data" as "<1s,2s>"};
+set STARTERS_LABEL := {read "starters.nodes.data" as "<1s>"};
+set STARTERS_OUTGOING_LINKS := {<i,j> in ES inter (STARTERS_LABEL cross NS) with i!=j};
+set STARTERS_INCOMING_LINKS := {<i,j> in ES inter (NS cross STARTERS_LABEL ) with i!=j};
 
 defset delta(u) := { <v> in N with <u,v> in (E union Et)};
 
@@ -49,23 +56,31 @@ var x_cdn[N cross CDN ] binary;
 var y [(E union Et) cross ES ] binary;
 var y_cdn [(E union Et) cross ES ] binary;
 var w binary;
-var cdns_var [CDN] binary;
+var cdns_var [CDN_LABEL] binary;
 var rho[ES] binary;
-var mu[NS] binary;
-var gamma[VHG union VCDN] binary;
+var gamma[NS] binary;
+
+subto gammaMustHave:
+  forall <i> in STARTERS_LABEL  union {"S0"}:
+    gamma[i]==1;
+
+subto rhoMustHave:
+  forall <i,j> in STARTERS_INCOMING_LINKS  union STARTERS_OUTGOING_LINKS:
+   rho[i,j]==1;
 
 
-maximize cost:
-			    sum <u,v> in E:
-					((bw[u,v]-sum <i,j> in ES:(y[u,v,i,j] * bwS[i,j] ))/(bw[u,v]))+
-				sum <u,v> in Et:
-				    ((bw[v,u]-sum <i,j> in ES:(y[u,v,i,j] * bwS[i,j] ))/(bw[v,u]));
+
+
+#maximize cost:
+#			    sum <u,v> in E:
+#					((bw[u,v]-sum <i,j> in ES:(y[u,v,i,j] * bwS[i,j] ))/(bw[u,v]))+
+#				sum <u,v> in Et:
+#				    ((bw[v,u]-sum <i,j> in ES:(y[u,v,i,j] * bwS[i,j] ))/(bw[v,u]));
 
 
 
-subto noVHGIfNolinkToVHGVCDN:
-    forall <j> in VHG union VCDN:
-       gamma[j] == sum <a,b> in {<aa,bb> in ES with bb==j}: rho[a,b];
+minimize cost:
+                sum<u,v,i,j> in (E union Et) cross ES: y[u,v,i,j];
 
 subto mappingVHGVCDN:
 	forall <j> in VHG union VCDN:
@@ -73,27 +88,47 @@ subto mappingVHGVCDN:
 
 
 
-subto oneCDNperVHG:
-   forall <vhg> in VHG:
-     sum <vv,cdn> in {<vv,j> in CDN_ES with vv==vhg}: rho[vv,cdn]<=1;
+subto everyNodeIsMapped:
+	forall <j> in NS\CDN_LABEL:
+		sum<i> in N: x[i,j]==1;
 
-subto onevCDNperVHG:
-   forall <vhg> in VHG:
-     sum <vv,vcdn> in {<vv,j> in VCDN_ES with vv==vhg}: rho[vv,vcdn]<=1;
 
-subto oneVHGperSource:
-   forall <s> in S:
-     sum <i,j> in {<i,j> in ES with i==s}: rho[i,j]==1;
 
-subto rhoSource:
-   forall <i,j> in S_ES: rho[i,j]==1;
+#subto onVHGPerSource:
+#  forall <i> in STARTERS_LABEL:
+#     forall <uu,vv> in { <uu,vv> in (E union Et) }:
+#      vif x[uu,i]==1 then
+#        sum <ii,jj> in { <ii,jj> in ES with ii!=i}:
+#            y[uu,vv,ii,jj]==1
+#      end;
+
+
+subto oneVhgPerSource:
+    forall <s,u> in STARTERS_MAPPING:
+      sum <uu,vv,ii,jj> in { <uu,vv,ii,jj> in (E union Et) cross ES with uu==u and ii==s}:
+        y[uu,vv,ii,jj]<=1;
+
+
+
+subto popRes:
+	forall <i> in N:
+		sum<j> in NS: x[i,j]*cpuS[j] <= cpu[i];
+
+		
+subto bwSubstrate:
+   forall <u,v> in E:
+       sum<i,j> in ES\CDN_LINKS: (y[u,v,i,j]+y[v,u,i,j]) * bwS[i,j] <= bw[u,v];
+       
+subto bwtSubstrate:
+   forall <u,v> in Et:
+       sum<i,j> in ES\CDN_LINKS: (y[u,v,i,j]+y[v,u,i,j]) * bwS[i,j] <= bwt[u,v];
 
 
 
 
 
 subto flowconservation:
-   forall <i,j> in {<i,j> in ES\CDN_ES  with i != j}:
+   forall <i,j> in {<i,j> in ES\CDN_LINKS }:
       forall <u> in N:
          sum<v> in {<v> in N with <u,v> in (E union Et)}:
                     (y[u, v, i, j] - y[v, u, i,j]) == x[u,i]-x[u,j];
@@ -135,5 +170,27 @@ subto noBigloop:
 		forall <u> in N:
 			sum <v> in delta(u):
 			  y[u,v,i,j] <= 1;
+		
+		
+		
+
+subto startsource:
+    x[source,"S0"]==1;
+    
+subto sources:
+    forall <name,id> in STARTERS_MAPPING:
+        x[id,name]==1;
+
+subto only1CDN:
+  sum <i> in (CDN_LABEL) : cdns_var[i] ==cdn_count;
+
+subto cdnToNode:
+	forall <i,j> in CDN:
+		x[j,i]==cdns_var[i];
+
+subto flowconservation_cdn:
+   forall <i,j> in {<i,j> in CDN_LINKS  with i != j}:
+      forall <u> in N:
+         sum<v> in {<v> in N with <u,v> in (E union Et)}: (y[u, v, i, j] - y[v, u, i,j]) *cdns_var[j]==( (x[u,i]-x[u,j])*cdns_var[j]);
 
 

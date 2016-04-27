@@ -1,5 +1,4 @@
 *.pdf
-substrate*
 .*
 *.pyc
 *.data
