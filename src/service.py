@@ -52,7 +52,7 @@ class Service:
             return False  # norelax
 
         # overrun
-        if self.vcdncount > 4 or self.vhgcount > 4:
+        if self.vcdncount > self.vhgcount or self.vhgcount >  len(self.start):
             return False
         else:
             return True

@@ -46,6 +46,7 @@ def do_simu(relax_vhg, relax_vcdn, proactive, seed, sla_count, rejected_threshol
     rs = np.random.RandomState(seed=seed)
     su = substrate.get_substrate(rs)
     slas = generate_random_slas(rs, su, sla_count)
+    sorted(slas, key=lambda x: x.bandwidth)
 
     while rejected < rejected_threshold:
         best_objective_function = None

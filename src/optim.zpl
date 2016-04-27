@@ -61,42 +61,15 @@ subto rhoMustHave:
    rho[i,j]==1;
 
 
-
-
-#maximize cost:
-#			    sum <u,v> in E:
-#					((bw[u,v]-sum <i,j> in ES:(y[u,v,i,j] * bwS[i,j] ))/(bw[u,v]))+
-#				sum <u,v> in Et:
-#				    ((bw[v,u]-sum <i,j> in ES:(y[u,v,i,j] * bwS[i,j] ))/(bw[v,u]));
-
-
-
 minimize cost:
-                sum<u,v,i,j> in (E union Et) cross ES: y[u,v,i,j];
-
+    sum <u,v> in E union Et:
+		sum <i,j> in ES:y[u,v,i,j] * bwS[i,j];
 
 
 
 subto everyNodeIsMapped:
 	forall <j> in NS\CDN_LABEL:
 		sum<i> in N: x[i,j]==1;
-
-
-
-#subto onVHGPerSource:
-#  forall <i> in STARTERS_LABEL:
-#     forall <uu,vv> in { <uu,vv> in (E union Et) }:
-#      vif x[uu,i]==1 then
-#        sum <ii,jj> in { <ii,jj> in ES with ii!=i}:
-#            y[uu,vv,ii,jj]==1
-#      end;
-
-
-subto oneVhgPerSource:
-    forall <s,u> in STARTERS_MAPPING:
-      sum <uu,vv,ii,jj> in { <uu,vv,ii,jj> in (E union Et) cross ES with uu==u and ii==s}:
-        y[uu,vv,ii,jj]<=1;
-
 
 
 subto popRes:
