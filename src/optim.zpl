@@ -72,39 +72,16 @@ subto rhoMustHave:
 
 
 minimize cost:
-
                 sum<u,v,i,j> in (E union Et) cross ES: y[u,v,i,j];
 
 
 
 
 subto everyNodeIsMapped:
-	forall <j> in NS\CDN_LABEL\VHG_LABEL:
+	forall <j> in NS\CDN_LABEL:
 		sum<i> in N: x[i,j]==1;
 
 
-subto VHGAreMappedInMax1Node:
-   forall <i> in VHG_LABEL:
-     sum <u> in N:
-       x[u,i] <= 1;
-
-subto AtLeastOneVHG:
-   sum <i> in VHG_LABEL:
-     sum <u> in N:
-       x[u,i]>=1;
-
-subto NoMoreVHGThanSource:
-   sum <i> in VHG_LABEL:      sum <u> in N:        x[u,i]   <=
-    sum <i> in STARTERS_LABEL:      sum <u> in N:        x[u,i];
-
-subto NoMoreVCDNThanVHG:
-   sum <i> in VCDN_LABEL:      sum <u> in N:        x[u,i]   <=
-    sum <i> in VHG_LABEL:      sum <u> in N:        x[u,i];
-
-
-subto NoMoreCDNThanVHG:
-   sum <i> in CDN_LABEL:      sum <u> in N:        x[u,i]   <=
-    sum <i> in VHG_LABEL:      sum <u> in N:        x[u,i];
 
 #subto onVHGPerSource:
 #  forall <i> in STARTERS_LABEL:
@@ -149,16 +126,16 @@ subto flowconservation:
          sum<v> in {<v> in N with <u,v> in (E union Et)}: (y[u, v, i, j] - y[v, u, i,j]) == x[u,i]-x[u,j];
 
 
-#subto noloop:
-#	forall <i,j> in {<i,j> in ES  with i != j}:
-#		forall <u,v> in (E union Et):
-#			y[u, v, i, j] + y[v, u, i,j] <= 1;
+subto noloop:
+	forall <i,j> in {<i,j> in ES  with i != j}:
+		forall <u,v> in (E union Et):
+			y[u, v, i, j] + y[v, u, i,j] <= 1;
 			
-#subto noBigloop:
-#	forall <i,j> in {<i,j> in ES  with i != j}:
-#		forall <u> in N:
-#			sum <v> in delta(u):
-#			  y[u,v,i,j] <= 1;
+subto noBigloop:
+	forall <i,j> in {<i,j> in ES  with i != j}:
+		forall <u> in N:
+			sum <v> in delta(u):
+			  y[u,v,i,j] <= 1;
 		
 		
 		

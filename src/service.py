@@ -64,26 +64,27 @@ class Service:
                 f.write("S0 S%d 0 %e\n" % (index, sys.maxint))
                 self.edges["S0 S%d" % index] = Edge(0, sys.maxint)
 
+            for index, value in enumerate(self.start, start=1):
+                assigned_vhg=1+(index-1)%self.vhgcount
+                f.write("S%d VHG%d %e %e\n" % (
+                index, assigned_vhg, self.sourcebw / self.vhgcount , self.vhgdelay))
+                self.edges["S%d VHG%d" % (index, assigned_vhg)] = Edge(self.sourcebw / self.vhgcount, self.vhgdelay)
+
             for i in range(1, int(self.vhgcount) + 1):
-                for index, value in enumerate(self.start, start=1):
-                    f.write("S%d VHG%d %e %e\n" % (
-                    index, i, self.sourcebw / self.vhgcount / float(len(self.start)), self.vhgdelay))
-                    self.edges["S%d VHG%d" % (index, i)] = Edge(self.sourcebw / self.vhgcount / float(len(self.start)),
-                                                                self.vhgdelay)
-
-                for index, value in enumerate(self.cdn, start=1):
-                    f.write("VHG%d CDN%d %e %e\n" % (i, index,self.sourcebw / self.vhgcount * (1 - self.vcdnratio), self.cdndelay))
-                    self.edges["VHG%d CDN%d" % (i,index)] = Edge(self.sourcebw / self.vhgcount * (1 - self.vcdnratio), self.cdndelay)
+                assigned_cdn=1+(i-1)%len(self.cdn)
+                f.write("VHG%d CDN%d %e %e\n" % (i, assigned_cdn,self.sourcebw / self.vhgcount * (1 - self.vcdnratio), self.cdndelay))
+                self.edges["VHG%d CDN%d" % (i,assigned_cdn)] = Edge(self.sourcebw / self.vhgcount * (1 - self.vcdnratio), self.cdndelay)
 
 
 
-                for j in range(1, int(self.vcdncount) + 1):
-                    f.write("VHG%d vCDN%d %e %e\n" % (i, j,
-                                                      self.sourcebw / (
-                                                          self.vhgcount * self.vcdncount) * self.vcdnratio,
-                                                      self.vcdndelay))
-                    self.edges["VHG%d vCDN%d" % (i, j)] = Edge(self.sourcebw / (
-                        self.vhgcount * self.vcdncount) * self.vcdnratio, self.vcdndelay)
+            for i in range(1, int(self.vhgcount) + 1):
+                assigned_vcdn=1+(i-1)%self.vcdncount
+                f.write("VHG%d vCDN%d %e %e\n" % (i, assigned_vcdn,
+                                                  self.sourcebw / (
+                                                      self.vhgcount * self.vcdncount) * self.vcdnratio,
+                                                  self.vcdndelay))
+                self.edges["VHG%d vCDN%d" % (i, assigned_vcdn)] = Edge(self.sourcebw / (
+                    self.vhgcount * self.vcdncount) * self.vcdnratio, self.vcdndelay)
 
         with open("service.nodes.data", "w") as f:
             f.write("S0 0	\n")
