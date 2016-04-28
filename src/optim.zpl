@@ -49,16 +49,6 @@ var y [(E union Et) cross ES ] binary;
 var y_cdn [(E union Et) cross ES ] binary;
 var w binary;
 var cdns_var [CDN_LABEL] binary;
-var rho[ES] binary;
-var gamma[NS] binary;
-
-subto gammaMustHave:
-  forall <i> in STARTERS_LABEL  union {"S0"}:
-    gamma[i]==1;
-
-subto rhoMustHave:
-  forall <i,j> in STARTERS_INCOMING_LINKS  union STARTERS_OUTGOING_LINKS:
-   rho[i,j]==1;
 
 
 minimize cost:
@@ -79,11 +69,7 @@ subto popRes:
 		
 subto bwSubstrate:
    forall <u,v> in E:
-       sum<i,j> in ES\CDN_LINKS: (y[u,v,i,j]+y[v,u,i,j]) * bwS[i,j] <= bw[u,v];
-       
-subto bwtSubstrate:
-   forall <u,v> in Et:
-       sum<i,j> in ES\CDN_LINKS: (y[u,v,i,j]+y[v,u,i,j]) * bwS[i,j] <= bwt[u,v];
+       sum<i,j> in ES: (y[u,v,i,j]+y[v,u,i,j]) * bwS[i,j] <= bw[u,v];
 
 
 subto delaySubstrate:

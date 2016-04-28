@@ -150,6 +150,8 @@ def deduce_bw(es, edges, service):
         service_edge = service.edges["%s %s" % (es[2], es[3])]
         edges.remove(sub_edge)
         edges.append((sub_edge[0], sub_edge[1], sub_edge[2] - service_edge.bw, sub_edge[3]))
+        if sub_edge[2] - service_edge.bw <0:
+            print "hein?"
         return True
     return False
 

@@ -48,12 +48,17 @@ def do_simu(relax_vhg, relax_vcdn, proactive, seed, sla_count, rejected_threshol
     slas = generate_random_slas(rs, su, sla_count)
     sorted(slas, key=lambda x: x.bandwidth)
 
+
     while rejected < rejected_threshold:
         best_objective_function = None
         best_mapping = None
         count_transformation_loop = 0
         sla = slas.pop()
         service = Service.fromSla(sla)
+        if relax_vhg:
+            service.vhgcount=len(sla.start)
+        if relax_vcdn:
+            service.vcdncount=service.vhgcount
         mapping = None
         while mapping is None:
             mapping = solve(service, su)
