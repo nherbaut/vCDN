@@ -21,7 +21,7 @@ class Service:
     def __init__(self, sourcebw, vhgcount, vhgdelay, vcdnratio, cdndelay, vcdndelay, vcdncpu, vhgcpu, vcdncount, start,
                  cdn,max_cdn_to_use):
         self.sourcebw = sourcebw
-        self.vhgcount = vhgcount
+
         self.vhgdelay = vhgdelay
         self.vhgcount = vhgcount
         self.vcdnratio = vcdnratio
@@ -31,6 +31,7 @@ class Service:
         self.vhgcpu = vhgcpu
         self.vcdncount = vcdncount
         self.start = start
+        self.vhgcount = min(vhgcount,len(start))
         self.cdn = cdn
         self.nodes = {}
         self.edges = {}
@@ -38,6 +39,7 @@ class Service:
 
     def relax(self, relax_vhg=True, relax_vcdn=True):
         #print("relaxation level\t%e " % (self.vhgcount + self.vcdncount - 2))
+
         if relax_vhg and relax_vcdn:
             if (self.vcdncount + self.vhgcount) % 2 == 0:
                 self.vhgcount = self.vhgcount + 1
@@ -51,11 +53,12 @@ class Service:
         else:
             return False  # norelax
 
+
         # overrun
-        if self.vcdncount > self.vhgcount or self.vhgcount >  len(self.start):
-            return False
-        else:
-            return True
+        if(relax_vcdn and not relax_vhg):
+            return self.vcdncount <= len(self.start)
+        else: #CAN increase vcdn up to len(start) is only relaxing vcdn
+            return (self.vcdncount <= self.vhgcount) and (self.vhgcount <=  len(self.start))
 
     def write(self):
 
@@ -84,11 +87,16 @@ class Service:
 
 
 
-
-            for i in range(1, int(self.vhgcount) + 1):
-                assigned_vcdn=1+(i-1)%self.vcdncount
-                e = Edge(bw["VHG%d"%i] * self.vcdnratio, self.vcdndelay)
-                self.edges["VHG%d vCDN%d" % (i, assigned_vcdn)] = e
+            if self.vhgcount>1:
+                for i in range(1, int(self.vhgcount) + 1):
+                    assigned_vcdn=1+(i-1)%self.vcdncount
+                    e = Edge(bw["VHG%d"%i] * self.vcdnratio, self.vcdndelay)
+                    self.edges["VHG%d vCDN%d" % (i, assigned_vcdn)] = e
+            else: #CAN increase vcdn up to len(start) is only relaxing vcdn
+                for i in range(1, int(self.vhgcount) + 1):
+                    for j in range(1, int(self.vcdncount) + 1):
+                        e = Edge(bw["VHG%d"%i] * self.vcdnratio/self.vcdncount, self.vcdndelay)
+                        self.edges["VHG%d vCDN%d" % (i, j)] = e
 
             for key,value in self.edges.items():
                 f.write((key+" %e %e\n") % (value.bw, value.delay))
@@ -106,9 +114,14 @@ class Service:
                 f.write("CDN%d 0\n" % index)
                 self.nodes["CDN%d"%index] = Node(0)
 
-            for j in range(1, min( int(self.vcdncount) + 1, int(self.vhgcount) + 1)):
-                f.write("vCDN%d	%e	\n" % (j, self.vcdncpu))
-                self.nodes["vCDN%d" % j] = Node(self.vcdncpu)
+            if self.vhgcount>1:
+                for j in range(1, min( int(self.vcdncount) + 1, int(self.vhgcount) + 1)):
+                    f.write("vCDN%d	%e	\n" % (j, self.vcdncpu))
+                    self.nodes["vCDN%d" % j] = Node(self.vcdncpu)
+            else: #can increase vcdn if vhg == 1
+                for j in range(1, int(self.vcdncount) + 1):
+                    f.write("vCDN%d	%e	\n" % (j, self.vcdncpu))
+                    self.nodes["vCDN%d" % j] = Node(self.vcdncpu)
 
             for i in range(1, int(self.vhgcount) + 1):
                 f.write("VHG%d %e\n" % (i, float(self.vhgcpu) ))

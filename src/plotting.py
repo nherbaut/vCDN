@@ -44,10 +44,6 @@ def plot_results_cpu(res, init_point, init_bw, init_cpu, id):
                     [100 - float(x.split("\t")[1]) / init_cpu * 100 for x in res["none"]][init_point:],
                     'r', label="none",
                     linestyle="solid")
-    for name in res.keys():
-        print name
-        for x in res[name][init_point:]:
-            print "%lf\t%lf" % (float(x.split("\t")[1]),(float(x.split("\t")[1]) / init_cpu * 100))
 
     vhg = plt.plot([float(x.split("\t")[2]) for x in res["vhg"]][init_point:],
                    [100 - float(x.split("\t")[1]) / init_cpu * 100 for x in res["vhg"]][init_point:],

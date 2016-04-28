@@ -38,7 +38,7 @@ def generate_random_slas(rs, substrate, count=1000):
         #bitrate = rs.choice([500000, 750000,  1000000, 1500000, 2000000])
         bitrate = rs.choice([500000, 1500000, 2500000])
 
-        concurent_users = max(rs.normal(30000, 1000), 1000)
+        concurent_users = max(rs.normal(3000, 1000), 1000)
         time_span = max(rs.normal(24 * 60 * 60, 60 * 60), 0)
         movie_duration = max(rs.normal(60 * 60, 10 * 60), 0)
 

@@ -62,9 +62,11 @@ def do_simu(relax_vhg, relax_vcdn, proactive, seed, sla_count, rejected_threshol
 
         #run this algo until relaxation is over
         while True:
+            #print "solving for vhg=%d vcdn=%d start=%d"%(service.vhgcount,service.vcdncount,len(service.start))
             mapping = solve(service, su)
             if mapping is not None:
                 mapping_res.append((deepcopy(service),deepcopy(mapping)))
+
             if service.relax(relax_vhg, relax_vcdn):
                 service.write()
             else:
@@ -74,7 +76,7 @@ def do_simu(relax_vhg, relax_vcdn, proactive, seed, sla_count, rejected_threshol
             rejected +=1
             continue
         else:
-            mapping_res=sorted(mapping_res, key=lambda x: -x[1].objective_function)
+            mapping_res=sorted(mapping_res, key=lambda x: x[1].objective_function)
             service=mapping_res[0][0]
             mapping=mapping_res[0][1]
             #mapping.save()
