@@ -11,6 +11,7 @@ class timed(object):
         self.start = time.time()
 
     def __call__(self, relax_vhg, relax_vcdn, proactive, seed, sla_count, rejected_threshold, name):
+        self.start = time.time()
         res = self.f(relax_vhg, relax_vcdn, proactive, seed, sla_count, rejected_threshold)
         print(
         "%s in %lf for %d run : %lf" % (

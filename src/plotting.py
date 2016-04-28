@@ -11,20 +11,22 @@ def plot_all_results(init_bw, init_cpu, res, init_point,id):
     plot_results_cpu(res, init_point, init_bw, init_cpu,id)
     plt.figure(2)
     plot_results_transfo(res, init_point, init_bw, init_cpu,id)
+    plt.figure(3)
+    plot_results_embedding(res, init_point, init_bw, init_cpu,id)
 
 
 def plot_results_transfo(res, init_point, init_bw, init_cpu, id):
     vhg = plt.plot([float(x.split("\t")[2]) for x in res["vhg"]][init_point:],
-                   [float(x.split("\t")[3]) for x in res["vhg"]][init_point:],
+                   [float(x.split("\t")[4]) for x in res["vhg"]][init_point:],
                    'b', label="vhg",
                    linestyle="solid")
 
     vcdn = plt.plot([float(x.split("\t")[2]) for x in res["vcdn"]][init_point:],
-                    [float(x.split("\t")[3]) for x in res["vcdn"]][init_point:],
+                    [float(x.split("\t")[4]) for x in res["vcdn"]][init_point:],
                     'y', label="vcdn",
                     linestyle="solid")
     all = plt.plot([float(x.split("\t")[2]) for x in res["all"]][init_point:],
-                   [float(x.split("\t")[3]) for x in res["all"]][init_point:],
+                   [float(x.split("\t")[4]) for x in res["all"]][init_point:],
                    'g', label="all",
                    linestyle="solid")
 
@@ -32,7 +34,7 @@ def plot_results_transfo(res, init_point, init_bw, init_cpu, id):
     plt.xlabel('# of Embeded SLA')
     plt.legend(["vHG", "vCDN", "vHG+vCDN"], bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
                ncol=4, mode="expand", borderaxespad=0.)
-    plt.savefig("transfo%d.pdf" % id, dpi=None, facecolor='w', edgecolor='w',
+    plt.savefig("%d-transfo.pdf" % id, dpi=None, facecolor='w', edgecolor='w',
                 orientation='landscape', papertype="A4", format="pdf",
                 transparent=False, bbox_inches=None, pad_inches=0.1,
                 frameon=None)
@@ -62,11 +64,44 @@ def plot_results_cpu(res, init_point, init_bw, init_cpu, id):
     plt.legend(["Canonical", "vHG", "vCDN", "vHG+vCDN"], bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
                ncol=4, mode="expand", borderaxespad=0.)
     plt.ylabel('% of Substrate Node Capacity Usage')
-    plt.xlabel('# of Embeded SLA')
+    plt.xlabel('# of Embeded requests')
     # plt.show()
 
 
-    plt.savefig("node-capacities%d.pdf" % id, dpi=None, facecolor='w', edgecolor='w',
+    plt.savefig("%d-node-capacitie.pdf" % id, dpi=None, facecolor='w', edgecolor='w',
+                orientation='landscape', papertype="A4", format="pdf",
+                transparent=False, bbox_inches=None, pad_inches=0.1,
+                frameon=None)
+    plt.clf()
+
+def plot_results_embedding(res, init_point, init_bw, init_cpu, id):
+    none = plt.plot([float(x.split("\t")[2]) for x in res["none"]][init_point:],
+                    [float(x.split("\t")[4])* 100 for x in res["none"]][init_point:],
+                    'r', label="none",
+                    linestyle="solid")
+
+    vhg = plt.plot([float(x.split("\t")[2]) for x in res["vhg"]][init_point:],
+                   [float(x.split("\t")[4])* 100 for x in res["vhg"]][init_point:],
+                   'b', label="vhg",
+                   linestyle="solid")
+
+    vcdn = plt.plot([float(x.split("\t")[2]) for x in res["vcdn"]][init_point:],
+                    [float(x.split("\t")[4])* 100 for x in res["vcdn"]][init_point:],
+                    'y', label="vcdn",
+                    linestyle="solid")
+    all = plt.plot([float(x.split("\t")[2]) for x in res["all"]][init_point:],
+                   [float(x.split("\t")[4])* 100  for x in res["all"]][init_point:],
+                   'g', label="all",
+                   linestyle="solid")
+
+    plt.legend(["Canonical", "vHG", "vCDN", "vHG+vCDN"], bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
+               ncol=4, mode="expand", borderaxespad=0.)
+    plt.ylabel('% of successful embedding')
+    plt.xlabel('# of Embeded requests')
+    # plt.show()
+
+
+    plt.savefig("%d-embedding.pdf" % id, dpi=None, facecolor='w', edgecolor='w',
                 orientation='landscape', papertype="A4", format="pdf",
                 transparent=False, bbox_inches=None, pad_inches=0.1,
                 frameon=None)
@@ -95,9 +130,9 @@ def plot_results_bw(res, init_point, init_bw, init_cpu, id):
     plt.legend(["Canonical", "vHG", "vCDN", "vHG+vCDN"], bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
                ncol=4, mode="expand", borderaxespad=0.)
     plt.ylabel('% of Substrate Bandwidth Usage')
-    plt.xlabel('# of Embeded SLA')
+    plt.xlabel('# of Embeded Requests')
     # plt.show()
-    plt.savefig("edge-capacities%d.pdf" % id, dpi=None, facecolor='w', edgecolor='w',
+    plt.savefig("%d-edge-capacities.pdf" % id, dpi=None, facecolor='w', edgecolor='w',
                 orientation='landscape', papertype="A4", format="pdf",
                 transparent=False, bbox_inches=None, pad_inches=0.1,
                 frameon=None)

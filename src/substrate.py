@@ -125,8 +125,7 @@ class Substrate:
         nodesdict = {}
 
         for l in nodes:
-            #value = max(rs.normal(100, 5, 1)[0], 0)
-            value=100
+            value = max(rs.normal(200, 5, 1)[0], 0)
             nodesdict[str(l)] = value
 
         return cls(edges, nodesdict)
@@ -147,7 +146,7 @@ class Substrate:
 
 
 def deduce_bw(es, edges, service):
-    candidate_edges = filter(lambda x: x[0] == int(es[0]) and x[1] == int(es[1]), edges)
+    candidate_edges = filter(lambda x: x[0] == es[0] and x[1] == es[1], edges)
     if len(candidate_edges) != 0:
         sub_edge = candidate_edges[0]
         service_edge = service.edges["%s %s" % (es[2], es[3])]

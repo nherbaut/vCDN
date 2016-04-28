@@ -4,7 +4,7 @@ import utils
 from service import Service
 from sla import generate_random_slas
 from solver import solve
-
+from substrate import Substrate
 from copy import deepcopy
 def is_cost_function_pathologic(cost_function, objective_function, proactive):
     '''
@@ -45,8 +45,9 @@ def do_simu(relax_vhg, relax_vcdn, proactive, seed, sla_count, rejected_threshol
     rejected = 0
     rs = np.random.RandomState(seed=seed)
     su = substrate.get_substrate(rs)
-    #slas = sorted(generate_random_slas(rs, su, sla_count), key=lambda x: x.bandwidth)
-    slas = generate_random_slas(rs, su, sla_count)
+    su=Substrate.fromSpec(4,4,5*10**9,3,300)
+    slas = sorted(generate_random_slas(rs, su, sla_count), key=lambda x: x.bandwidth)
+    #slas = generate_random_slas(rs, su, sla_count)
 
 
 
@@ -62,7 +63,7 @@ def do_simu(relax_vhg, relax_vcdn, proactive, seed, sla_count, rejected_threshol
 
         #run this algo until relaxation is over
         while True:
-            #print "solving for vhg=%d vcdn=%d start=%d"%(service.vhgcount,service.vcdncount,len(service.start))
+            print "solving for vhg=%d vcdn=%d start=%d"%(service.vhgcount,service.vcdncount,len(service.start))
             mapping = solve(service, su)
             if mapping is not None:
                 mapping_res.append((deepcopy(service),deepcopy(mapping)))
@@ -80,11 +81,11 @@ def do_simu(relax_vhg, relax_vcdn, proactive, seed, sla_count, rejected_threshol
             service=mapping_res[0][0]
             mapping=mapping_res[0][1]
             #mapping.save()
-            #print "winner has %d\t%d" % (service.vhgcount,service.vcdncount)
+            print "winner has %d\t%d" % (service.vhgcount,service.vcdncount)
             su.consume_service(service, mapping)
             su.write()
 
             accepted_slas=sla_count - len(slas) - rejected
-            result.append("%s\t%d\t%d\t%d" % (su, accepted_slas, len(mapping_res),float(accepted_slas)/(accepted_slas+rejected)))
+            result.append("%s\t%d\t%d\t%lf" % (su, accepted_slas, len(mapping_res),float(accepted_slas)/(accepted_slas+rejected)))
 
     return result
