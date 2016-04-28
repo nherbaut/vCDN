@@ -31,13 +31,13 @@ class bcolors:
 
 class Substrate:
     def __str__(self):
+        #print [x[1] for x in self.nodesdict.items()]
         return "%e\t%e" % (
             sum([x[2] for x in self.edges]), sum([x[1] for x in self.nodesdict.items()]))
 
     def __init__(self, edges, nodesdict):
         self.edges = edges
         self.nodesdict = nodesdict
-
         self.edges_init = sorted(edges, key=lambda x: "%s%s" % (str(x[0]), str(x[1])))
         self.nodesdict_init = nodesdict.copy()
 
@@ -51,7 +51,7 @@ class Substrate:
         with open(nodes_file, 'w') as f:
             for nodekey in sorted(nodesdict.keys()):
                 node = nodesdict[nodekey]
-                f.write("%s\t%e\n" % (nodekey, node))
+                f.write("%s\t%lf\n" % (nodekey, node))
 
         with open("pc_" + edges_file, 'w') as f:
             for idx, val in enumerate(sorted(edges, key=lambda x: "%s%s" % (str(x[0]), str(x[1])))):
@@ -125,15 +125,18 @@ class Substrate:
         nodesdict = {}
 
         for l in nodes:
-            value = max(rs.normal(300, 5, 1)[0], 0)
+            #value = max(rs.normal(100, 5, 1)[0], 0)
+            value=100
             nodesdict[str(l)] = value
 
         return cls(edges, nodesdict)
 
     def consume_service(self, service, mapping):
         try:
+            #print "consuming..."
             for ns in mapping.nodesSol:
                 self.nodesdict[ns[0]] = self.nodesdict[ns[0]] - service.nodes[ns[1]].cpu
+                #print "\teater %lf from %s, remaining %s" % (service.nodes[ns[1]].cpu, ns[1], self)
             for es in mapping.edgesSol:
                 if not deduce_bw(es, self.edges, service):
                     backward = (es[1], es[0], es[2], es[3])

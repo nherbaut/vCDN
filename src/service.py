@@ -15,7 +15,7 @@ class Edge:
 class Service:
     @classmethod
     def fromSla(cls, sla):
-        return cls(sla.bandwidth, 1, 1 * sla.delay / 4.0, 0.35, sla.delay * 100, 3 * sla.delay / 4.0, 10, 5, 1,
+        return cls(sla.bandwidth, 1, 2 * sla.delay / 4.0, 0.35, sla.delay * 100, 2 * sla.delay / 4.0, 10, 3, 1,
                    sla.start, sla.cdn,sla.max_cdn_to_use)
 
     def __init__(self, sourcebw, vhgcount, vhgdelay, vcdnratio, cdndelay, vcdndelay, vcdncpu, vhgcpu, vcdncount, start,
@@ -37,7 +37,7 @@ class Service:
         self.max_cdn_to_use=max_cdn_to_use
 
     def relax(self, relax_vhg=True, relax_vcdn=True):
-        print("relaxation level\t%e " % (self.vhgcount + self.vcdncount - 2))
+        #print("relaxation level\t%e " % (self.vhgcount + self.vcdncount - 2))
         if relax_vhg and relax_vcdn:
             if (self.vcdncount + self.vhgcount) % 2 == 0:
                 self.vhgcount = self.vhgcount + 1
