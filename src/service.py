@@ -80,10 +80,10 @@ class Service:
                 else:
                     bw["VHG%d"%assigned_vhg]= self.sourcebw/ self.vhgcount
 
-            for i in range(1, int(len(self.cdn)) + 1):
-                assigned_vhg=1+(i-1)%self.vhgcount
-                e = Edge(bw["VHG%d"%assigned_vhg] * (1 - self.vcdnratio)/len(self.cdn), self.cdndelay)
-                self.edges["VHG%d CDN%d" % (assigned_vhg,i)] = e
+            for i in range(1, int(self.vhgcount) + 1):
+                assigned_vhg=1+(i-1)%len(self.cdn)
+                e = Edge(bw["VHG%d"%i] * (1 - self.vcdnratio)/len(self.cdn), self.cdndelay)
+                self.edges["VHG%d CDN%d" % (i,assigned_vhg)] = e
 
 
 
