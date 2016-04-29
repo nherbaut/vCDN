@@ -113,19 +113,19 @@ class Substrate:
 
         g = parser.parse(file)
 
-        nodes = {n.id: n for n in g.nodes()}
-        edges = [(e.node1.id, e.node2.id, float(e.attributes()["d42"].value),
-                  get_delay(nodes[e.node1.id], nodes[e.node2.id]))
-                 for e in g.edges() if "d42" in e.attributes() and isOK(nodes[e.node1.id], nodes[e.node2.id])]
+        nodes = {str(n.id): n for n in g.nodes()}
+        edges = [(str(e.node1.id), str(e.node2.id), float(e.attributes()["d42"].value),
+                  get_delay(nodes[str(e.node1.id)], nodes[str(e.node2.id)]))
+                 for e in g.edges() if "d42" in e.attributes() and isOK(nodes[str(e.node1.id)], nodes[str(e.node2.id)])]
 
         # for which we have all the data
         valid_nodes = list(set([e[0] for e in edges] + [e[1] for e in edges]))
 
-        nodes = set([n.id for n in g.nodes() if n.id in valid_nodes])
+        nodes = set([str(n.id) for n in g.nodes() if str(n.id) in valid_nodes])
         nodesdict = {}
 
         for l in nodes:
-            value = max(rs.normal(200, 5, 1)[0], 0)
+            value = max(rs.normal(100, 5, 1)[0], 0)
             nodesdict[str(l)] = value
 
         return cls(edges, nodesdict)
