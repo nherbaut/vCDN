@@ -17,17 +17,19 @@ args = parser.parse_args()
 
 rejected_threshold = int(args.threshold)
 sla_count = 10000
-init_point = 1
+init_point = 0
 s = int(args.seed)
 
 for seed in range(s, s + int(args.count), 1):
     res = {}
+
+    res["none"] = do_simu(False, False, False, seed=seed, sla_count=sla_count, rejected_threshold=rejected_threshold,
+                          name="none")
     res["vcdn"] = do_simu(False, True, False, seed=seed, sla_count=sla_count, rejected_threshold=rejected_threshold,
                           name="vcdn")
     res["vhg"] = do_simu(True, False, False, seed=seed, sla_count=sla_count, rejected_threshold=rejected_threshold,
                          name="vhg")
-    res["none"] = do_simu(False, False, False, seed=seed, sla_count=sla_count, rejected_threshold=rejected_threshold,
-                          name="none")
+
 
     res["all"] = do_simu(True, True, False, seed=seed, sla_count=sla_count, rejected_threshold=rejected_threshold,
                          name="all")
