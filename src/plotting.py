@@ -222,7 +222,7 @@ def plotsol():
                 if "VHG" in node[1]:
                     color="azure1"
                 elif "vCDN" in node[1]:
-                    color="azure2"
+                    color="azure3"
                 elif "S" in node[1]:
                     color="green"
                 else :
