@@ -4,62 +4,26 @@ import subprocess
 import matplotlib.pyplot as plt
 import tempfile
 
-def plot_all_results(init_bw, init_cpu, res, init_point,id):
+def plot_all_results( res, init_point=0,id=999):
     plt.figure(0)
-    plot_results_bw(res, init_point, init_bw, init_cpu,id)
+    plot_results_bw(res, init_point, id)
     plt.figure(1)
-    plot_results_cpu(res, init_point, init_bw, init_cpu,id)
+    plot_results_cpu(res, init_point,id)
     plt.figure(2)
-    plot_results_transfo(res, init_point, init_bw, init_cpu,id)
-    plt.figure(3)
-    plot_results_embedding(res, init_point, init_bw, init_cpu,id)
+    plot_results_embedding(res, init_point, id)
 
 
-def plot_results_transfo(res, init_point, init_bw, init_cpu, id):
-    vhg = plt.plot([float(x.split("\t")[2]) for x in res["vhg"]][init_point:],
-                   [float(x.split("\t")[4]) for x in res["vhg"]][init_point:],
-                   'b', label="vhg",
-                   linestyle="solid")
 
-    vcdn = plt.plot([float(x.split("\t")[2]) for x in res["vcdn"]][init_point:],
-                    [float(x.split("\t")[4]) for x in res["vcdn"]][init_point:],
-                    'y', label="vcdn",
-                    linestyle="solid")
-    all = plt.plot([float(x.split("\t")[2]) for x in res["all"]][init_point:],
-                   [float(x.split("\t")[4]) for x in res["all"]][init_point:],
-                   'g', label="all",
-                   linestyle="solid")
-
-    plt.ylabel("# for transformation required by embedding")
-    plt.xlabel('# of Embeded SLA')
-    plt.legend(["vHG", "vCDN", "vHG+vCDN"], bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
-               ncol=4, mode="expand", borderaxespad=0.)
-    plt.savefig("%d-transfo.pdf" % id, dpi=None, facecolor='w', edgecolor='w',
-                orientation='landscape', papertype="A4", format="pdf",
-                transparent=False, bbox_inches=None, pad_inches=0.1,
-                frameon=None)
-    plt.clf()
-
-
-def plot_results_cpu(res, init_point, init_bw, init_cpu, id):
-    none = plt.plot([float(x.split("\t")[2]) for x in res["none"]][init_point:],
-                    [100 - float(x.split("\t")[1]) / init_cpu * 100 for x in res["none"]][init_point:],
-                    'r', label="none",
-                    linestyle="solid")
-
-    vhg = plt.plot([float(x.split("\t")[2]) for x in res["vhg"]][init_point:],
-                   [100 - float(x.split("\t")[1]) / init_cpu * 100 for x in res["vhg"]][init_point:],
-                   'b', label="vhg",
-                   linestyle="solid")
-
-    vcdn = plt.plot([float(x.split("\t")[2]) for x in res["vcdn"]][init_point:],
-                    [100 - float(x.split("\t")[1]) / init_cpu * 100 for x in res["vcdn"]][init_point:],
-                    'y', label="vcdn",
-                    linestyle="solid")
-    all = plt.plot([float(x.split("\t")[2]) for x in res["all"]][init_point:],
-                   [100 - float(x.split("\t")[1]) / init_cpu * 100 for x in res["all"]][init_point:],
-                   'g', label="all",
-                   linestyle="solid")
+def plot_results_cpu(res, init_point, id):
+    for key in res.keys():
+        spec=get_display_style(key)
+        init_value=res[key][0].substrate.get_nodes_sum()
+        plt.plot([x[0] for x in enumerate(res[key][init_point:])],
+                 [100 - x.substrate.get_nodes_sum()/init_value*100 for x in res[key][init_point:]],
+                 color=spec["color"],
+                 label=spec["label"],
+                 linestyle=spec["linestyle"],
+                 )
 
     plt.legend(["Canonical", "vHG", "vCDN", "vHG+vCDN"], bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
                ncol=4, mode="expand", borderaxespad=0.)
@@ -74,25 +38,18 @@ def plot_results_cpu(res, init_point, init_bw, init_cpu, id):
                 frameon=None)
     plt.clf()
 
-def plot_results_embedding(res, init_point, init_bw, init_cpu, id):
-    none = plt.plot([float(x.split("\t")[2]) for x in res["none"]][init_point:],
-                    [float(x.split("\t")[4])* 100 for x in res["none"]][init_point:],
-                    'r', label="none",
-                    linestyle="solid")
+def plot_results_embedding(res, init_point,  id):
 
-    vhg = plt.plot([float(x.split("\t")[2]) for x in res["vhg"]][init_point:],
-                   [float(x.split("\t")[4])* 100 for x in res["vhg"]][init_point:],
-                   'b', label="vhg",
-                   linestyle="solid")
+    for key in res.keys():
+        spec=get_display_style(key)
+        init_value=res[key][0].substrate.get_nodes_sum()
+        plt.plot([x[0] for x in enumerate(res[key][init_point:])],
+                 [x.success_rate for x in res[key][init_point:]],
+                 color=spec["color"],
+                 label=spec["label"],
+                 linestyle=spec["linestyle"],
+                 )
 
-    vcdn = plt.plot([float(x.split("\t")[2]) for x in res["vcdn"]][init_point:],
-                    [float(x.split("\t")[4])* 100 for x in res["vcdn"]][init_point:],
-                    'y', label="vcdn",
-                    linestyle="solid")
-    all = plt.plot([float(x.split("\t")[2]) for x in res["all"]][init_point:],
-                   [float(x.split("\t")[4])* 100  for x in res["all"]][init_point:],
-                   'g', label="all",
-                   linestyle="solid")
 
     plt.legend(["Canonical", "vHG", "vCDN", "vHG+vCDN"], bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
                ncol=4, mode="expand", borderaxespad=0.)
@@ -108,24 +65,28 @@ def plot_results_embedding(res, init_point, init_bw, init_cpu, id):
     plt.clf()
 
 
-def plot_results_bw(res, init_point, init_bw, init_cpu, id):
-    none = plt.plot([float(x.split("\t")[2]) for x in res["none"]][init_point:],
-                    [100 - float(x.split("\t")[0]) / init_bw * 100 for x in res["none"]][init_point:],
-                    'r', label="none",
-                    linestyle="solid")
 
-    vhg = plt.plot([float(x.split("\t")[2]) for x in res["vhg"]][init_point:],
-                   [100 - float(x.split("\t")[0]) / init_bw * 100 for x in res["vhg"]][init_point:],
-                   'b', label="vhg",
-                   linestyle="solid")
-    vcdn = plt.plot([float(x.split("\t")[2]) for x in res["vcdn"]][init_point:],
-                    [100 - float(x.split("\t")[0]) / init_bw * 100 for x in res["vcdn"]][init_point:],
-                    'y', label="vcdn",
-                    linestyle="solid")
-    all = plt.plot([float(x.split("\t")[2]) for x in res["all"]][init_point:],
-                   [100 - float(x.split("\t")[0]) / init_bw * 100 for x in res["all"]][init_point:],
-                   'g', label="all",
-                   linestyle="solid")
+def get_display_style(name):
+    if name=="none":
+        return {'color':'r', 'label':"none", 'linestyle':"solid"}
+    elif name=="vhg":
+        return {'color':'b', 'label':"vhg", 'linestyle':"solid"}
+    elif name=="vcdn":
+        return {'color':'y', 'label':"vhg", 'linestyle':"solid"}
+    elif name=="all":
+        return {'color':'g', 'label':"vhg", 'linestyle':"solid"}
+
+def plot_results_bw(res, init_point, id):
+
+    for key in res.keys():
+        spec=get_display_style(key)
+        init_value=res[key][0].substrate.get_edges_sum()
+        plt.plot([x[0] for x in enumerate(res[key][init_point:])],
+                 [100 - x.substrate.get_edges_sum()/init_value*100 for x in res[key][init_point:]],
+                 color=spec["color"],
+                 label=spec["label"],
+                 linestyle=spec["linestyle"],
+                 )
 
     plt.legend(["Canonical", "vHG", "vCDN", "vHG+vCDN"], bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
                ncol=4, mode="expand", borderaxespad=0.)

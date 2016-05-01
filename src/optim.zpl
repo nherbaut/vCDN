@@ -51,10 +51,15 @@ var w binary;
 var cdns_var [CDN_LABEL] binary;
 
 
-minimize cost:
-    sum <u,v> in E union Et:
-		sum <i,j> in ES:y[u,v,i,j] * bwS[i,j];
+#minimize cost:
+#    sum <u,v> in E union Et:
+#		sum <i,j> in ES:y[u,v,i,j] * bwS[i,j];
 
+maximize cost:
+                        sum <u,v> in E:
+                                    ((bw[u,v]-sum <i,j> in ES:(y[u,v,i,j] * bwS[i,j] ))/(bw[u,v]))+
+                            sum <u,v> in Et:
+                                ((bw[v,u]-sum <i,j> in ES:(y[u,v,i,j] * bwS[i,j] ))/(bw[v,u]));
 
 
 subto everyNodeIsMapped:

@@ -1,11 +1,15 @@
+from copy import deepcopy
+
 import numpy as np
 import substrate
 import utils
 from service import Service
 from sla import generate_random_slas
 from solver import solve
-from substrate import Substrate
 from copy import deepcopy
+from result import ResultItem
+
+
 def is_cost_function_pathologic(cost_function, objective_function, proactive):
     '''
 
@@ -44,14 +48,22 @@ def do_simu(relax_vhg, relax_vcdn, proactive, seed, sla_count, rejected_threshol
     cost_function = []
     rejected = 0
     rs = np.random.RandomState(seed=seed)
+
     su = substrate.get_substrate(rs)
-    su=Substrate.fromSpec(4,4,5*10**9,3,300)
+
+    # su=Substrate.fromSpec(4,4,5*10**9,3,300)
     slas = sorted(generate_random_slas(rs, su, sla_count), key=lambda x: x.bandwidth)
-    #slas = generate_random_slas(rs, su, sla_count)
+    # slas = generate_random_slas(rs, su, sla_count)
 
 
+
+    result.append(
+                ResultItem(deepcopy(su), 0, 0, None, None))
+    print su
 
     while rejected < rejected_threshold:
+        print
+        rs.normal(50, 5, 1)[0]
         best_objective_function = None
         best_mapping = None
         count_transformation_loop = 0
@@ -59,14 +71,14 @@ def do_simu(relax_vhg, relax_vcdn, proactive, seed, sla_count, rejected_threshol
         service = Service.fromSla(sla)
 
         mapping = None
-        mapping_res=[]
+        mapping_res = []
 
-        #run this algo until relaxation is over
+        # run this algo until relaxation is over
         while True:
-            print "solving for vhg=%d vcdn=%d start=%d"%(service.vhgcount,service.vcdncount,len(service.start))
+            # print "solving for vhg=%d vcdn=%d start=%d"%(service.vhgcount,service.vcdncount,len(service.start))
             mapping = solve(service, su)
             if mapping is not None:
-                mapping_res.append((deepcopy(service),deepcopy(mapping)))
+                mapping_res.append((deepcopy(service), deepcopy(mapping)))
 
             if service.relax(relax_vhg, relax_vcdn):
                 service.write()
@@ -74,18 +86,22 @@ def do_simu(relax_vhg, relax_vcdn, proactive, seed, sla_count, rejected_threshol
                 break
 
         if len(mapping_res) == 0:
-            rejected +=1
+            rejected += 1
+            result.append(
+                ResultItem(su, accepted_slas, float(accepted_slas) / (accepted_slas + rejected), service, None))
             continue
         else:
-            mapping_res=sorted(mapping_res, key=lambda x: x[1].objective_function)
-            service=mapping_res[0][0]
-            mapping=mapping_res[0][1]
-            #mapping.save()
-            print "winner has %d\t%d" % (service.vhgcount,service.vcdncount)
+            mapping_res = sorted(mapping_res, key=lambda x: -x[1].objective_function)
+            service = mapping_res[0][0]
+            mapping = mapping_res[0][1]
+            # mapping.save()
+            # print "winner has %d\t%d" % (service.vhgcount,service.vcdncount)
             su.consume_service(service, mapping)
             su.write()
 
-            accepted_slas=sla_count - len(slas) - rejected
-            result.append("%s\t%d\t%d\t%lf" % (su, accepted_slas, len(mapping_res),float(accepted_slas)/(accepted_slas+rejected)))
+            accepted_slas = sla_count - len(slas) - rejected
+            # result.append("%s\t%d\t%d\t%lf\t%s" % (su, accepted_slas, len(mapping_res),float(accepted_slas)/(accepted_slas+rejected),"winner has %d %d" % (service.vhgcount,service.vcdncount)))
+            result.append(
+                ResultItem(deepcopy(su), accepted_slas, float(accepted_slas) / (accepted_slas + rejected), deepcopy(service), deepcopy(mapping)))
 
     return result

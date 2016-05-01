@@ -32,8 +32,14 @@ class bcolors:
 class Substrate:
     def __str__(self):
         #print [x[1] for x in self.nodesdict.items()]
-        return "%e\t%e" % (
-            sum([x[2] for x in self.edges]), sum([x[1] for x in self.nodesdict.items()]))
+        return "%e\t%e" % (self.get_edges_sum(),self.get_edges_sum())
+
+    def get_edges_sum(self):
+        return sum([x[2] for x in self.edges])
+
+
+    def get_nodes_sum(self):
+        return sum([x[1] for x in self.nodesdict.items()])
 
     def __init__(self, edges, nodesdict):
         self.edges = edges
@@ -125,7 +131,7 @@ class Substrate:
         nodesdict = {}
 
         for l in nodes:
-            value = max(rs.normal(100, 5, 1)[0], 0)
+            value = max(rs.normal(50, 5, 1)[0], 0)
             nodesdict[str(l)] = value
 
         return cls(edges, nodesdict)

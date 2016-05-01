@@ -34,16 +34,15 @@ for seed in range(s, s + int(args.count), 1):
     res["all"] = do_simu(True, True, False, seed=seed, sla_count=sla_count, rejected_threshold=rejected_threshold,
                          name="all")
 
-    # initial substracte bandwidth capacity
-    init_bw = float(res["none"][0].split("\t")[0])
-    # initial substrate cpu capacity
-    init_cpu = float(res["none"][0].split("\t")[1])
 
-    # do the plotting if pdf files
-    plot_all_results(init_bw, init_cpu, res, init_point, seed)
-
-    # save results just in case
+      # save results just in case
     with open("results.pickle", "w") as f:
         pickle.dump(res, f)
+
+
+    # do the plotting if pdf files
+    plot_all_results(res, init_point, seed)
+
+
 
 # plt.savefig('node-cap.pdf', format='pdf')
