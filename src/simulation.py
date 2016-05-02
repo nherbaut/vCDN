@@ -53,7 +53,7 @@ def do_simu(relax_vhg, relax_vcdn, proactive, seed, sla_count, rejected_threshol
 
     # su=Substrate.fromSpec(4,4,5*10**9,3,300)
     slas = sorted(generate_random_slas(rs, su, sla_count), key=lambda x: x.bandwidth)
-    # slas = generate_random_slas(rs, su, sla_count)
+    #slas = generate_random_slas(rs, su, sla_count)
 
 
 

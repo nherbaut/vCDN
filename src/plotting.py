@@ -15,7 +15,9 @@ def plot_all_results( res, init_point=0,id=999):
 
 
 def plot_results_cpu(res, init_point, id):
-    for key in res.keys():
+
+    legend=[]
+    for key in sorted(res.keys()):
         spec=get_display_style(key)
         init_value=res[key][0].substrate.get_nodes_sum()
         plt.plot([x[0] for x in enumerate(res[key][init_point:])],
@@ -24,8 +26,9 @@ def plot_results_cpu(res, init_point, id):
                  label=spec["label"],
                  linestyle=spec["linestyle"],
                  )
+        legend.append(spec["label"])
 
-    plt.legend(["Canonical", "vHG", "vCDN", "vHG+vCDN"], bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
+    plt.legend(legend, bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
                ncol=4, mode="expand", borderaxespad=0.)
     plt.ylabel('% of Substrate Node Capacity Usage')
     plt.xlabel('# of Embeded requests')
@@ -40,7 +43,8 @@ def plot_results_cpu(res, init_point, id):
 
 def plot_results_embedding(res, init_point,  id):
 
-    for key in res.keys():
+    legend=[]
+    for key in sorted(res.keys()):
         spec=get_display_style(key)
         init_value=res[key][0].substrate.get_nodes_sum()
         plt.plot([x[0] for x in enumerate(res[key][init_point:])],
@@ -49,9 +53,9 @@ def plot_results_embedding(res, init_point,  id):
                  label=spec["label"],
                  linestyle=spec["linestyle"],
                  )
+        legend.append(spec["label"])
 
-
-    plt.legend(["Canonical", "vHG", "vCDN", "vHG+vCDN"], bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
+    plt.legend(legend, bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
                ncol=4, mode="expand", borderaxespad=0.)
     plt.ylabel('% of successful embedding')
     plt.xlabel('# of Embeded requests')
@@ -68,16 +72,17 @@ def plot_results_embedding(res, init_point,  id):
 
 def get_display_style(name):
     if name=="none":
-        return {'color':'r', 'label':"none", 'linestyle':"solid"}
+        return {'color':'r', 'label':"Canonical", 'linestyle':"solid"}
     elif name=="vhg":
-        return {'color':'b', 'label':"vhg", 'linestyle':"solid"}
+        return {'color':'b', 'label':"VHG", 'linestyle':"solid"}
     elif name=="vcdn":
-        return {'color':'y', 'label':"vcdn", 'linestyle':"solid"}
+        return {'color':'y', 'label':"VCDN", 'linestyle':"solid"}
     elif name=="all":
-        return {'color':'g', 'label':"all", 'linestyle':"solid"}
+        return {'color':'g', 'label':"VHG+VCDN", 'linestyle':"solid"}
 
 def plot_results_bw(res, init_point, id):
 
+    legend=[]
     for key in sorted(res.keys()):
         spec=get_display_style(key)
         init_value=res[key][0].substrate.get_edges_sum()
@@ -87,8 +92,9 @@ def plot_results_bw(res, init_point, id):
                  label=spec["label"],
                  linestyle=spec["linestyle"],
                  )
+        legend.append(spec["label"])
 
-    plt.legend(["vHG+vCDN","Canonical","vCDN", "vHG"], bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
+    plt.legend(legend, bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
                ncol=4, mode="expand", borderaxespad=0.)
     plt.ylabel('% of Substrate Bandwidth Usage')
     plt.xlabel('# of Embeded Requests')
