@@ -59,11 +59,9 @@ def do_simu(relax_vhg, relax_vcdn, proactive, seed, sla_count, rejected_threshol
 
     result.append(
                 ResultItem(deepcopy(su), 0, 0, None, None))
-    print su
+
 
     while rejected < rejected_threshold:
-        print
-        rs.normal(50, 5, 1)[0]
         best_objective_function = None
         best_mapping = None
         count_transformation_loop = 0
@@ -85,10 +83,10 @@ def do_simu(relax_vhg, relax_vcdn, proactive, seed, sla_count, rejected_threshol
             else:
                 break
 
+        accepted_slas = sla_count - len(slas) - rejected
         if len(mapping_res) == 0:
             rejected += 1
-            result.append(
-                ResultItem(deepcopy(su), accepted_slas, float(accepted_slas) / (accepted_slas + rejected), deepcopy(service), None))
+            result.append(ResultItem(deepcopy(su), accepted_slas, float(accepted_slas) / (accepted_slas + rejected), deepcopy(service), None))
             continue
         else:
             mapping_res = sorted(mapping_res, key=lambda x: -x[1].objective_function)
@@ -98,9 +96,7 @@ def do_simu(relax_vhg, relax_vcdn, proactive, seed, sla_count, rejected_threshol
             # print "winner has %d\t%d" % (service.vhgcount,service.vcdncount)
             su.consume_service(service, mapping)
             su.write()
-
-            accepted_slas = sla_count - len(slas) - rejected
-            # result.append("%s\t%d\t%d\t%lf\t%s" % (su, accepted_slas, len(mapping_res),float(accepted_slas)/(accepted_slas+rejected),"winner has %d %d" % (service.vhgcount,service.vcdncount)))
+             # result.append("%s\t%d\t%d\t%lf\t%s" % (su, accepted_slas, len(mapping_res),float(accepted_slas)/(accepted_slas+rejected),"winner has %d %d" % (service.vhgcount,service.vcdncount)))
             result.append(
                 ResultItem(deepcopy(su), accepted_slas, float(accepted_slas) / (accepted_slas + rejected), deepcopy(service), deepcopy(mapping)))
 
