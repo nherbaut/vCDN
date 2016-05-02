@@ -64,6 +64,11 @@ class Service:
 
         bw={}
 
+        path={}
+
+        for i in range(1,self.vcdncount+1):
+
+
         with open("service.edges.data", "w") as f:
             for index, value in enumerate(self.start, start=1):
                 e=Edge(0, sys.maxint)
@@ -97,6 +102,9 @@ class Service:
                     for j in range(1, int(self.vcdncount) + 1):
                         e = Edge(bw["VHG%d"%i] * self.vcdnratio/self.vcdncount, self.vcdndelay)
                         self.edges["VHG%d vCDN%d" % (i, j)] = e
+
+
+
 
             for key,value in self.edges.items():
                 f.write((key+" %e %e\n") % (value.bw, value.delay))

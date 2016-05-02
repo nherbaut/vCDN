@@ -72,13 +72,13 @@ def get_display_style(name):
     elif name=="vhg":
         return {'color':'b', 'label':"vhg", 'linestyle':"solid"}
     elif name=="vcdn":
-        return {'color':'y', 'label':"vhg", 'linestyle':"solid"}
+        return {'color':'y', 'label':"vcdn", 'linestyle':"solid"}
     elif name=="all":
-        return {'color':'g', 'label':"vhg", 'linestyle':"solid"}
+        return {'color':'g', 'label':"all", 'linestyle':"solid"}
 
 def plot_results_bw(res, init_point, id):
 
-    for key in res.keys():
+    for key in sorted(res.keys()):
         spec=get_display_style(key)
         init_value=res[key][0].substrate.get_edges_sum()
         plt.plot([x[0] for x in enumerate(res[key][init_point:])],
@@ -88,7 +88,7 @@ def plot_results_bw(res, init_point, id):
                  linestyle=spec["linestyle"],
                  )
 
-    plt.legend(["Canonical", "vHG", "vCDN", "vHG+vCDN"], bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
+    plt.legend(["vHG+vCDN","Canonical","vCDN", "vHG"], bbox_to_anchor=(0., 1.02, 1., .102), loc=3,
                ncol=4, mode="expand", borderaxespad=0.)
     plt.ylabel('% of Substrate Bandwidth Usage')
     plt.xlabel('# of Embeded Requests')

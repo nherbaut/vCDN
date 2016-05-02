@@ -88,7 +88,7 @@ def do_simu(relax_vhg, relax_vcdn, proactive, seed, sla_count, rejected_threshol
         if len(mapping_res) == 0:
             rejected += 1
             result.append(
-                ResultItem(su, accepted_slas, float(accepted_slas) / (accepted_slas + rejected), service, None))
+                ResultItem(deepcopy(su), accepted_slas, float(accepted_slas) / (accepted_slas + rejected), deepcopy(service), None))
             continue
         else:
             mapping_res = sorted(mapping_res, key=lambda x: -x[1].objective_function)
