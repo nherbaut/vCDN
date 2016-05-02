@@ -24,14 +24,16 @@ set STARTERS_LABEL := {read "starters.nodes.data" as "<1s>"};
 set STARTERS_OUTGOING_LINKS := {<i,j> in ES inter (STARTERS_LABEL cross NS) with i!=j};
 set STARTERS_INCOMING_LINKS := {<i,j> in ES inter (NS cross STARTERS_LABEL ) with i!=j};
 
-defset delta(u) := { <v> in N with <u,v> in (E union Et)};
+set SERVICE_PATHS := {read "service.path.data" as "<1s,2s,3s>"};
+set SERVICE_PATHS_DELAY := {read "service.path.delay.data" as "<1s,2n>"};
 
+
+
+defset delta(u) := { <v> in N with <u,v> in (E union Et)};
 param cpuS[NS] := read "service.nodes.data" as "<1s> 2n";
 param cpu[N] := read "substrate.nodes.data" as "<1s> 2n";
 
 param delays[E] := read "substrate.edges.data" as "<1s,2s> 4n";
-param delayst[Et] := read "substrate.edges.data" as "<2s,1s> 4n";
-param delaysS[ES] := read "service.edges.data" as "<1s,2s> 4n";
 
 
 param bwS[ES] := read "service.edges.data" as "<1s,2s> 3n";
@@ -77,10 +79,12 @@ subto bwSubstrate:
        sum<i,j> in ES: (y[u,v,i,j]+y[v,u,i,j]) * bwS[i,j] <= bw[u,v];
 
 
-subto delaySubstrate:
-   	forall <i,j> in ES :
-   	    sum <u,v> in E:
-			y[u,v,i,j]*delays[u,v] <= delaysS[i,j];
+
+
+subto E2EdelayConstraint:
+  forall <service,delay> in SERVICE_PATHS_DELAY:
+    forall <k,i,j> in {<k,i,j>  in SERVICE_PATHS with k==service}:
+     (sum <u,v> in E:y[u,v,i,j]*delays[u,v] + sum <u,v> in Et: y[u,v,i,j]*delays[v,u])<= delay;
 
 
 
