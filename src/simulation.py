@@ -8,7 +8,7 @@ from sla import generate_random_slas
 from solver import solve
 from copy import deepcopy
 from result import ResultItem
-
+from substrate import Substrate
 
 def is_cost_function_pathologic(cost_function, objective_function, proactive):
     '''
@@ -34,7 +34,7 @@ def is_cost_function_pathologic(cost_function, objective_function, proactive):
 
 
 @utils.timed
-def do_simu(relax_vhg, relax_vcdn, proactive, seed, sla_count, rejected_threshold):
+def do_simu(relax_vhg, relax_vcdn, proactive, seed, sla_count, rejected_threshold=0,iteration_threshold=0):
     '''
     performs the simulation with the specified characteristics
     :param relax_vhg: True if we let the algothim increase the number of vhg
@@ -49,9 +49,9 @@ def do_simu(relax_vhg, relax_vcdn, proactive, seed, sla_count, rejected_threshol
     rejected = 0
     rs = np.random.RandomState(seed=seed)
 
-    su = substrate.get_substrate(rs)
+    #su = substrate.get_substrate(rs)
 
-    # su=Substrate.fromSpec(4,4,5*10**9,3,300)
+    su=Substrate.fromSpec(5,5,8**9,30,50)
     slas = sorted(generate_random_slas(rs, su, sla_count), key=lambda x: x.bandwidth)
     #slas = generate_random_slas(rs, su, sla_count)
 
@@ -61,7 +61,7 @@ def do_simu(relax_vhg, relax_vcdn, proactive, seed, sla_count, rejected_threshol
                 ResultItem(deepcopy(su), 0, 0, None, None))
 
 
-    while rejected < rejected_threshold:
+    while (rejected_threshold>0 and rejected < rejected_threshold) or (iteration_threshold>0 and (sla_count - len(slas) < iteration_threshold)):
         best_objective_function = None
         best_mapping = None
         count_transformation_loop = 0
@@ -87,6 +87,7 @@ def do_simu(relax_vhg, relax_vcdn, proactive, seed, sla_count, rejected_threshol
         if len(mapping_res) == 0:
             rejected += 1
             result.append(ResultItem(deepcopy(su), accepted_slas, float(accepted_slas) / (accepted_slas + rejected), deepcopy(service), None))
+
             continue
         else:
             mapping_res = sorted(mapping_res, key=lambda x: -x[1].objective_function)

@@ -131,7 +131,7 @@ class Substrate:
         nodesdict = {}
 
         for l in nodes:
-            value = max(rs.normal(50, 5, 1)[0], 0)
+            value = max(rs.normal(100, 5, 1)[0], 0)
             nodesdict[str(l)] = value
 
         return cls(edges, nodesdict)
@@ -183,3 +183,4 @@ def get_substrate(rs, file='Geant2012.graphml'):
     su.write()
 
     return su
+    

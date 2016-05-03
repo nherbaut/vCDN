@@ -48,7 +48,7 @@ def plot_results_embedding(res, init_point,  id):
         spec=get_display_style(key)
         init_value=res[key][0].substrate.get_nodes_sum()
         plt.plot([x[0] for x in enumerate(res[key][init_point:])],
-                 [x.success_rate for x in res[key][init_point:]],
+                 [x.success_rate*100 for x in res[key][init_point:]],
                  color=spec["color"],
                  label=spec["label"],
                  linestyle=spec["linestyle"],

@@ -32,17 +32,47 @@ def write_sla(sla, seed=None):
         f.write("%s \n" % sla.start)
 
 
+def getRandomBitrate(rs):
+    n = rs.uniform(0,100)
+    if n < 5:
+        return 7110500
+    elif n < 10:
+        return 2548000
+    elif n < 15:
+        return 1298000
+    elif n < 20:
+        return 829250
+    elif n< 70:
+        return 454250
+    elif n< 100:
+        return 204250
+
+
+
+
+
+
+
 def generate_random_slas(rs, substrate, count=1000):
     res = []
     for i in range(0, count):
-        #bitrate = rs.choice([500000, 750000,  1000000, 1500000, 2000000])
-        bitrate = rs.choice([   400000, 500000, 600000])
 
-        concurent_users = max(rs.normal(10000, 5000), 10000)
+
+
+
+
+        bitrate = getRandomBitrate(rs)
+
+        #bitrate = rs.choice([   400000, 500000, 600000])
+
+        concurent_users = max(rs.normal(5000, 5000), 5000)
+
+
+        #concurent_users = max(rs.normal(20000, 5000), 5000)
         time_span = max(rs.normal(24 * 60 * 60, 60 * 60), 0)
         movie_duration = max(rs.normal(60 * 60, 10 * 60), 0)
 
-        start_count=rs.choice([1,2,3])
+        start_count=rs.choice([1,2,3,4])
         end_count=2
         max_cdn_to_use=2
 
