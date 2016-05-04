@@ -1,5 +1,5 @@
 import sys
-
+from combinatorial import clusterStart
 
 class Node:
     def __init__(self, cpu):
@@ -66,6 +66,10 @@ class Service:
         '''
 
         bw = {}
+        #VHG assignment
+        cluster_data= clusterStart(self.start,self.vhgcount)
+        print cluster_data
+
         #write info on the edge
         with open("service.edges.data", "w") as f:
             for index, value in enumerate(self.start, start=1):
@@ -73,7 +77,8 @@ class Service:
                 self.edges["S0 S%d" % index] = e
 
             for index, value in enumerate(self.start, start=1):
-                assigned_vhg = 1 + (index - 1) % self.vhgcount
+                assigned_vhg = cluster_data[value]
+                #assigned_vhg = 1 + (index - 1) % self.vhgcount
 
                 e = Edge(self.sourcebw / self.vhgcount)
                 self.edges["S%d VHG%d" % (index, assigned_vhg)] = e

@@ -27,7 +27,7 @@ if args.reuse :
 else:
     su=Substrate.fromGraph(rs,'Geant2012.graphml')
     #su=Substrate.fromSpec(5,5,10**9,1,100)
-
+su.write()
 if dry and not os.path.isfile("service.pickle"):
     print("must have a service.pickle to dry-run")
     exit(1)

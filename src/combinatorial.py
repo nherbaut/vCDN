@@ -1,17 +1,14 @@
-from collections import defaultdict
-from itertools import chain, combinations
 import sys
-import numpy as np
+from collections import defaultdict
+from itertools import chain, combinations, product
 
-n = 5
-nodes = ["S"+str(i) for i in range(1,n+1)]
-c = 3
+from solver import shortest_path
 
 
-def toto(problem):
+def generate_problem_combinaisons(problem):
     res = []
     if problem[1] == problem[0]:  # trivial
-        return np.ones(problem[0]).tolist()
+        return [[1 for x in range(1, problem[0] + 1)], ]
     elif problem[1] == 1:  # also trivial
         return [[problem[0]]]
     elif problem[1] == 2:  # solving the pb for 2
@@ -20,8 +17,8 @@ def toto(problem):
             res.append([i, problem[0] - i])
         return res
     else:
-        for i in range(1, problem[0] - problem[1]):
-            for j in toto([problem[0] - i, problem[1] - 1]):
+        for i in range(1, problem[0] - problem[1] + 1):
+            for j in generate_problem_combinaisons([problem[0] - i, problem[1] - 1]):
                 res.append([i] + j)
         return res
 
@@ -31,23 +28,14 @@ def powerset(iterable):
     return chain.from_iterable(combinations(s, r) for r in range(len(s) + 1))
 
 
-data = defaultdict(list)
-for i in powerset(nodes ):
-    if len(i) > 0:
-        data[len(i)].append(i)
-
-didi = [map(lambda x: int(x), x.split(" ")) for x in
-        set([" ".join(map(lambda x: str(x), (sorted(x)))) for x in toto([n, c])])]
-
-
 class Tree:
-    def __init__(self, parent=None, node=("root",),distance=lambda x:len(x)):
+    def __init__(self, parent=None, node=("root",), distance=lambda x: len(x)):
         self.node = node
         self.children = []
         self.parent = parent
-        self.score=None
-        self.d=distance
-        self.best_leaf=None
+        self.score = None
+        self.d = distance
+        self.best_leaf = None
 
     def has_ancester(self, node):
         if self.parent is not None:
@@ -61,31 +49,50 @@ class Tree:
 
     def compute_best_leaf(self):
 
+        for c in self.children:
+            c.compute_best_leaf()
 
-            for c in self.children:
-                c.compute_best_leaf()
-
-            if self.parent is not None:
-                my_best_children=self.score if self.score is not None else 0
-                my_value=self.d(self.node)
-                if self.parent.score is None or my_best_children+my_value < self.parent.score:
-                    self.parent.score=my_value + my_best_children
-                    self.parent.best_leaf=(self.node,self.best_leaf)
-
-
-
-
-
-
-
-
+        if self.parent is not None:
+            my_best_children = self.score if self.score is not None else 0
+            my_value = self.d(self.node)
+            if self.parent.score is None or my_best_children + my_value < self.parent.score:
+                self.parent.score = my_value + my_best_children
+                self.parent.best_leaf = [self.node, ]
+                if self.best_leaf is not None:
+                    for i in self.best_leaf:
+                        self.parent.best_leaf.append(i)
 
 
 class AncesterError(Exception):
     pass
 
 
-def build_exhaustive_tree(data, settings, tree=Tree()):
+cache = {}
+
+
+def do_dist(bunch):
+    if bunch in cache:
+        return cache[bunch]
+    else:
+        asum = 0
+        for i in filter(lambda x: x[0] != x[1],
+                        map(lambda x: x.split(" "), set([" ".join(sorted(i)) for i in product(bunch, bunch)]))):
+
+            if (str(i[0]), str(i[1])) not in cache:
+                value = shortest_path(str(i[0]), str(i[1]))
+                cache[(str(i[0]), str(i[1]))] = value
+            else:
+                value = cache[(str(i[0]), str(i[1]))]
+            if value is not None:
+                asum += value
+            else:
+                print
+                "failure: %s" % str(i)
+
+        return asum
+
+
+def build_exhaustive_tree(data, settings, tree):
     '''
 
     :param data: {1: [("a","b","c"], 2: [("a","b")]}
@@ -93,7 +100,7 @@ def build_exhaustive_tree(data, settings, tree=Tree()):
     :param tree:
     :return:
     '''
-    if len(settings)==0:
+    if len(settings) == 0:
         return
 
     for j in data[settings[0]]:
@@ -101,18 +108,41 @@ def build_exhaustive_tree(data, settings, tree=Tree()):
             for k in j:
                 if tree.has_ancester(k):
                     raise AncesterError()
-            subtree=Tree(node=j, parent=tree)
+            subtree = Tree(node=j, parent=tree, distance=tree.d)
             tree.children.append(subtree)
-            build_exhaustive_tree(data,settings[1:],subtree)
+            build_exhaustive_tree(data, settings[1:], subtree)
 
         except AncesterError:
-                continue
+            continue
 
 
-for i in didi:
-    tree=Tree()
-    build_exhaustive_tree(data, i,tree)
-    tree.compute_best_leaf()
-    print i
-    print tree.score
-    print tree.best_leaf
+def clusterStart(nodes, class_count):
+    data = defaultdict(list)
+    for i in powerset(nodes):
+        if len(i) > 0:
+            data[len(i)].append(i)
+
+    combinaisons = [map(lambda x: int(x), x.split(" ")) for x in
+                    set([" ".join(map(lambda x: str(x), (sorted(x)))) for x in
+                         generate_problem_combinaisons([len(nodes), class_count])])]
+
+    min_score = sys.maxint
+    candidate = None
+
+    for i in combinaisons:
+        tree = Tree(distance=do_dist)
+        build_exhaustive_tree(data, i, tree)
+        tree.compute_best_leaf()
+        if tree.score < min_score:
+            min_score = tree.score
+            candidate = tree.best_leaf
+
+
+    i=1
+    res={}
+    for x in candidate:
+        for y in x:
+          res[y]=i
+        i+=1
+
+    return res
