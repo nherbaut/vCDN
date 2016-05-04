@@ -183,4 +183,3 @@ def get_substrate(rs, file='Geant2012.graphml'):
     su.write()
 
     return su
-    
