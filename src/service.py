@@ -13,6 +13,15 @@ class Edge:
 
 
 class Service:
+    _spvhg = True
+    @property
+    def spvhg(self):
+        return self._spvhg
+
+    @spvhg.setter
+    def spvhg(self,val):
+        self._spvhg = val
+
     @classmethod
     def fromSla(cls, sla):
         return cls(sla.bandwidth, 1, sla.delay, 0.35, 10, 3, 1,
@@ -36,6 +45,8 @@ class Service:
         self.edges = {}
         self.max_cdn_to_use = max_cdn_to_use
         self.service_id = 0
+
+
 
     def relax(self, relax_vhg=True, relax_vcdn=True):
         # print("relaxation level\t%e " % (self.vhgcount + self.vcdncount - 2))
@@ -67,8 +78,9 @@ class Service:
 
         bw = {}
         #VHG assignment
-        cluster_data= clusterStart(self.start,self.vhgcount)
-        #print cluster_data
+        if Service.spvhg:
+            cluster_data= clusterStart(self.start,self.vhgcount)
+
 
         #write info on the edge
         with open("service.edges.data", "w") as f:
@@ -77,8 +89,13 @@ class Service:
                 self.edges["S0 S%d" % index] = e
 
             for index, value in enumerate(self.start, start=1):
-                assigned_vhg = cluster_data[value]
-                #assigned_vhg = 1 + (index - 1) % self.vhgcount
+
+
+
+                if Service.spvhg:
+                    assigned_vhg = cluster_data[value]
+                else:
+                    assigned_vhg = 1 + (index - 1) % self.vhgcount
 
                 e = Edge(self.sourcebw / self.vhgcount)
                 self.edges["S%d VHG%d" % (index, assigned_vhg)] = e

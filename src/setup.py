@@ -9,7 +9,4 @@ setup(name='paper3simu',
       author_email='nherbaut@labri.fr',
       url='http://www.labri.fr/perso/nherbaut',
       packages=['src', 'distutils.command'],
-
-
-
-     )
+      )
