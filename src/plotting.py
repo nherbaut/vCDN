@@ -3,7 +3,9 @@ import re
 import subprocess
 import matplotlib.pyplot as plt
 import tempfile
-
+import argparse
+import os
+import shutil
 def plot_all_results( res, init_point=0,id=999):
     plt.figure(0)
     plot_results_bw(res, init_point, id)
@@ -208,10 +210,23 @@ def plotsol():
 
 
 if __name__ == "__main__":
+
+
+    parser = argparse.ArgumentParser(description='1 iteration for solver')
+    parser.add_argument('--png', dest='dopng', action='store_true')
+    args=parser.parse_args()
+    dopng=args.dopng
     plotsol()
-    file=tempfile.mkstemp(".pdf")[1]
-    subprocess.Popen( ["neato", "./substrate.dot" ,"-Tpdf" ,"-o", file]).wait()
-    subprocess.Popen(["evince",file]).wait()
+    if not dopng:
+        file=tempfile.mkstemp(".pdf")[1]
+        subprocess.Popen( ["neato", "./substrate.dot" ,"-Tpdf" ,"-o", file]).wait()
+        subprocess.Popen(["evince",file]).wait()
+    else:
+        file=tempfile.mkstemp(".svg")[1]
+        subprocess.Popen( ["neato", "./substrate.dot" ,"-Tsvg" ,"-o", file]).wait()
+        shutil.copy(file, "./res.svg")
+
+
 
 
 
