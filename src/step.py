@@ -10,7 +10,7 @@ from sla import generate_random_slas
 from solver import solve
 import substrate
 from substrate import Substrate
-
+import time
 
 parser = argparse.ArgumentParser(description='1 iteration for solver')
 parser.add_argument('-d',"--dry-run", dest='dry', action='store_true')
@@ -27,6 +27,7 @@ if args.reuse :
 else:
     su=Substrate.fromGraph(rs,'Geant2012.graphml')
     #su=Substrate.fromSpec(5,5,10**9,1,100)
+
 su.write()
 if dry and not os.path.isfile("service.pickle"):
     print("must have a service.pickle to dry-run")
@@ -51,7 +52,9 @@ if args.vcdn is not None:
 
 with open("service.pickle", "w") as f:
         pickle.dump(service, f)
-        service.write()
+
+service.write()
+
 
 mapping = solve(service, su)
 

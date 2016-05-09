@@ -8,7 +8,6 @@ def shortest_path(node1,node2):
         f.write("%s\n"%node1)
     with open("node2.data","w") as f:
         f.write("%s\n"%node2)
-
     subprocess.call(["scip", "-b", "./sp.batch"],stdout=open(os.devnull, 'wb'))
     with open("solutions.data", "r") as sol:
         data = sol.read()
