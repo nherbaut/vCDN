@@ -68,7 +68,7 @@ class Service:
         bw = {}
         #VHG assignment
         cluster_data= clusterStart(self.start,self.vhgcount)
-        print cluster_data
+        #print cluster_data
 
         #write info on the edge
         with open("service.edges.data", "w") as f:

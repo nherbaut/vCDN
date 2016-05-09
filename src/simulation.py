@@ -49,9 +49,10 @@ def do_simu(relax_vhg, relax_vcdn, proactive, seed, sla_count, rejected_threshol
     rejected = 0
     rs = np.random.RandomState(seed=seed)
 
-    #su = substrate.get_substrate(rs)
+    su = substrate.get_substrate(rs)
 
-    su=Substrate.fromSpec(5,5,8**9,30,50)
+    #su=Substrate.fromSpec(5,5,8**9,30,50)
+    su.write()
     slas = sorted(generate_random_slas(rs, su, sla_count), key=lambda x: x.bandwidth)
     #slas = generate_random_slas(rs, su, sla_count)
 
