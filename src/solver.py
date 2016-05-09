@@ -2,6 +2,7 @@ import re
 import subprocess
 import os
 from mapping import Mapping
+import copy
 
 def shortest_path(node1,node2):
     with open("node1.data","w") as f:
@@ -20,7 +21,20 @@ def shortest_path(node1,node2):
 
     return None
 
-def solve(service, substrate,allow_violations=False):
+def solve(service, substrate,allow_violations=False,preassign_vhg=False):
+
+
+
+    if preassign_vhg:
+        service_no_cdn=copy.deepcopy(service)
+        service_no_cdn.max_cdn_to_use=0
+        service_no_cdn.cdn=[]
+        mapping=solve(service_no_cdn, substrate,allow_violations=False,preassign_vhg=False)
+        if mapping is None:
+            return None
+        service.vhg_hints=mapping.get_vhg_mapping()
+
+
     service.write()
     substrate.write()
     violations=[]

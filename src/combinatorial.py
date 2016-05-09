@@ -78,11 +78,9 @@ def do_dist(bunch):
         for i in filter(lambda x: x[0] != x[1],
                         map(lambda x: x.split(" "), set([" ".join(sorted(i)) for i in product(bunch, bunch)]))):
 
-            if (str(i[0]), str(i[1])) not in cache:
-                value = shortest_path(str(i[0]), str(i[1]))
-                cache[(str(i[0]), str(i[1]))] = value
-            else:
-                value = cache[(str(i[0]), str(i[1]))]
+
+            value = shortest_path_cached(str(i[0]), str(i[1]))
+
             if value is not None:
                 asum += value
             else:
@@ -114,6 +112,33 @@ def build_exhaustive_tree(data, settings, tree):
 
         except AncesterError:
             continue
+
+
+
+
+def shortest_path_cached(node1,node2):
+    if (node1,node2) not in cache:
+        cache[(node1,node2)]=shortest_path(node1,node2)
+
+    return cache[(node1,node2)]
+
+
+def get_vhg_cdn_mapping(vhgs,cdns):
+    '''
+
+    :param vhgs: [ ("1025",'vhg1'), ("1026",'vhg2')]
+    :param cdns: [ ("1025",'cdn1'), ("1026",'cdn3')]
+    :return: [ "vhg1":"cdn3"]
+    '''
+    res={}
+    for vhg in vhgs:
+        best=sys.maxint
+        for cdn in cdns:
+            value=shortest_path_cached(vhg[0],cdn[0])
+            if value < best:
+                best==value
+                res[vhg[1]]=cdn[1]
+    return res
 
 
 def clusterStart(nodes, class_count):

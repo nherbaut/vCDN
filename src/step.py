@@ -49,8 +49,7 @@ else:
 
 if args.vhg is not None:
     if int(args.vhg) > len(service.start):
-        print
-        "warining, vhg_count greater that start count, decreased vhg coutn to %d " % len(service.start)
+        print("warining, vhg_count greater that start count, decreased vhg coutn to %d " % len(service.start))
     service.vhgcount = min(len(service.start), int(args.vhg))
 if args.vcdn is not None:
     service.vcdncount = int(args.vcdn)
@@ -60,7 +59,8 @@ with open("service.pickle", "w") as f:
 
 service.write()
 
-mapping = solve(service, su)
+
+mapping = solve(service, su,preassign_vhg=True)
 
 if not mapping is None:
     if not dry:

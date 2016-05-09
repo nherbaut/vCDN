@@ -1,5 +1,5 @@
 import sys
-from combinatorial import clusterStart
+from combinatorial import clusterStart, get_vhg_cdn_mapping
 
 class Node:
     def __init__(self, cpu):
@@ -40,11 +40,13 @@ class Service:
         self.vcdncount = vcdncount
         self.start = start
         self.vhgcount = min(vhgcount, len(start))
-        self.cdn = cdn
+
         self.nodes = {}
         self.edges = {}
+        self.cdn = cdn
         self.max_cdn_to_use = max_cdn_to_use
         self.service_id = 0
+        self.vhg_hints=None
 
 
 
@@ -77,9 +79,16 @@ class Service:
         '''
 
         bw = {}
+        self.nodes = {}
+        self.edges = {}
         #VHG assignment
         if Service.spvhg:
-            cluster_data= clusterStart(self.start,self.vhgcount)
+            source_vhg_assignment= clusterStart(self.start,self.vhgcount)
+
+        if  self.vhg_hints is not None:
+            vhg_cdn_assignment=get_vhg_cdn_mapping(self.vhg_hints,[(value,"CDN%d"%index) for index,value in enumerate(self.cdn)])
+        else:
+            vhg_cdn_assignment=None
 
 
         #write info on the edge
@@ -93,7 +102,7 @@ class Service:
 
 
                 if Service.spvhg:
-                    assigned_vhg = cluster_data[value]
+                    assigned_vhg = source_vhg_assignment[value]
                 else:
                     assigned_vhg = 1 + (index - 1) % self.vhgcount
 
@@ -105,9 +114,13 @@ class Service:
                     bw["VHG%d" % assigned_vhg] = self.sourcebw / self.vhgcount
 
             for i in range(1, int(self.vhgcount) + 1):
-                assigned_vhg = 1 + (i - 1) % len(self.cdn)
-                e = Edge(bw["VHG%d" % i] * (1 - self.vcdnratio))
-                self.edges["VHG%d CDN%d" % (i, assigned_vhg)] = e
+                if len(self.cdn)>0:
+                    if vhg_cdn_assignment is None:
+                        assigned_vhg = 1 + (i - 1) % len(self.cdn)
+                    else:
+                        assigned_vhg = vhg_cdn_assignment["VHG%d" % i]
+                    e = Edge(bw["VHG%d" % i] * (1 - self.vcdnratio))
+                    self.edges["VHG%d %s" % (i, assigned_vhg)] = e
 
             if self.vhgcount > 1:
                 for i in range(1, int(self.vhgcount) + 1):

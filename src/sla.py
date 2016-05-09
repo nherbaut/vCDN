@@ -72,13 +72,21 @@ def generate_random_slas(rs, substrate, count=1000):
         time_span = max(rs.normal(24 * 60 * 60, 60 * 60), 0)
         movie_duration = max(rs.normal(60 * 60, 10 * 60), 0)
 
-        start_count=rs.choice([1,2,3,4])
+        #start_count=rs.choice([1,2,3,4])
+        start_count=4
         end_count=2
         max_cdn_to_use=2
 
-        draws = rs.choice(substrate.nodesdict.keys(), size=start_count+end_count, replace=False)
-        start=draws[:-end_count]
-        cdn=draws[-end_count:]
+        draws = rs.choice(substrate.nodesdict.keys(), size=start_count+end_count, replace=False).tolist()
+
+
+        start=[]
+        cdn=[]
+        for i in range(1,start_count+1):
+            start.append(draws.pop())
+        for i in range(1,end_count+1):
+            cdn.append(draws.pop())
+
 
         res.append(Sla(bitrate, concurent_users, time_span, movie_duration, start, cdn,max_cdn_to_use=max_cdn_to_use))
 
