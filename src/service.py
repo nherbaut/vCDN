@@ -86,7 +86,7 @@ class Service:
             source_vhg_assignment= clusterStart(self.start,self.vhgcount)
 
         if  self.vhg_hints is not None:
-            vhg_cdn_assignment=get_vhg_cdn_mapping(self.vhg_hints,[(value,"CDN%d"%index) for index,value in enumerate(self.cdn)])
+            vhg_cdn_assignment=get_vhg_cdn_mapping(self.vhg_hints,[(value,"CDN%d"%index) for index,value in enumerate(self.cdn,start=1)])
         else:
             vhg_cdn_assignment=None
 
@@ -118,9 +118,9 @@ class Service:
                     if vhg_cdn_assignment is None:
                         assigned_vhg = 1 + (i - 1) % len(self.cdn)
                     else:
-                        assigned_vhg = vhg_cdn_assignment["VHG%d" % i]
+                        assigned_vhg = int(vhg_cdn_assignment["VHG%d" % i].split("CDN")[1])
                     e = Edge(bw["VHG%d" % i] * (1 - self.vcdnratio))
-                    self.edges["VHG%d %s" % (i, assigned_vhg)] = e
+                    self.edges["VHG%d CDN%d" % (i, assigned_vhg)] = e
 
             if self.vhgcount > 1:
                 for i in range(1, int(self.vhgcount) + 1):

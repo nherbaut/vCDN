@@ -19,9 +19,13 @@ parser.add_argument('--reuse', help="Start from a new substrate", dest='reuse', 
 parser.add_argument('--spvhg-disable', help="Disable grouping vhg by shortest path", dest='spvhg_disable',
                     action='store_true')
 
+parser.add_argument('--vhgpa-disable', help="Disable grouping vhg by shortest path", dest='vhgpa',
+                    action='store_true')
+
 args = parser.parse_args()
 dry = args.dry
 spvhg_disable = args.spvhg_disable
+vhgpa=args.vhgpa
 
 rs = np.random.RandomState()
 if args.reuse:
@@ -60,7 +64,7 @@ with open("service.pickle", "w") as f:
 service.write()
 
 
-mapping = solve(service, su,preassign_vhg=True)
+mapping = solve(service, su,preassign_vhg=not vhgpa)
 
 if not mapping is None:
     if not dry:

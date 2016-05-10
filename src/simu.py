@@ -26,16 +26,13 @@ s = int(args.seed)
 for seed in range(s, s + int(args.count), 1):
     res = {}
 
-    res["none"] = do_simu(False, False, False, seed=seed, sla_count=sla_count, rejected_threshold=rejected_threshold,
-                          name="none",iteration_threshold=iteration_threshold)
-    res["vcdn"] = do_simu(False, True, False, seed=seed, sla_count=sla_count, rejected_threshold=rejected_threshold,
-                          name="vcdn",iteration_threshold=iteration_threshold)
-    res["vhg"] = do_simu(True, False, False, seed=seed, sla_count=sla_count, rejected_threshold=rejected_threshold,
-                         name="vhg",iteration_threshold=iteration_threshold)
-
-
-    res["all"] = do_simu(True, True, False, seed=seed, sla_count=sla_count, rejected_threshold=rejected_threshold,
-                         name="all",iteration_threshold=iteration_threshold)
+    #res["none"] = do_simu(False, False, False, seed=seed, sla_count=sla_count, rejected_threshold=rejected_threshold,                          name="none",iteration_threshold=iteration_threshold)
+    #res["vcdn"] = do_simu(False, True, False, seed=seed, sla_count=sla_count, rejected_threshold=rejected_threshold,                          name="vcdn",iteration_threshold=iteration_threshold)
+    res["vhg.4"] = do_simu(True, False, False, seed=seed, sla_count=sla_count, rejected_threshold=rejected_threshold,                         name="VHG-PAPER4",iteration_threshold=iteration_threshold,preassign_vhg=True)
+    res["all.4"] = do_simu(True, True, False, seed=seed, sla_count=sla_count, rejected_threshold=rejected_threshold,                         name="VHG+VCDN-PAPER4",iteration_threshold=iteration_threshold,preassign_vhg=True)
+    res["vhg.3"] = do_simu(True, False, False, seed=seed, sla_count=sla_count, rejected_threshold=rejected_threshold,                         name="VHG-PAPER3",iteration_threshold=iteration_threshold,preassign_vhg=False)
+    res["all.3"] = do_simu(True, True, False, seed=seed, sla_count=sla_count, rejected_threshold=rejected_threshold,                         name="VHG+VCDN-PAPER3",iteration_threshold=iteration_threshold,preassign_vhg=False)
+    res["baseline"] = do_simu(False, False, False, seed=seed, sla_count=sla_count, rejected_threshold=rejected_threshold,                         name="baseline",iteration_threshold=iteration_threshold,preassign_vhg=False)
 
 
       # save results just in case

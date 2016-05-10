@@ -34,7 +34,7 @@ def is_cost_function_pathologic(cost_function, objective_function, proactive):
 
 
 @utils.timed
-def do_simu(relax_vhg, relax_vcdn, proactive, seed, sla_count, rejected_threshold=0,iteration_threshold=0):
+def do_simu(relax_vhg, relax_vcdn, proactive, seed, sla_count, rejected_threshold=0,iteration_threshold=0,preassign_vhg=False):
     '''
     performs the simulation with the specified characteristics
     :param relax_vhg: True if we let the algothim increase the number of vhg
@@ -58,8 +58,7 @@ def do_simu(relax_vhg, relax_vcdn, proactive, seed, sla_count, rejected_threshol
 
 
 
-    result.append(
-                ResultItem(deepcopy(su), 0, 0, None, None))
+    result.append(ResultItem(deepcopy(su), 0, 0, None, None))
 
 
     while (rejected_threshold>0 and rejected < rejected_threshold) or (iteration_threshold>0 and (sla_count - len(slas) < iteration_threshold)):
@@ -75,13 +74,11 @@ def do_simu(relax_vhg, relax_vcdn, proactive, seed, sla_count, rejected_threshol
         # run this algo until relaxation is over
         while True:
             # print "solving for vhg=%d vcdn=%d start=%d"%(service.vhgcount,service.vcdncount,len(service.start))
-            mapping = solve(service, su)
+            mapping = solve(service, su,preassign_vhg=preassign_vhg)
             if mapping is not None:
                 mapping_res.append((deepcopy(service), deepcopy(mapping)))
 
-            if service.relax(relax_vhg, relax_vcdn):
-                service.write()
-            else:
+            if not service.relax(relax_vhg, relax_vcdn):
                 break
 
         accepted_slas = sla_count - len(slas) - rejected
