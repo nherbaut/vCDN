@@ -40,9 +40,12 @@ def solve(service, substrate,allow_violations=False,preassign_vhg=False):
     violations=[]
 
     if not allow_violations:
-        subprocess.call(["scip", "-b", "./scpi.batch"],stdout=open(os.devnull, 'wb'))
+        if not preassign_vhg: #run the optim without CDNs
+            subprocess.call(["scip", "-b", "./mapping.batch"],stdout=open(os.devnull, 'wb'))
+        else: #run the optim with CDN using reoptim
+            subprocess.call(["scip", "-b", "./mapping-reopt.batch"],stdout=open(os.devnull, 'wb'))
     else:
-        subprocess.call(["scip", "-b", "./scpi-debug.batch"],stdout=open(os.devnull, 'wb'))
+        subprocess.call(["scip", "-b", "./mapping-debug.batch"],stdout=open(os.devnull, 'wb'))
     # plotting.plotsol()
     # os.subprocess.call(["cat", "./substrate.dot", "|", "dot", "-Tpdf", "-osol.pdf"])
     with open("solutions.data", "r") as sol:

@@ -43,6 +43,7 @@ def plot_results_cpu(res, init_point, id):
                 orientation='landscape', papertype="A4", format="pdf",
                 transparent=False, bbox_inches=None, pad_inches=0.1,
                 frameon=None)
+    subprocess.Popen(["evince", "%d-node-capacitie.pdf" % id])
     plt.clf()
 
 
@@ -71,6 +72,7 @@ def plot_results_embedding(res, init_point, id):
                 orientation='landscape', papertype="A4", format="pdf",
                 transparent=False, bbox_inches=None, pad_inches=0.1,
                 frameon=None)
+    subprocess.Popen(["evince", "%d-embedding.pdf" % id])
     plt.clf()
 
 
@@ -114,6 +116,7 @@ def plot_results_bw(res, init_point, id):
                 transparent=False, bbox_inches=None, pad_inches=0.1,
                 frameon=None)
 
+    subprocess.Popen(["evince", "%d-edge-capacities.pdf" % id])
     plt.clf()
 
 

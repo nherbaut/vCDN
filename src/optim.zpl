@@ -43,7 +43,8 @@ param source := read "starters.nodes.data" as "2s" use 1;
 param cdn_count := read "cdnmax.data" as "1n" use 1;
 
 
-
+param cpuCost := read "cpu.cost.data" as "1n" use 1;
+param netCost := read "net.cost.data" as "1n" use 1;
 
 var x[N cross NS ] binary;
 var x_cdn[N cross CDN_LABEL ] binary;
@@ -53,15 +54,16 @@ var w binary;
 var cdns_var [CDN_LABEL] binary;
 
 
-#minimize cost:
-#    sum <u,v> in E union Et:
-#		sum <i,j> in ES:y[u,v,i,j] * bwS[i,j];
+minimize cost:
+    sum <u,v> in E union Et:(
+		sum <i,j> in ES:(y[u,v,i,j] * bwS[i,j] * netCost)) + card(VHG_LABEL)*cpuCost*3 + card(VCDN_LABEL)*cpuCost*10;
 
-maximize cost:
-                        sum <u,v> in E:
-                                    ((bw[u,v]-sum <i,j> in ES:(y[u,v,i,j] * bwS[i,j] ))/(bw[u,v]))+
-                            sum <u,v> in Et:
-                                ((bw[v,u]-sum <i,j> in ES:(y[u,v,i,j] * bwS[i,j] ))/(bw[v,u]));
+
+#maximize cost:
+#                        sum <u,v> in E:
+#                                    ((bw[u,v]-sum <i,j> in ES:(y[u,v,i,j] * bwS[i,j] ))/(bw[u,v]))+
+#                            sum <u,v> in Et:
+#                                ((bw[v,u]-sum <i,j> in ES:(y[u,v,i,j] * bwS[i,j] ))/(bw[v,u]));
 
 
 subto everyNodeIsMapped:

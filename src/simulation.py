@@ -1,5 +1,6 @@
-from copy import deepcopy
 
+from copy import deepcopy
+import sys
 import numpy as np
 import substrate
 import utils
@@ -73,30 +74,33 @@ def do_simu(relax_vhg, relax_vcdn, proactive, seed, sla_count, rejected_threshol
 
         # run this algo until relaxation is over
         while True:
-            # print "solving for vhg=%d vcdn=%d start=%d"%(service.vhgcount,service.vcdncount,len(service.start))
+            #print "solving for vhg=%d vcdn=%d start=%d"%(service.vhgcount,service.vcdncount,len(service.start))
             mapping = solve(service, su,preassign_vhg=preassign_vhg)
             if mapping is not None:
                 mapping_res.append((deepcopy(service), deepcopy(mapping)))
 
             if not service.relax(relax_vhg, relax_vcdn):
+
                 break
 
         accepted_slas = sla_count - len(slas) - rejected
         if len(mapping_res) == 0:
             rejected += 1
             result.append(ResultItem(deepcopy(su), accepted_slas, float(accepted_slas) / (accepted_slas + rejected), deepcopy(service), None))
-
+            sys.stdout.write("X")
             continue
         else:
             mapping_res = sorted(mapping_res, key=lambda x: -x[1].objective_function)
             service = mapping_res[0][0]
             mapping = mapping_res[0][1]
             # mapping.save()
-            # print "winner has %d\t%d" % (service.vhgcount,service.vcdncount)
+            #print "winner has %d\t%d" % (service.vhgcount,service.vcdncount)
             su.consume_service(service, mapping)
             su.write()
              # result.append("%s\t%d\t%d\t%lf\t%s" % (su, accepted_slas, len(mapping_res),float(accepted_slas)/(accepted_slas+rejected),"winner has %d %d" % (service.vhgcount,service.vcdncount)))
             result.append(
                 ResultItem(deepcopy(su), accepted_slas, float(accepted_slas) / (accepted_slas + rejected), deepcopy(service), deepcopy(mapping)))
+            sys.stdout.write("O")
+        sys.stdout.flush()
 
     return result

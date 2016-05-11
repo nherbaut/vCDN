@@ -130,18 +130,18 @@ def get_vhg_cdn_mapping(vhgs,cdns):
     :param cdns: [ ("1025",'cdn1'), ("1026",'cdn3')]
     :return: [ "vhg1":"cdn3"]
     '''
-    print "managing %d vhgs and %d cdns" % (len(vhgs),len(cdns))
+    #print "managing %d vhgs and %d cdns" % (len(vhgs),len(cdns))
     res={}
     for vhg in vhgs:
         best=sys.maxint
         for cdn in cdns:
             value=shortest_path_cached(vhg[0],cdn[0])
             if value is not None:
-                print("from %s to %s we have %lf"%( vhg[1], cdn[1], value))
+                #print("from %s to %s we have %lf"%( vhg[1], cdn[1], value))
                 if value < best:
                     best=value
                     res[vhg[1]]=cdn[1]
-    print res
+    #print res
     return res
 
 

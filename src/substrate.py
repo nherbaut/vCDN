@@ -41,11 +41,13 @@ class Substrate:
     def get_nodes_sum(self):
         return sum([x[1] for x in self.nodesdict.items()])
 
-    def __init__(self, edges, nodesdict):
+    def __init__(self, edges, nodesdict,cpuCost=2000,netCost=20000.0/10**9):
         self.edges = edges
         self.nodesdict = nodesdict
         self.edges_init = sorted(edges, key=lambda x: "%s%s" % (str(x[0]), str(x[1])))
         self.nodesdict_init = nodesdict.copy()
+        self.cpuCost=cpuCost
+        self.netCost=netCost
 
     def write(self, edges_file="substrate.edges.data", nodes_file="substrate.nodes.data"):
         edges = self.edges
@@ -67,6 +69,13 @@ class Substrate:
             for nodekey in sorted(nodesdict.keys()):
                 node = bcolors.color_out(float(nodesdict[nodekey])/float(self.nodesdict_init[nodekey])*100)
                 f.write("%s\t%s\n" % (nodekey, node))
+
+        with open("cpu.cost.data","w") as f:
+            f.write("%lf\n"%self.cpuCost)
+
+        with open("net.cost.data","w") as f:
+            f.write("%lf\n"%self.netCost)
+
 
     @classmethod
     def fromSpec(cls,width,height,bw,delay,cpu):

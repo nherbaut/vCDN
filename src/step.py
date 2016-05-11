@@ -31,8 +31,8 @@ rs = np.random.RandomState()
 if args.reuse:
     su = Substrate.fromFile()
 else:
-    #su = Substrate.fromGraph(rs, 'Geant2012.graphml')
-    su=Substrate.fromSpec(3,4,10**9,1,100)
+    su = Substrate.fromGraph(rs, 'Geant2012.graphml')
+    #su=Substrate.fromSpec(3,4,10**9,1,100)
 
 su.write()
 if dry and not os.path.isfile("service.pickle"):

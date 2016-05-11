@@ -34,18 +34,13 @@ def write_sla(sla, seed=None):
 
 def getRandomBitrate(rs):
     n = rs.uniform(0,100)
-    if n < 5:
-        return 7110500
-    elif n < 10:
-        return 2548000
-    elif n < 15:
-        return 1298000
-    elif n < 20:
-        return 829250
-    elif n< 70:
-        return 454250
-    elif n< 100:
-        return 204250
+    if n < 25: #LD
+        return 666666
+    elif n < 75:
+        return 1555555# SD
+    else:
+        return 5000000 #HD
+
 
 
 
@@ -65,7 +60,7 @@ def generate_random_slas(rs, substrate, count=1000):
 
         #bitrate = rs.choice([   400000, 500000, 600000])
 
-        concurent_users = max(rs.normal(5000, 5000), 5000)
+        concurent_users = max(rs.normal(1000, 1000), 5000)
 
 
         #concurent_users = max(rs.normal(20000, 5000), 5000)

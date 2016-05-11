@@ -2,7 +2,7 @@
 
 import argparse
 import pickle
-
+import sys
 from plotting import plot_all_results
 from simulation import do_simu
 
@@ -35,13 +35,32 @@ for seed in range(s, s + int(args.count), 1):
     res["baseline"] = do_simu(False, False, False, seed=seed, sla_count=sla_count, rejected_threshold=rejected_threshold,                         name="baseline",iteration_threshold=iteration_threshold,preassign_vhg=False)
 
 
-      # save results just in case
-    with open("results.pickle", "w") as f:
-        pickle.dump(res, f)
+    with open("results.pickle", "r") as f:
+        res_file=pickle.load(f)
 
+
+    for key in res.keys():
+        if key in res_file:
+            print "won't add %s to already existing result" % key
+        else:
+            res_file[key]=res[key]
+
+
+
+    # save results just in case
+    with open("results.pickle", "w") as f:
+        pickle.dump(res_file, f)
+
+
+    print("saved results with keys:")
+    for key in res.keys():
+        if key in res_file:
+            sys.stdout.write("%s "%key)
+
+    sys.stdout.write("\n")
 
     # do the plotting if pdf files
-    plot_all_results(res, init_point, seed)
+    #plot_all_results(res, init_point, seed)
 
 
 
