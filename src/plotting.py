@@ -7,7 +7,7 @@ import tempfile
 import hashlib
 
 import matplotlib.pyplot as plt
-
+import numpy
 
 def plot_all_results(res, init_point=0, id=999):
     plt.figure(0)
@@ -21,17 +21,20 @@ def plot_all_results(res, init_point=0, id=999):
 def plot_results_cpu(res, init_point, id):
     legend = []
     for key in sorted(res.keys()):
-        spec = get_display_style(key)
+        spec = get_display_style(key,res)
         init_value = res[key][0].substrate.get_nodes_sum()
         plt.plot([x[0] for x in enumerate(res[key][init_point:])],
                  [100 - x.substrate.get_nodes_sum() / init_value * 100 for x in res[key][init_point:]],
                  color=spec["color"],
                  label=spec["label"],
-                 linestyle=spec["linestyle"],
+                 linestyle=spec["linestyle"],marker=spec["marker"],
                  )
         legend.append(spec["label"])
 
     ax = plt.subplot(111)
+    plt.grid()
+    ax.set_xticks(numpy.arange(0,len(res[key]),max(1,len(res[key])/20)))
+    ax.set_yticks(numpy.arange(0,100,20))
     ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.05),
           ncol=3, fancybox=True, shadow=True)
     plt.ylabel('% of Substrate Node Capacity Usage')
@@ -50,17 +53,20 @@ def plot_results_cpu(res, init_point, id):
 def plot_results_embedding(res, init_point, id):
     legend = []
     for key in sorted(res.keys()):
-        spec = get_display_style(key)
+        spec = get_display_style(key,res)
         init_value = res[key][0].substrate.get_nodes_sum()
         plt.plot([x[0] for x in enumerate(res[key][init_point:])],
                  [x.success_rate * 100 for x in res[key][init_point:]],
                  color=spec["color"],
                  label=spec["label"],
-                 linestyle=spec["linestyle"],
+                 linestyle=spec["linestyle"],marker=spec["marker"],
                  )
         legend.append(spec["label"])
 
     ax = plt.subplot(111)
+    plt.grid()
+    ax.set_xticks(numpy.arange(0,len(res[key]),max(1,len(res[key])/20)))
+    ax.set_yticks(numpy.arange(0,100,20))
     ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.05),
           ncol=3, fancybox=True, shadow=True)
     plt.ylabel('% of successful embedding')
@@ -76,36 +82,46 @@ def plot_results_embedding(res, init_point, id):
     plt.clf()
 
 
-def get_display_style(name):
+def get_display_style(name,res):
+    ls=res[name][0].linestyle
     color = "#" + hashlib.sha1("0"+name).hexdigest()[0:6]
+    results={}
 
     if name == "none":
-        return {'color': color, 'label': "Canonical", 'linestyle': "solid"}
+        results ={'color': color, 'label': "Canonical", 'linestyle': ls}
     elif name == "vhg":
-        return {'color': color, 'label': "VHG", 'linestyle': "solid"}
+        results= {'color': color, 'label': "VHG", 'linestyle': ls}
     elif name == "vcdn":
-        return {'color': color, 'label': "VCDN", 'linestyle': "solid"}
+        results= {'color': color, 'label': "VCDN", 'linestyle': ls}
     elif name == "all":
-        return {'color': color, 'label': "VHG+VCDN", 'linestyle': "solid"}
+        results = {'color': color, 'label': "VHG+VCDN", 'linestyle': ls}
     else:
-        return {'color': color, 'label': name, 'linestyle': "solid"}
+        results = {'color': color, 'label': name, 'linestyle': ls}
+    results["marker"]=res[name][0].marker
+
+    return results
 
 
 def plot_results_bw(res, init_point, id):
     legend = []
     for key in sorted(res.keys()):
-        spec = get_display_style(key)
+        spec = get_display_style(key,res)
         init_value = res[key][0].substrate.get_edges_sum()
 
         plt.plot([x[0] for x in enumerate(res[key][init_point:])],
                  [100 - x.substrate.get_edges_sum() / init_value * 100 for x in res[key][init_point:]],
                  color=spec["color"],
                  label=spec["label"],
-                 linestyle=spec["linestyle"],
+                 linestyle=spec["linestyle"],marker=spec["marker"],
+
                  )
+
         legend.append(spec["label"])
 
     ax = plt.subplot(111)
+    plt.grid()
+    ax.set_xticks(numpy.arange(0,len(res[key]),max(1,len(res[key])/20)))
+    ax.set_yticks(numpy.arange(0,100,20))
     ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.05),
           ncol=3, fancybox=True, shadow=True)
     plt.ylabel('% of Substrate Bandwidth Usage')

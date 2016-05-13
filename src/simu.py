@@ -5,7 +5,7 @@ import pickle
 import sys
 from plotting import plot_all_results
 from simulation import do_simu
-
+import os.path
 parser = argparse.ArgumentParser(description='Process some integers.')
 parser.add_argument('--threshold', help="the number of failure until the algorithm stops", default=0)
 parser.add_argument('--ithreshold', help="the number of run of the algo", default=0)
@@ -35,8 +35,11 @@ for seed in range(s, s + int(args.count), 1):
     res["baseline"] = do_simu(False, False, False, seed=seed, sla_count=sla_count, rejected_threshold=rejected_threshold,                         name="baseline",iteration_threshold=iteration_threshold,preassign_vhg=False)
 
 
-    with open("results.pickle", "r") as f:
-        res_file=pickle.load(f)
+    if os.path.isfile("results.pickle"):
+        with open("results.pickle", "r") as f:
+            res_file=pickle.load(f)
+    else:
+        res_file={}
 
 
     for key in res.keys():

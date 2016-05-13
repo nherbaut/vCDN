@@ -5,3 +5,5 @@ class ResultItem:
         self.success_rate = success_rate
         self.service = service
         self.mapping = mapping
+        self.marker =  " "
+        self.linestyle = "solid"
