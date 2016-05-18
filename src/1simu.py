@@ -19,6 +19,9 @@ parser.add_argument('--relaxVhg', help="boolean expression that allow the algo t
 parser.add_argument('--relaxvCDN', help="boolean expression that allow the algo to add vCDN", dest='relaxvCDN', action='store_true')
 parser.add_argument('--name', help="name of the experiment", default="unamed experiment")
 parser.add_argument('--smart-disable', dest='smart_ass', action='store_false')
+parser.add_argument('--unsorted-sla', dest='unsorted_sla', action='store_true')
+parser.add_argument('--cpuCost', help="unit cost of the cpu",default=2000)
+parser.add_argument('--netCost', help="unit cost of the networking",default=20000)
 
 
 
@@ -37,8 +40,7 @@ res={}
 relax_vhg=args.relaxVhg
 relax_vcdn=args.relaxvCDN
 smart_ass=args.smart_ass
-
-
+sorted_sla=(args.unsorted_sla is True)
 
 res[args.name] = do_simu(relax_vhg=relax_vhg,
                        relax_vcdn=relax_vcdn,
@@ -47,7 +49,11 @@ res[args.name] = do_simu(relax_vhg=relax_vhg,
                        rejected_threshold=rejected_threshold,
                        name=args.name,
                        iteration_threshold=iteration_threshold,
-                       smart_ass=smart_ass)
+                       smart_ass=smart_ass,
+                       cpuCost=int(args.cpuCost),
+                       netCost=float(args.netCost)/10.0**9,
+                       sorted=sorted_sla
+                        )
 
 
 if os.path.isfile("results.pickle"):

@@ -89,7 +89,7 @@ def plot_results_embedding(res, init_point, id):
 
 def get_display_style(name,res):
     ls=res[name][0].linestyle
-    color = "#" + hashlib.sha1("0"+name).hexdigest()[0:6]
+    color = "#" + hashlib.sha1("0sdsqd"+name).hexdigest()[0:6]
     results={}
 
     if name == "none":

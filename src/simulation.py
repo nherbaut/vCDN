@@ -23,6 +23,7 @@ def do_simu(**kwargs):
     :param rejected_threshold:  stop after X rejection
     :param iteration_threshold:  stop after Y iteration
     :param smart_ass: use heuristics to groups S to VHG and vCDN to VHG
+    :param sorted: use sorted SLA
     :return: a list containing each step results
     '''
 
@@ -34,12 +35,16 @@ def do_simu(**kwargs):
     rs = np.random.RandomState(seed=kwargs["seed"])
 
     su = substrate.get_substrate(rs)
+    su.cpuCost=kwargs["cpuCost"]
+    su.netCost=kwargs["netCost"]
 
     #su=Substrate.fromSpec(5,5,8**9,30,50)
     su.write()
-    slas = sorted(generate_random_slas(rs, su, kwargs["sla_count"]), key=lambda x: x.bandwidth)
-    #slas = generate_random_slas(rs, su, sla_count)
-    #slas = generate_random_slas(rs, su, kwargs["sla_count"])
+    if "sorted" in kwargs and kwargs["sorted"]==True:
+        slas = sorted(generate_random_slas(rs, su, kwargs["sla_count"]), key=lambda x: -x.bandwidth)
+    else:
+        slas = generate_random_slas(rs, su, kwargs["sla_count"])
+
 
 
 
