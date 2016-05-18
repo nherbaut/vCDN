@@ -60,7 +60,7 @@ def generate_random_slas(rs, substrate, count=1000):
 
         #bitrate = rs.choice([   400000, 500000, 600000])
 
-        concurent_users = max(rs.normal(1000, 1000), 5000)
+        concurent_users = max(rs.normal(1000, 1000), 1000)
 
 
         #concurent_users = max(rs.normal(20000, 5000), 5000)

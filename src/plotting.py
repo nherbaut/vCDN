@@ -9,6 +9,11 @@ import hashlib
 import matplotlib.pyplot as plt
 import numpy
 
+
+
+
+x_resolution=5
+
 def plot_all_results(res, init_point=0, id=999):
     plt.figure(0)
     plot_results_bw(res, init_point, id)
@@ -33,8 +38,8 @@ def plot_results_cpu(res, init_point, id):
 
     ax = plt.subplot(111)
     plt.grid()
-    ax.set_xticks(numpy.arange(0,len(res[key]),max(1,len(res[key])/20)))
-    ax.set_yticks(numpy.arange(0,100,20))
+    ax.set_xticks(numpy.arange(0,len(res[key]),max(1,len(res[key])/x_resolution)))
+    ax.set_yticks(numpy.arange(0,140,20))
     ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.05),
           ncol=3, fancybox=True, shadow=True)
     plt.ylabel('% of Substrate Node Capacity Usage')
@@ -65,8 +70,8 @@ def plot_results_embedding(res, init_point, id):
 
     ax = plt.subplot(111)
     plt.grid()
-    ax.set_xticks(numpy.arange(0,len(res[key]),max(1,len(res[key])/20)))
-    ax.set_yticks(numpy.arange(0,100,20))
+    ax.set_xticks(numpy.arange(0,len(res[key]),max(1,len(res[key])/x_resolution)))
+    ax.set_yticks(numpy.arange(0,140,20))
     ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.05),
           ncol=3, fancybox=True, shadow=True)
     plt.ylabel('% of successful embedding')
@@ -120,8 +125,8 @@ def plot_results_bw(res, init_point, id):
 
     ax = plt.subplot(111)
     plt.grid()
-    ax.set_xticks(numpy.arange(0,len(res[key]),max(1,len(res[key])/20)))
-    ax.set_yticks(numpy.arange(0,100,20))
+    ax.set_xticks(numpy.arange(0,len(res[key]),max(1,len(res[key])/x_resolution)))
+    ax.set_yticks(numpy.arange(0,140,20))
     ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.05),
           ncol=3, fancybox=True, shadow=True)
     plt.ylabel('% of Substrate Bandwidth Usage')

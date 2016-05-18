@@ -1,6 +1,6 @@
 import sys
 from combinatorial import clusterStart, get_vhg_cdn_mapping
-
+import logging
 class Node:
     def __init__(self, cpu):
         self.cpu = cpu
@@ -13,22 +13,14 @@ class Edge:
 
 
 class Service:
-    _spvhg = True
-    @property
-    def spvhg(self):
-        return self._spvhg
-
-    @spvhg.setter
-    def spvhg(self,val):
-        self._spvhg = val
 
     @classmethod
     def fromSla(cls, sla):
         return cls(sla.bandwidth, 1, sla.delay, 0.35, 10, 3, 1,
-                   sla.start, sla.cdn, sla.max_cdn_to_use)
+                   sla.start, sla.cdn, sla.max_cdn_to_use,spvhg=False)
 
     def __init__(self, sourcebw, vhgcount, sla_delay, vcdnratio, vcdncpu, vhgcpu, vcdncount, start,
-                 cdn, max_cdn_to_use):
+                 cdn, max_cdn_to_use,spvhg):
         self.sourcebw = sourcebw
 
 
@@ -47,11 +39,13 @@ class Service:
         self.max_cdn_to_use = max_cdn_to_use
         self.service_id = 0
         self.vhg_hints=None
+        self.spvhg=spvhg
 
 
 
     def relax(self, relax_vhg=True, relax_vcdn=True):
-        # print("relaxation level\t%e " % (self.vhgcount + self.vcdncount - 2))
+        logging.debug("relax_vhg %s, relax_vcdn %s" % (relax_vhg,relax_vcdn))
+
 
         if relax_vhg and relax_vcdn:
             if (self.vcdncount + self.vhgcount) % 2 == 0:
@@ -82,7 +76,7 @@ class Service:
         self.nodes = {}
         self.edges = {}
         #VHG assignment
-        if Service.spvhg:
+        if self.spvhg:
             source_vhg_assignment= clusterStart(self.start,self.vhgcount)
 
         if  self.vhg_hints is not None:
@@ -101,7 +95,7 @@ class Service:
 
 
 
-                if Service.spvhg:
+                if self.spvhg:
                     assigned_vhg = source_vhg_assignment[value]
                 else:
                     assigned_vhg = 1 + (index - 1) % self.vhgcount
