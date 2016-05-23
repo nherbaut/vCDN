@@ -56,7 +56,7 @@ var cdns_var [CDN_LABEL] binary;
 
 minimize cost:
     sum <u,v> in E union Et:(
-		sum <i,j> in ES:(y[u,v,i,j] * bwS[i,j] * netCost)) + card(VHG_LABEL)*cpuCost*3 + card(VCDN_LABEL)*cpuCost*10;
+		sum <i,j> in ES:(y[u,v,i,j] * bwS[i,j] * netCost)) + card(VHG_LABEL)*cpuCost*1 + card(VCDN_LABEL)*cpuCost*2;
 
 
 #maximize cost:

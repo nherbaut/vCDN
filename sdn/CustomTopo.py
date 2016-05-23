@@ -9,6 +9,8 @@ topology enables one to pass in '--topo=mytopo' from the command line.
 """
 
 from mininet.topo import Topo
+from mininet.node import OVSSwitch
+
 
 class MyTopo( Topo ):
     "Simple topology example."
@@ -20,27 +22,27 @@ class MyTopo( Topo ):
         Topo.__init__( self )
 
         # Add hosts and switches
-        hosts={}
-        switches={}
+        self._hosts={}
+        self._switches={}
 
         sizex=5
-        sizey=2
+        sizey=1
 
         for i in range(0,sizex):
             for j in range (0,sizey):
                 names="s%d%d"%(i,j)
-                switches[names]=self.addSwitch( names )
+                self._switches[names]=self.addSwitch(names)
                 nameh="h%d%d"%(i,j)
-                hosts[nameh]=self.addHost( nameh )
-                self.addLink( hosts[nameh], switches[names] )
+                self._hosts[nameh]=self.addHost(nameh)
+                self.addLink(self._hosts[nameh], self._switches[names], bw=1000, delay='5ms')
 
 
         for i in range(0,sizex):
             for j in range (0,sizey):
                 if j+1 < sizey:
-                    self.addLink( switches["s%d%d"%(i,j)], switches["s%d%d"%(i,j+1)] )
+                    self.addLink(self._switches["s%d%d" % (i, j)], self._switches["s%d%d" % (i, j + 1)])
                 if i+1 < sizex:
-                    self.addLink( switches["s%d%d"%(i,j)], switches["s%d%d"%(i+1,j)] )
+                    self.addLink(self._switches["s%d%d" % (i, j)], self._switches["s%d%d" % (i + 1, j)])
 
 
 

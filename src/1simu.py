@@ -35,7 +35,7 @@ iteration_threshold= int(args.ithreshold)
 sla_count = 10000
 init_point = 0
 s = int(args.seed)
-seed=args.seed
+seed=int(args.seed)
 res={}
 relax_vhg=args.relaxVhg
 relax_vcdn=args.relaxvCDN
@@ -66,8 +66,6 @@ else:
 
 for key in res.keys():
     if key in res_file:
-
-
         print "won't add %s to already existing result" % key
         new_key=key + str(random.uniform(1,10000))
         print "writing to another result instead : %s" % new_key
