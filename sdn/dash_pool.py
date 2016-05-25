@@ -43,7 +43,7 @@ class DashThread(threading.Thread):
 
     def run(self):
         logging.debug("Starting " + self.name)
-        do_dash(self.target_br, self.mini_buffer_seconds, self.maxi_buffer_seconds, self.movie_size, self.chunk_size,
+        do_dash(self.name,self.target_br, self.mini_buffer_seconds, self.maxi_buffer_seconds, self.movie_size, self.chunk_size,
                 self.host, self.path, self.port,self.proxy_host ,self.proxy_port )
         logging.debug("Exiting " + self.name)
 
@@ -52,7 +52,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='1 iteration for solver')
 
-    parser.add_argument('--arrival_time', default=3, type=int)
+    parser.add_argument('--arrival_time', default=3.0, type=float)
     parser.add_argument('--user_count', default=100, type=int)
 
     parser.add_argument('--target_br', help="target bitrate", default=5 * 1000 * 1000, type=int)

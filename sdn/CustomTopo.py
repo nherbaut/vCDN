@@ -9,41 +9,46 @@ topology enables one to pass in '--topo=mytopo' from the command line.
 """
 
 from mininet.topo import Topo
-from mininet.node import OVSSwitch
 
 
-class MyTopo( Topo ):
+class MyTopo(Topo):
     "Simple topology example."
 
-    def __init__( self ):
+    def __init__(self):
         "Create custom topo."
 
         # Initialize topology
-        Topo.__init__( self )
+        Topo.__init__(self)
 
         # Add hosts and switches
-        self._hosts={}
-        self._switches={}
+        self._hosts = {}
+        self._switches = {}
+        self._link = {}
 
-        sizex=5
-        sizey=1
+        self._switches["s11"] = self.addSwitch("s11")
+        self._switches["s12"] = self.addSwitch("s12")
+        self._switches["s21"] = self.addSwitch("s21")
+        self._switches["s31"] = self.addSwitch("s31")
+        self._switches["s32"] = self.addSwitch("s32")
 
-        for i in range(0,sizex):
-            for j in range (0,sizey):
-                names="s%d%d"%(i,j)
-                self._switches[names]=self.addSwitch(names)
-                nameh="h%d%d"%(i,j)
-                self._hosts[nameh]=self.addHost(nameh)
-                self.addLink(self._hosts[nameh], self._switches[names], bw=1000, delay='5ms')
+        self._hosts["h11"] = self.addHost("h11")
+        self._hosts["h12"] = self.addHost("h12")
+        self._hosts["h21"] = self.addHost("h21")
+        self._hosts["h31"] = self.addHost("h31")
+        self._hosts["h32"] = self.addHost("h32")
 
-
-        for i in range(0,sizex):
-            for j in range (0,sizey):
-                if j+1 < sizey:
-                    self.addLink(self._switches["s%d%d" % (i, j)], self._switches["s%d%d" % (i, j + 1)])
-                if i+1 < sizex:
-                    self.addLink(self._switches["s%d%d" % (i, j)], self._switches["s%d%d" % (i + 1, j)])
-
+        self.addLink(self._hosts["h11"], self._switches["s11"], bw=1000, delay='5ms',key="%s-%s" % ("h11", "s11"))
+        self.addLink(self._hosts["h12"], self._switches["s12"], bw=1000, delay='5ms',key="%s-%s" % ("h12", "s12"))
+        self.addLink(self._hosts["h21"], self._switches["s21"], bw=1000, delay='5ms',key="%s-%s" % ("h21", "s21"))
+        self.addLink(self._hosts["h31"], self._switches["s31"], bw=1000, delay='5ms',key="%s-%s" % ("h31", "s31"))
+        self.addLink(self._hosts["h32"], self._switches["s32"], bw=1000, delay='5ms',key="%s-%s" % ("h32", "s32"))
 
 
-topos = { 'mytopo': ( lambda: MyTopo() ) }
+        self.addLink(self._switches["s11"], self._switches["s21"], bw=1000, delay='5ms',key="%s-%s" % ("s11", "s21"))
+        self.addLink(self._switches["s12"], self._switches["s21"], bw=1000, delay='5ms',key="%s-%s" % ("s12", "s21"))
+        self.addLink(self._switches["s21"], self._switches["s31"], bw=1000, delay='5ms',key="%s-%s" % ("s21", "s31"))
+        self.addLink(self._switches["s21"], self._switches["s32"], bw=1000, delay='5ms',key="%s-%s" % ("s21", "s32"))
+
+
+
+topos = {'mytopo': (lambda: MyTopo())}
