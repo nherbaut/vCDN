@@ -3,15 +3,15 @@
 import argparse
 import datetime
 import logging
+import os
 import threading
 import time
+from collections import defaultdict
 from scipy.stats import poisson
 
 from apscheduler.schedulers.background import BackgroundScheduler
 
 from dash import do_dash
-
-logging.basicConfig(filename='dash_pool.log', level=logging.DEBUG)
 
 
 class DashThread(threading.Thread):
@@ -26,7 +26,8 @@ class DashThread(threading.Thread):
                  path,
                  port,
                  proxy_host=None,
-                 proxy_port=None):
+                 proxy_port=None,
+                 stalled=None):
         threading.Thread.__init__(self)
         self.name = name
         self.target_br = target_br
@@ -40,11 +41,13 @@ class DashThread(threading.Thread):
         self.port = port
         self.proxy_host = proxy_host
         self.proxy_port = proxy_port
+        self.stalled = stalled
 
     def run(self):
         logging.debug("Starting " + self.name)
-        do_dash(self.name,self.target_br, self.mini_buffer_seconds, self.maxi_buffer_seconds, self.movie_size, self.chunk_size,
-                self.host, self.path, self.port,self.proxy_host ,self.proxy_port )
+        do_dash(self.name, self.target_br, self.mini_buffer_seconds, self.maxi_buffer_seconds, self.movie_size,
+                self.chunk_size,
+                self.host, self.path, self.port, self.proxy_host, self.proxy_port, self.stalled)
         logging.debug("Exiting " + self.name)
 
 
@@ -52,6 +55,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='1 iteration for solver')
 
+    parser.add_argument('--name', default="anonymous")
     parser.add_argument('--arrival_time', default=3.0, type=float)
     parser.add_argument('--user_count', default=100, type=int)
 
@@ -63,14 +67,20 @@ if __name__ == "__main__":
     parser.add_argument('--host', default="mirlitone.com")
     parser.add_argument('--path', default="big_buck_bunny.mp4")
     parser.add_argument('--port', default="80")
-    parser.add_argument('--proxy_host' )
-    parser.add_argument('--proxy_port' )
+    parser.add_argument('--proxy_host')
+    parser.add_argument('--proxy_port')
 
     args = parser.parse_args()
+
+    logging.basicConfig(filename='dash_pool-%s.log' % args.name, level=logging.DEBUG)
 
     scheduler = BackgroundScheduler()
 
     arrival_time = poisson.rvs(args.arrival_time, size=args.user_count).tolist()
+    stalled = defaultdict(int)
+    stalled_file="stalled-%s.log"%args.name
+    if os.path.isfile(stalled_file):
+        os.remove(stalled_file)
 
     next = datetime.datetime.now()
     while len(arrival_time) > 0:
@@ -78,16 +88,23 @@ if __name__ == "__main__":
         if args.proxy_host is None or args.proxy_port is None:
             thread1 = DashThread("Thread-%000d" % (args.user_count - len(arrival_time)), args.target_br,
                                  args.mini_buffer_seconds, args.maxi_buffer_seconds, args.movie_size, args.chunk_size,
-                                 args.host, args.path, args.port)
+                                 args.host, args.path, args.port, stalled=stalled)
         else:
             thread1 = DashThread("Thread-%000d" % (args.user_count - len(arrival_time)), args.target_br,
-                             args.mini_buffer_seconds, args.maxi_buffer_seconds, args.movie_size, args.chunk_size,
-                             args.host, args.path, args.port, args.proxy_host, args.proxy_port)
+                                 args.mini_buffer_seconds, args.maxi_buffer_seconds, args.movie_size, args.chunk_size,
+                                 args.host, args.path, args.port, args.proxy_host, args.proxy_port, stalled=stalled)
         job = scheduler.add_job(thread1.start, 'date', run_date=next)
 
     scheduler.start()
 
-    while len(scheduler.get_jobs()) > 0:
+    start = time.time()
+    with open(stalled_file, "a") as f:
+        f.write("time,sum_stalled,count_stalled,count_users\n")
+
+    while True:
+        with open(stalled_file, "a") as f:
+            f.write("%lf,%d,%d,%d\n" % (
+            time.time() - start, sum(stalled.values()), len(stalled), args.user_count - len(scheduler.get_jobs())))
         time.sleep(1)
 
     scheduler.shutdown(wait=True)

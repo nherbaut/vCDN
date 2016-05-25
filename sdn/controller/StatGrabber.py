@@ -1,7 +1,7 @@
 import logging
 from collections import defaultdict
 from operator import attrgetter
-
+import sys
 from ryu.base import app_manager
 from ryu.controller import ofp_event
 from ryu.controller.handler import CONFIG_DISPATCHER, MAIN_DISPATCHER
@@ -24,8 +24,9 @@ class SimpleMonitor(app_manager.RyuApp):
         self.mac_to_port = {}
         self.datapaths = {}
         self.monitor_thread = hub.spawn(self._monitor)
-        #self.stats = defaultdict({})
+        self.p3stats = {}
         self.started=time.time()
+        self.logger.info('time,id,port,rx_packets,rx_byes,rx_errors,tx_packets,tx_bytes,tx_errors,rx_packetsps,rx_byesps,rx_errorsps,tx_packetsps,tx_bytesps,tx_errorsps')
 
 
     @set_ev_cls(ofp_event.EventOFPStateChange,
@@ -81,12 +82,28 @@ class SimpleMonitor(app_manager.RyuApp):
 
 
         for stat in sorted(body, key=attrgetter('port_no')):
+
             if stat.port_no!=4294967294:
-                self.logger.info('%lf %8d %8d %8d %8d %8d %8d %8d %8d',
+
+                if (ev.msg.datapath.id, stat.port_no) in self.p3stats:
+                    oldtime,rx_packets,rx_bytes,rx_errors,tx_packets,tx_bytes,tx_errors=self.p3stats[ev.msg.datapath.id, stat.port_no]
+                    timespan=float(time.time()-oldtime)
+                else:
+                    oldtime,rx_packets,rx_bytes,rx_errors,tx_packets,tx_bytes,tx_errors=(time.time(),0,0,0,0,0,0)
+                    timespan=float(sys.maxint)
+
+
+
+                self.logger.info('%lf,%8d,%8d,%8d,%8d,%8d,%8d,%8d,%8d,%8f,%8f,%8f,%8f,%8f,%8f',
                                  time.time()-self.started,
                                  ev.msg.datapath.id, stat.port_no,
                                  stat.rx_packets, stat.rx_bytes, stat.rx_errors,
-                                 stat.tx_packets, stat.tx_bytes, stat.tx_errors)
+                                 stat.tx_packets, stat.tx_bytes, stat.tx_errors,
+                                 (stat.rx_packets-rx_packets)/timespan, (stat.rx_bytes-rx_bytes)/timespan, (stat.rx_errors-rx_errors)/timespan,
+                                 (stat.tx_packets-tx_packets)/timespan, (stat.tx_bytes-tx_bytes)/timespan, (stat.tx_errors-tx_errors)/timespan)
+                self.p3stats[ev.msg.datapath.id, stat.port_no]=(time.time(),stat.rx_packets, stat.rx_bytes, stat.rx_errors,stat.tx_packets, stat.tx_bytes, stat.tx_errors)
+
+
 
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
     def switch_features_handler(self, ev):

@@ -3,7 +3,8 @@ import argparse
 import httplib
 import logging
 import time
-
+import exceptions
+from collections import defaultdict
 logging.basicConfig(filename='dash.log', level=logging.DEBUG)
 
 
@@ -13,7 +14,7 @@ def download_bytes(host, path, port, bytes_count, proxy_host, proxy_port):
         if proxy_host is not None and proxy_port is not None:
             conn = httplib.HTTPConnection(proxy_host, proxy_port)
             conn.request(method="GET", url='http://%s:%s/%s' % (host, port, path),
-                         headers={'Range': 'bytes=0-%d' % bytes_count})
+                         headers={'Range': 'bytes=0-%d' % bytes_count,"User-Agent": "Mozilla/5.0 (Android 4.4; Mobile; rv:41.0) Gecko/41.0 Firefox/41.0"})
 
         else:
             conn = httplib.HTTPConnection('%s:%s' % (host, port))
@@ -24,14 +25,16 @@ def download_bytes(host, path, port, bytes_count, proxy_host, proxy_port):
             return int(resp.getheader("content-length"))
         else:
             return 0
-    except:
+    except exceptions.BaseException as e:
+        print e
         print "failed to download"
         return 0
 
 
 def do_dash(name, target_br, mini_buffer_seconds, maxi_buffer_seconds, movie_size, chunk_size, host, path, port,
             proxy_host,
-            proxy_port):
+            proxy_port,
+            stalled):
     TARGET_BITRATE = target_br
     m = mini_buffer_seconds
     M = maxi_buffer_seconds
@@ -47,15 +50,19 @@ def do_dash(name, target_br, mini_buffer_seconds, maxi_buffer_seconds, movie_siz
     buffer = 0
     total_bytes_left = MOVIE_SIZE
     tic = time.time()
+    start=tic
     while total_bytes_left > 0:
         time_spent = time.time() - tic
         tic = time.time()
-        logging.debug("buffering: %s\ttotal_bytes_left: %d\t buffer left %d \t consumed %d bytes in %lf seconds" % (
-            buffering, total_bytes_left, buffer, time_spent * TARGET_BITRATE, time_spent))
+
         data_consumed = min(buffer, time_spent * TARGET_BITRATE)
         total_bytes_left -= data_consumed
         buffer -= data_consumed
-        if buffer == 0 and time_spent >= 10:
+        logging.debug("%s buffering: %s\ttotal_bytes_left: %d\t buffer left %d \t consumed %d bytes in %lf seconds" % (
+            name,buffering, total_bytes_left, buffer, time_spent * TARGET_BITRATE, time_spent))
+        if buffer == 0 and time.time()-start >= 10:
+            stalled[name]+=1
+            logging.debug("stalled")
             print "%d\t%s\tstalled!" % (time.time(), name)
 
         if buffer <= m * TARGET_BITRATE:
@@ -68,7 +75,7 @@ def do_dash(name, target_br, mini_buffer_seconds, maxi_buffer_seconds, movie_siz
                 # logging.debug("switched off buffering")
                 buffering = False
         else:
-            time.sleep(float(buffer - m * TARGET_BITRATE) / TARGET_BITRATE)
+            time.sleep(min(5,float(buffer - m * TARGET_BITRATE) / TARGET_BITRATE))
 
 
 if __name__ == "__main__":
@@ -78,10 +85,10 @@ if __name__ == "__main__":
     parser.add_argument('--mini_buffer_seconds', default=10, type=int)
     parser.add_argument('--maxi_buffer_seconds', default=30, type=int)
     parser.add_argument('--movie_size', default=1000 * 1000 * 1000, type=int)
-    parser.add_argument('--chunk_size', default=1000 * 1000, type=int)
+    parser.add_argument('--chunk_size', default=500 * 1000, type=int)
     parser.add_argument('--host', default="mirlitone.com")
     parser.add_argument('--path', default="big_buck_bunny.mp4")
-    parser.add_argument('--port', default="8080")
+    parser.add_argument('--port', default="80")
     parser.add_argument('--proxy_host', default=None)
     parser.add_argument('--proxy_port', default=None)
 
@@ -89,4 +96,4 @@ if __name__ == "__main__":
 
     do_dash("only_child", args.target_br, args.mini_buffer_seconds, args.maxi_buffer_seconds, args.movie_size,
             args.chunk_size,
-            args.host, args.path, args.port, args.proxy_host, args.proxy_port)
+            args.host, args.path, args.port, args.proxy_host, args.proxy_port,defaultdict(int))

@@ -41,7 +41,7 @@ class MyTopo(Topo):
         self.addLink(self._hosts["h12"], self._switches["s12"], bw=1000, delay='5ms',key="%s-%s" % ("h12", "s12"))
         self.addLink(self._hosts["h21"], self._switches["s21"], bw=1000, delay='5ms',key="%s-%s" % ("h21", "s21"))
         self.addLink(self._hosts["h31"], self._switches["s31"], bw=1000, delay='5ms',key="%s-%s" % ("h31", "s31"))
-        self.addLink(self._hosts["h32"], self._switches["s32"], bw=1000, delay='5ms',key="%s-%s" % ("h32", "s32"))
+        self.addLink(self._hosts["h32"], self._switches["s32"], bw=100, delay='30ms',key="%s-%s" % ("h32", "s32"))
 
 
         self.addLink(self._switches["s11"], self._switches["s21"], bw=1000, delay='5ms',key="%s-%s" % ("s11", "s21"))
