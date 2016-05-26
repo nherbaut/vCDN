@@ -32,14 +32,15 @@ net = Mininet(topo=topo, link=TCLink,controller=c,switch=switch)
 net.start()
 net.pingAll(timeout=1)
 h11, h12, h21, h31,h32= net.get('h11', "h12", "h21", "h31","h32")
-h31.cmd('http-server -p 8000 -a %s . > h31.log &' %h31.IP())
+h31.cmd('http-server -p 8000 -a %s . > h31.log &' % h31.IP())
 h32.cmd('http-server -p 8000 -a %s . > h32.log &' % h32.IP())
 h21.cmd('./proxy/startproxy.sh > proxy.log &')
 
-h11.cmd('./dash_pool.py  --name h11 --host %s --port 8000 --path data --user_count=1000 --arrival_time=0.5 --target_br=500000 --movie_size 100000000 --proxy_host %s --proxy_port 8082&'%(h32.IP(),h21.IP()))
-h12.cmd('./dash_pool.py  --name h11 --host %s --port 8000 --path data --user_count=1000 --arrival_time=0.5 --target_br=500000 --movie_size 100000000 --proxy_host %s --proxy_port 8082&'%(h32.IP(),h21.IP()))
+h11.cmd('./dash_pool.py  --name h11 --host %s --port 8000 --path data --user_count=200 --arrival_time=1 --target_br=300000 --movie_size 100000000 --proxy_host %s --proxy_port 8082 > dash_pool.log&'%(h32.IP(),h21.IP()))
+#h12.cmd('./dash_pool.py  --name h11 --host %s --port 8000 --path data --user_count=1000 --arrival_time=0.5 --target_br=500000 --movie_size 100000000 --proxy_host %s --proxy_port 8082&'%(h32.IP(),h21.IP()))
 #h11.cmd('./dash_pool.py  --name h12 --host %s --port 8000 --path data --user_count=1000 --arrival_time=1 --target_br=2000000&'%h32.IP())
 #print res
+#CLI(net)
 print "press enter to stop mininet"
 sys.stdin.readline()
 print "stopping mininet"

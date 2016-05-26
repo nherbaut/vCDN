@@ -1,31 +1,34 @@
 #!/usr/bin/env python
 import argparse
-import httplib
+import exceptions
 import logging
 import time
-import exceptions
 from collections import defaultdict
+import sys,traceback
 logging.basicConfig(filename='dash.log', level=logging.DEBUG)
+import requests
 
 
 def download_bytes(host, path, port, bytes_count, proxy_host, proxy_port):
+    proxies = None
 
     try:
         if proxy_host is not None and proxy_port is not None:
-            conn = httplib.HTTPConnection(proxy_host, proxy_port)
-            conn.request(method="GET", url='http://%s:%s/%s' % (host, port, path),
-                         headers={'Range': 'bytes=0-%d' % bytes_count,"User-Agent": "Mozilla/5.0 (Android 4.4; Mobile; rv:41.0) Gecko/41.0 Firefox/41.0"})
+            proxies ={}
+            proxies["http"] = 'http://%s:%s' % (proxy_host, proxy_port)
 
-        else:
-            conn = httplib.HTTPConnection('%s:%s' % (host, port))
-            conn.request("GET", '/%s' % (path), headers={'Range': 'bytes=0-%d' % bytes_count})
+        r = requests.get('http://%s:%s/%s' % (host, port, path), headers={'Range': 'bytes=0-%d' % bytes_count,
+                                                                          "User-Agent": "Mozilla/5.0 (Android 4.4; Mobile; rv:41.0) Gecko/41.0 Firefox/41.0"},
+                         allow_redirects=True, proxies=proxies)
 
-        resp = conn.getresponse()
-        if resp.getheader("content-length") is not None:
-            return int(resp.getheader("content-length"))
+        r.content
+
+        if r.headers["content-length"] is not None:
+            return int(r.headers["content-length"])
         else:
             return 0
     except exceptions.BaseException as e:
+        traceback.print_exc(file=sys.stdout)
         print e
         print "failed to download"
         return 0
@@ -35,6 +38,9 @@ def do_dash(name, target_br, mini_buffer_seconds, maxi_buffer_seconds, movie_siz
             proxy_host,
             proxy_port,
             stalled):
+
+    with open("dash_pool.log", "a+") as f:
+        f.write("[%s] %s fire in the whole! let's reach %s  \n"%(time.time(),name,path))
     TARGET_BITRATE = target_br
     m = mini_buffer_seconds
     M = maxi_buffer_seconds
@@ -50,7 +56,7 @@ def do_dash(name, target_br, mini_buffer_seconds, maxi_buffer_seconds, movie_siz
     buffer = 0
     total_bytes_left = MOVIE_SIZE
     tic = time.time()
-    start=tic
+    start = tic
     while total_bytes_left > 0:
         time_spent = time.time() - tic
         tic = time.time()
@@ -58,10 +64,11 @@ def do_dash(name, target_br, mini_buffer_seconds, maxi_buffer_seconds, movie_siz
         data_consumed = min(buffer, time_spent * TARGET_BITRATE)
         total_bytes_left -= data_consumed
         buffer -= data_consumed
-        logging.debug("%s buffering: %s\ttotal_bytes_left: %d\t buffer left %d \t consumed %d bytes in %lf seconds" % (
-            name,buffering, total_bytes_left, buffer, time_spent * TARGET_BITRATE, time_spent))
-        if buffer == 0 and time.time()-start >= 10:
-            stalled[name]+=1
+        logging.debug(
+            "%s buffering: %s\ttotal_bytes_left: %d\t buffer left %d \t consumed %d bytes in %lf seconds to %s:%s/%s" % (
+                name, buffering, total_bytes_left, buffer, time_spent * TARGET_BITRATE, time_spent, host, port, path))
+        if buffer == 0 and time.time() - start >= 10:
+            stalled[name] += 1
             logging.debug("stalled")
             print "%d\t%s\tstalled!" % (time.time(), name)
 
@@ -75,7 +82,9 @@ def do_dash(name, target_br, mini_buffer_seconds, maxi_buffer_seconds, movie_siz
                 # logging.debug("switched off buffering")
                 buffering = False
         else:
-            time.sleep(min(5,float(buffer - m * TARGET_BITRATE) / TARGET_BITRATE))
+            with open("dash_pool.log", "a+") as f:
+                f.write("[%s] %s Zzzz for %s  \n"%(time.time(),name,min(5, float(buffer - m * TARGET_BITRATE) / TARGET_BITRATE)))
+            time.sleep(min(5, float(buffer - m * TARGET_BITRATE) / TARGET_BITRATE))
 
 
 if __name__ == "__main__":
@@ -96,4 +105,4 @@ if __name__ == "__main__":
 
     do_dash("only_child", args.target_br, args.mini_buffer_seconds, args.maxi_buffer_seconds, args.movie_size,
             args.chunk_size,
-            args.host, args.path, args.port, args.proxy_host, args.proxy_port,defaultdict(int))
+            args.host, args.path, args.port, args.proxy_host, args.proxy_port, defaultdict(int))
