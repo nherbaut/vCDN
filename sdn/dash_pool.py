@@ -8,12 +8,12 @@ import threading
 import time
 from collections import defaultdict
 from scipy.stats import poisson, binom
-
+import pandas as pd
 from apscheduler.schedulers.background import BackgroundScheduler
-
+from datetime import datetime as dt
 from dash import do_dash
 import logging
-
+import numpy as np
 
 
 class DashThread(threading.Thread):
@@ -29,7 +29,8 @@ class DashThread(threading.Thread):
                  port,
                  proxy_host=None,
                  proxy_port=None,
-                 stalled=None):
+                 stalled=None,
+                 threads=None):
         threading.Thread.__init__(self)
         self.name = name
         self.target_br = target_br
@@ -44,13 +45,18 @@ class DashThread(threading.Thread):
         self.proxy_host = proxy_host
         self.proxy_port = proxy_port
         self.stalled = stalled
+        self.job=None
+        self.threads=threads
 
     def run(self):
+        self.threads[self.name]=True
         logging.debug("Starting " + self.name)
         do_dash(self.name, self.target_br, self.mini_buffer_seconds, self.maxi_buffer_seconds, self.movie_size,
                 self.chunk_size,
                 self.host, self.path, self.port, self.proxy_host, self.proxy_port, self.stalled)
         logging.debug("Exiting " + self.name)
+        self.job.remove()
+        del self.threads[self.name]
 
 
 if __name__ == "__main__":
@@ -73,6 +79,7 @@ if __name__ == "__main__":
     parser.add_argument('--proxy_port')
 
     args = parser.parse_args()
+    threads={}
 
 
 
@@ -93,7 +100,7 @@ if __name__ == "__main__":
 
             target_br = args.target_br
             movie_size = args.movie_size
-            if binom.rvs(5, 0.5) == 1:  # pop
+            if binom.rvs(10, 0.5) <= 3:  # pop
                 postfix = "_hdpop"
             else:
                 postfix = "_hd"
@@ -108,34 +115,68 @@ if __name__ == "__main__":
         with open("dash_pool.log", "a+") as f:
             f.write("Thread-%000d will be %s and will start at %s\n"%(thread_no,postfix,next))
 
+        thread_name="Thread-%000d-%s" % (thread_no, postfix)
 
         if args.proxy_host is None or args.proxy_port is None:
 
-            thread1 = DashThread("Thread-%000d-%s" % (thread_no, postfix), target_br,
+
+            thread1 = DashThread(thread_name, target_br,
                                  args.mini_buffer_seconds, args.maxi_buffer_seconds, movie_size, args.chunk_size,
-                                 args.host, args.path + postfix, args.port, stalled=stalled)
+                                 args.host, args.path + postfix, args.port, stalled=stalled,threads=threads)
         else:
-            thread1 = DashThread("Thread-%000d-%s" % (thread_no, postfix), target_br,
+            thread1 = DashThread(thread_name, target_br,
                                  args.mini_buffer_seconds, args.maxi_buffer_seconds, movie_size, args.chunk_size,
                                  args.host, args.path + postfix, args.port, args.proxy_host, args.proxy_port,
-                                 stalled=stalled)
+                                 stalled=stalled,threads=threads)
         job = scheduler.add_job(thread1.start, 'date', run_date=next)
+        thread1.job=job
+
 
     scheduler.start()
 
     start = time.time()
     with open(stalled_file, "a+") as f:
-        f.write("time,sum_stalled,count_stalled,count_users,stalled_hd,stalled_sd\n")
+        f.write("time,sum_stalled,count_stalled,count_users,stalled_hd,stalled_sd,active_session\n")
+
+
+    sstalled_hd=pd.Series()
+    sstalled_sd=pd.Series()
+    users=pd.Series()
+
+    now=dt.now()
+    sstalled_hd[now]=0
+    sstalled_sd[now]=0
+    stalled_total_old=0
+    stalled_hd_old=0
+
 
     while True:
         with open(stalled_file, "a") as f:
+            now=dt.now()
+
             stalled_hd = sum([x[1] for x in filter(lambda value: "hd" in value[0], stalled.items())])
             stalled_total = sum(stalled.values())
-            f.write("%lf,%d,%d,%d,%d,%d\n" % (
+
+
+            sstalled_hd[now]=stalled_hd-stalled_hd_old
+            sstalled_sd[now]=(stalled_total - stalled_hd)-(stalled_total_old - stalled_hd_old)
+            users[now]=args.user_count - len(scheduler.get_jobs())
+            stalled_hd_old=stalled_hd
+            stalled_total_old=stalled_total
+
+
+            stalled_hd_rm=pd.rolling_mean(sstalled_hd.resample("1S",fill_method='bfill'),30)[-1]*60
+            stalled_sd_rm=pd.rolling_mean(sstalled_sd.resample("1S",fill_method='bfill'),30)[-1]*60
+
+            stalled_hd_value=stalled_hd_rm if not np.isnan(stalled_hd_rm) else 0
+            stalled_sd_value=stalled_sd_rm if not np.isnan(stalled_sd_rm) else 0
+
+
+            f.write("%lf,%d,%d,%d,%lf,%lf,%d\n" % (
                 time.time() - start,
                 sum(stalled.values()),
                 len(stalled), args.user_count - len(scheduler.get_jobs()),
-                    stalled_hd, stalled_total - stalled_hd))
+                stalled_hd_value,stalled_sd_value,len(threads)))
         time.sleep(1)
 
     scheduler.shutdown(wait=True)
