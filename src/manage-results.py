@@ -2,6 +2,12 @@
 import pickle
 import sys
 
+
+import readline
+import cmd
+
+
+
 with open("results.pickle", "r") as f:
         res=pickle.load(f)
 
@@ -27,13 +33,21 @@ while buffer != "q\n":
                 del res[keydict[index]]
                 print "reccord %s deleted" % keydict[index]
                 continue
-            if user_input[0] == "l" and  len(user_input)==3:
+
+
+            elif user_input[0] == "l" and  len(user_input)==3:
                 res[keydict[index]][0].linestyle=user_input[2]
                 print "%s will be displayed with %s" % (keydict[index], user_input[2])
                 continue
-            if user_input[0] == "m" and  len(user_input)==3:
+            elif user_input[0] == "m" and  len(user_input)==3:
                 res[keydict[index]][0].marker=user_input[2]
                 print "%s will be displayed with %s" % (keydict[index], user_input[2])
+                continue
+
+            elif user_input[0] == "n" and  len(user_input)==3:
+                v=res[keydict[index]]
+                del res[keydict[index]]
+                res[user_input[2]]=v
                 continue
         else:
             print "error - no one here"

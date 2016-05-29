@@ -20,7 +20,7 @@ parser.add_argument('--relaxvCDN', help="boolean expression that allow the algo 
 parser.add_argument('--name', help="name of the experiment", default="unamed experiment")
 parser.add_argument('--smart-disable', dest='smart_ass', action='store_false')
 parser.add_argument('--unsorted-sla', dest='unsorted_sla', action='store_true')
-parser.add_argument('--cpuCost', help="unit cost of the cpu",default=2000)
+parser.add_argument('--cpuCost', help="unit cost of the cpu",default=1000)
 parser.add_argument('--netCost', help="unit cost of the networking",default=20000)
 
 

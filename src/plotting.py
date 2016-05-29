@@ -9,36 +9,37 @@ import hashlib
 import matplotlib.pyplot as plt
 import numpy
 
-
+import sys
 
 
 x_resolution=5
 
-def plot_all_results(res, init_point=0, id=999):
+def plot_all_results(res, min_plot,max_plot, id=999):
+
     plt.figure(0)
-    plot_results_bw(res, init_point, id)
+    plot_results_bw(res, min_plot,max_plot, id)
     plt.figure(1)
-    plot_results_cpu(res, init_point, id)
+    plot_results_cpu(res, min_plot,max_plot, id)
     plt.figure(2)
-    plot_results_embedding(res, init_point, id)
+    plot_results_embedding(res, min_plot,max_plot, id)
 
 
-def plot_results_cpu(res, init_point, id):
+def plot_results_cpu(res, min_plot,max_plot, id):
     legend = []
     for key in sorted(res.keys()):
         spec = get_display_style(key,res)
         init_value = res[key][0].substrate.get_nodes_sum()
-        plt.plot([x[0] for x in enumerate(res[key][init_point:])],
-                 [100 - x.substrate.get_nodes_sum() / init_value * 100 for x in res[key][init_point:]],
+        plt.plot([x[0] for x in enumerate(res[key][min_plot:max_plot])],
+                 [100 - x.substrate.get_nodes_sum() / init_value * 100 for x in res[key][min_plot:max_plot]],
                  color=spec["color"],
                  label=spec["label"],
-                 linestyle=spec["linestyle"],marker=spec["marker"],
+                 linestyle=spec["linestyle"], marker=spec["marker"],markevery=10,linewidth=2,
                  )
         legend.append(spec["label"])
 
     ax = plt.subplot(111)
     plt.grid()
-    ax.set_xticks(numpy.arange(0,len(res[key]),max(1,len(res[key])/x_resolution)))
+    ax.set_xticks(numpy.arange(0,len(res[key][min_plot:max_plot]),max(1,len(res[key][min_plot:max_plot])/x_resolution)))
     ax.set_yticks(numpy.arange(0,140,20))
     ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.05),
           ncol=3, fancybox=True, shadow=True)
@@ -55,22 +56,22 @@ def plot_results_cpu(res, init_point, id):
     plt.clf()
 
 
-def plot_results_embedding(res, init_point, id):
+def plot_results_embedding(res, min_plot,max_plot, id):
     legend = []
     for key in sorted(res.keys()):
         spec = get_display_style(key,res)
         init_value = res[key][0].substrate.get_nodes_sum()
-        plt.plot([x[0] for x in enumerate(res[key][init_point:])],
-                 [x.success_rate * 100 for x in res[key][init_point:]],
+        plt.plot([x[0] for x in enumerate(res[key][min_plot:max_plot])],
+                 [x.success_rate * 100 for x in res[key][min_plot:max_plot]],
                  color=spec["color"],
                  label=spec["label"],
-                 linestyle=spec["linestyle"],marker=spec["marker"],
+                 linestyle=spec["linestyle"], marker=spec["marker"],markevery=10,linewidth=2,
                  )
         legend.append(spec["label"])
 
     ax = plt.subplot(111)
     plt.grid()
-    ax.set_xticks(numpy.arange(0,len(res[key]),max(1,len(res[key])/x_resolution)))
+    ax.set_xticks(numpy.arange(0,len(res[key][min_plot:max_plot]),max(1,len(res[key][min_plot:max_plot])/x_resolution)))
     ax.set_yticks(numpy.arange(0,140,20))
     ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.05),
           ncol=3, fancybox=True, shadow=True)
@@ -107,17 +108,17 @@ def get_display_style(name,res):
     return results
 
 
-def plot_results_bw(res, init_point, id):
+def plot_results_bw(res, min_plot,max_plot, id):
     legend = []
     for key in sorted(res.keys()):
         spec = get_display_style(key,res)
         init_value = res[key][0].substrate.get_edges_sum()
 
-        plt.plot([x[0] for x in enumerate(res[key][init_point:])],
-                 [100 - x.substrate.get_edges_sum() / init_value * 100 for x in res[key][init_point:]],
+        plt.plot([x[0] for x in enumerate(res[key][min_plot:max_plot])],
+                 [100 - x.substrate.get_edges_sum() / init_value * 100 for x in res[key][min_plot:max_plot]],
                  color=spec["color"],
                  label=spec["label"],
-                 linestyle=spec["linestyle"],marker=spec["marker"],
+                 linestyle=spec["linestyle"], marker=spec["marker"],markevery=10,linewidth=2,
 
                  )
 
@@ -125,7 +126,7 @@ def plot_results_bw(res, init_point, id):
 
     ax = plt.subplot(111)
     plt.grid()
-    ax.set_xticks(numpy.arange(0,len(res[key]),max(1,len(res[key])/x_resolution)))
+    ax.set_xticks(numpy.arange(0,len(res[key][min_plot:max_plot]),max(1,len(res[key][min_plot:max_plot])/x_resolution)))
     ax.set_yticks(numpy.arange(0,140,20))
     ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.05),
           ncol=3, fancybox=True, shadow=True)
@@ -141,7 +142,7 @@ def plot_results_bw(res, init_point, id):
     plt.clf()
 
 
-def plotsol():
+def plotsol(**kwargs):
     edges = []
     nodesdict = {}
     cdn_candidates = []
@@ -191,7 +192,7 @@ def plotsol():
                 continue
 
     with open("substrate.dot", 'w') as f:
-        f.write("graph{rankdir=LR;\n\n\n\n subgraph{\n\n\n")
+        f.write("graph{rankdir=LR;overlap = voronoi;splines = true;\n\n\n\n subgraph{\n\n\n")
 
         avgcpu = reduce(lambda x, y: float(x) + float(y), nodesdict.values(), 0.0) / len(nodesdict)
 
@@ -216,23 +217,29 @@ def plotsol():
 
         for node in nodesSol:
             if node[1] != "S0":
-                f.write("%s--%s[color=red,len=1.5];\n" % node)
+                f.write("%s--%s[color=blue,len=1.5];\n" % node)
+                name=node[1]
                 if "VHG" in node[1]:
                     color = "azure1"
+                    shape="circle"
+
                 elif "vCDN" in node[1]:
                     color = "azure3"
+                    shape="circle"
                 elif "S" in node[1]:
                     color = "green"
+                    shape="doublecircle"
                 else:
                     color = "red"
+                    shape="doublecircle"
 
-                f.write("%s[shape=circle,fillcolor=%s,style=filled,fontsize=12];\n" % (node[1], color))
+                f.write("%s[shape=%s,fillcolor=%s,style=filled,fontsize=12];\n" % (name,shape, color))
         f.write("}")
 
-        f.write("\nsubgraph{\n edge[color=blue3,weight=0];\n")
+        f.write("\nsubgraph{\n edge[color=chartreuse,weight=0];\n")
         for edge in edgesSol:
             if edge[2] != "S0":
-                f.write("%s--%s [ style=dashed,label=\"%s-->%s\",fontcolor=blue3 ,fontsize=8,penwidth=1];\n " % (edge))
+                f.write("%s--%s [ style=dashed,label=\"%s&#8594;%s\",fontcolor=blue3 ,fontsize=12,penwidth=%d];\n " % (edge+(kwargs["service_link_linewidth"],)))
 
         f.write("}\n\n")
         f.write("}")
@@ -241,15 +248,17 @@ def plotsol():
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='1 iteration for solver')
-    parser.add_argument('--png', dest='dopng', action='store_true')
+    parser.add_argument('--svg', dest='dosvg', action='store_true')
+    parser.add_argument('--service_link_linewidth', default=5, type=int)
     args = parser.parse_args()
-    dopng = args.dopng
-    plotsol()
-    if not dopng:
+    dosvg = args.dosvg
+    plotsol(service_link_linewidth=args.service_link_linewidth)
+    if not dosvg:
         file = tempfile.mkstemp(".pdf")[1]
         subprocess.Popen(["neato", "./substrate.dot", "-Tpdf", "-o", file]).wait()
         subprocess.Popen(["evince", file]).wait()
     else:
         file = tempfile.mkstemp(".svg")[1]
         subprocess.Popen(["neato", "./substrate.dot", "-Tsvg", "-o", file]).wait()
+        subprocess.Popen(["eog", file]).wait()
         shutil.copy(file, "./res.svg")
