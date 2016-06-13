@@ -203,7 +203,7 @@ def plotsol(**kwargs):
                 color = "red1"
             else:
                 color = "black"
-            f.write("%s [shape=box,color=%s,width=%f,fontsize=15,pos=\"%d,%d\"];\n" % (
+            f.write("%s [shape=box,style=filled,fillcolor=white,color=%s,width=%f,fontsize=15,pos=\"%d,%d\"];\n" % (
             node[0], color, min(1, float(node[1]) / avgcpu), int(node[0][:2]), int(node[0][-2:])))
 
         avgbw = [float(edge[2]) for edge in edges]
@@ -213,11 +213,11 @@ def plotsol(**kwargs):
         for edge in edges:
             availbw = float(edge[2])
             # f.write("%s->%s [ label=\"%d\", penwidth=\"%d\", fontsize=20];\n " % (edge[0], edge[1], float(edge[2]), 1+3*availbw/avgbw))
-            f.write("%s--%s [  penwidth=\"%d\", fontsize=15,len=2];\n " % (edge[0], edge[1], 3))
+            f.write("%s--%s [penwidth=\"%d\",fontsize=15,len=2,label=\" \"];\n " % (edge[0], edge[1], 3))
 
         for node in nodesSol:
             if node[1] != "S0":
-                f.write("%s--%s[color=blue,len=1.5];\n" % node)
+                f.write("%s--%s[color=blue,len=1.5,label=\" \"];\n" % node)
                 name=node[1]
                 if "VHG" in node[1]:
                     color = "azure1"
