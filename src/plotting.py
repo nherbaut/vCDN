@@ -250,15 +250,19 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='1 iteration for solver')
     parser.add_argument('--svg', dest='dosvg', action='store_true')
     parser.add_argument('--service_link_linewidth', default=5, type=int)
+    parser.add_argument('--destination', default="/var/simuservice/results/", type=str)
+    parser.add_argument('--view', dest='view', action='store_true')
     args = parser.parse_args()
     dosvg = args.dosvg
     plotsol(service_link_linewidth=args.service_link_linewidth)
     if not dosvg:
         file = tempfile.mkstemp(".pdf")[1]
         subprocess.Popen(["neato", "./substrate.dot", "-Tpdf", "-o", file]).wait()
-        subprocess.Popen(["evince", file]).wait()
+        if args.view:
+          subprocess.Popen(["evince", file]).wait()
     else:
         file = tempfile.mkstemp(".svg")[1]
-        subprocess.Popen(["neato", "./substrate.dot", "-Tsvg", "-o", file]).wait()
-        subprocess.Popen(["eog", file]).wait()
-        shutil.copy(file, "./res.svg")
+        subprocess.Popen(["neato", "./substrate.dot", "-Tsvg", "-o", file]).wait()        
+        if args.view:
+          subprocess.Popen(["eog", file]).wait()
+        shutil.copy(file, args.destination + "./res.svg")
