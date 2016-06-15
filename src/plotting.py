@@ -209,8 +209,10 @@ def plotsol(**kwargs):
                 color = "red1"
             else:
                 color = "black"
-            f.write("%s [shape=box,style=filled,fillcolor=white,color=%s,width=%f,fontsize=15,pos=\"%d,%d\"];\n" % (
-            node[0], color, min(1, float(node[1]) / avgcpu), int(node[0][:2]), int(node[0][-2:])))
+            # f.write("%s [shape=box,style=filled,fillcolor=white,color=%s,width=%f,fontsize=15,pos=\"%d,%d\"];\n" % (
+            # node[0], color, min(1, float(node[1]) / avgcpu), int(node[0][:2]), int(node[0][-2:])))
+            f.write("%s [shape=box,style=filled,fillcolor=white,color=%s,width=%f,fontsize=15];\n" % (
+            node[0], color, min(1, float(node[1]) / avgcpu),))
 
         avgbw = [float(edge[2]) for edge in edges]
         avgbw = sum(avgbw) / len(avgbw)

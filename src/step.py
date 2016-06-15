@@ -60,7 +60,8 @@ else:
 su.write()
 
 if args.solve_disable:
-    print("Not tried to find a solution (--spvhg-disable)")
+    print("Not tried to find a solution (--solve-disable)")
+    print("finish")
     exit(0)
 
 if dry and not os.path.isfile("service.pickle"):
