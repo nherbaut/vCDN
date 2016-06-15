@@ -1,0 +1,4 @@
+simuservice:
+  image: dngroup/simuservice
+  volumes: 
+   - ./results:/var/simuservice/results/

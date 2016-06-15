@@ -147,20 +147,38 @@ def plotsol(**kwargs):
     nodesdict = {}
     cdn_candidates = []
     starters_candiates = []
+    nodesSol = []
+    edgesSol = []
+    net = kwargs["net"]
+    if not net: #we don't display solution, only substrate
+        with open("CDN.nodes.data", 'r') as f:
+            data = f.read()
+            for line in data.split("\n"):
+                line = line.split("\t")
+                if len(line) == 2:
+                    cdn_candidates.append(line[1])
 
-    with open("CDN.nodes.data", 'r') as f:
-        data = f.read()
-        for line in data.split("\n"):
-            line = line.split("\t")
-            if len(line) == 2:
-                cdn_candidates.append(line[1])
+        with open("starters.nodes.data", 'r') as f:
+            data = f.read()
+            for line in data.split("\n"):
+                line = line.split("\t")
+                if len(line) == 2:
+                    starters_candiates.append(line[1])
 
-    with open("starters.nodes.data", 'r') as f:
-        data = f.read()
-        for line in data.split("\n"):
-            line = line.split("\t")
-            if len(line) == 2:
-                starters_candiates.append(line[1])
+
+        with open("solutions.data", "r") as sol:
+            data = sol.read().split("\n")
+
+            for line in data:
+                matches = re.findall("^x\$(.*)\$([^ \t]+)", line)
+                if (len(matches) > 0):
+                    nodesSol.append(matches[0])
+                    continue
+                matches = re.findall("^y\$(.*)\$(.*)\$(.*)\$([^ \t]+)", line)
+                if (len(matches) > 0):
+                    edgesSol.append(matches[0])
+                    continue
+
 
     with open("substrate.edges.data", 'r') as f:
         data = f.read()
@@ -177,22 +195,10 @@ def plotsol(**kwargs):
             if (len(line) == 2):
                 nodesdict[line[0]] = line[1]
 
-    with open("solutions.data", "r") as sol:
-        data = sol.read().split("\n")
-        nodesSol = []
-        edgesSol = []
-        for line in data:
-            matches = re.findall("^x\$(.*)\$([^ \t]+)", line)
-            if (len(matches) > 0):
-                nodesSol.append(matches[0])
-                continue
-            matches = re.findall("^y\$(.*)\$(.*)\$(.*)\$([^ \t]+)", line)
-            if (len(matches) > 0):
-                edgesSol.append(matches[0])
-                continue
 
     with open("substrate.dot", 'w') as f:
         f.write("graph{rankdir=LR;overlap = voronoi;splines = true;\n\n\n\n subgraph{\n\n\n")
+        #f.write("graph{rankdir=LR;\n\n\n\n subgraph{\n\n\n")
 
         avgcpu = reduce(lambda x, y: float(x) + float(y), nodesdict.values(), 0.0) / len(nodesdict)
 
@@ -214,6 +220,7 @@ def plotsol(**kwargs):
             availbw = float(edge[2])
             # f.write("%s->%s [ label=\"%d\", penwidth=\"%d\", fontsize=20];\n " % (edge[0], edge[1], float(edge[2]), 1+3*availbw/avgbw))
             f.write("%s--%s [penwidth=\"%d\",fontsize=15,len=2,label=\" \"];\n " % (edge[0], edge[1], 3))
+
 
         for node in nodesSol:
             if node[1] != "S0":
@@ -252,17 +259,24 @@ if __name__ == "__main__":
     parser.add_argument('--service_link_linewidth', default=5, type=int)
     parser.add_argument('--destination', default="/var/simuservice/results/", type=str)
     parser.add_argument('--view', dest='view', action='store_true')
+    parser.add_argument('--net', dest='net', action='store_true', help="print only the network")
     args = parser.parse_args()
+
+    if not args.net:
+        graphiz_exe="neato"
+    else:
+        graphiz_exe="dot"
+
     dosvg = args.dosvg
-    plotsol(service_link_linewidth=args.service_link_linewidth)
+    plotsol(service_link_linewidth=args.service_link_linewidth,net=args.net)
     if not dosvg:
         file = tempfile.mkstemp(".pdf")[1]
-        subprocess.Popen(["neato", "./substrate.dot", "-Tpdf", "-o", file]).wait()
+        subprocess.Popen([graphiz_exe, "./substrate.dot", "-Tpdf", "-o", file]).wait()
         if args.view:
           subprocess.Popen(["evince", file]).wait()
     else:
         file = tempfile.mkstemp(".svg")[1]
-        subprocess.Popen(["neato", "./substrate.dot", "-Tsvg", "-o", file]).wait()        
+        subprocess.Popen([graphiz_exe, "./substrate.dot", "-Tsvg", "-o", file]).wait()
         if args.view:
           subprocess.Popen(["eog", file]).wait()
         shutil.copy(file, args.destination + "./res.svg")

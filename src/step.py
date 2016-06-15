@@ -38,6 +38,8 @@ parser.add_argument('--spvhg-disable', help="Disable grouping vhg by shortest pa
 
 parser.add_argument('--vhgpa-disable', help="Disable grouping vhg by shortest path", dest='vhgpa',
                     action='store_true')
+parser.add_argument("--solve-disable", help="no try to find solution", dest='solve_disable', action='store_true')
+
 
 args = parser.parse_args()
 dry = args.dry
@@ -56,6 +58,11 @@ else:
 
 
 su.write()
+
+if args.solve_disable:
+    print("Not tried to find a solution (--spvhg-disable)")
+    exit(0)
+
 if dry and not os.path.isfile("service.pickle"):
     print("must have a service.pickle to dry-run")
     exit(1)

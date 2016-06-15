@@ -21,4 +21,4 @@ WORKDIR /opt/simuservice/
 COPY src/ /opt/simuservice/
 
 
-ENTRYPOINT ./step.py && ./plotting.py --svg
+CMD ./step.py --solve-disable && ./plotting.py --svg --net
