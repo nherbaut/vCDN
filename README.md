@@ -6,10 +6,20 @@
 
 # dependencies
 
-scip
-
-
-
+```
+cycler==0.10.0
+decorator==4.0.9
+haversine==0.4.5
+matplotlib==1.5.1
+networkx==1.11
+numpy==1.11.0
+pygraphml==2.0
+pyparsing==2.1.1
+python-dateutil==2.5.3
+pytz==2016.4
+scipy==0.17.0
+six==1.10.0
+```
 
 # RUNTIME
 
@@ -29,3 +39,6 @@ plotting:
 python -m offline.tools.plotting
 ```
 
+# Docker image
+
+coming soon
