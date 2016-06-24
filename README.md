@@ -21,9 +21,6 @@ scipy==0.17.0
 six==1.10.0
 ```
 
-
-
-
 # RUNTIME
 
 batch simulation: 
@@ -42,3 +39,6 @@ plotting:
 python -m offline.tools.plotting
 ```
 
+# Docker image
+
+coming soon
