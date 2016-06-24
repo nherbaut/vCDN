@@ -1,6 +1,6 @@
 import logging
 
-from src.core.combinatorial import clusterStart, get_vhg_cdn_mapping
+from offline.core.combinatorial import clusterStart, get_vhg_cdn_mapping
 import os
 OPTIM_FOLDER=os.path.join(os.path.dirname(os.path.realpath(__file__)),'../optim')
 RESULTS_FOLDER=os.path.join(os.path.dirname(os.path.realpath(__file__)),'../results')

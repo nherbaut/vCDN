@@ -3,7 +3,7 @@ import os
 import re
 import subprocess
 
-from src.core.mapping import Mapping
+from mapping import Mapping
 
 
 
@@ -54,12 +54,12 @@ def solve(service, substrate,allow_violations=False,smart_ass=False,preassign_vh
 
     if not allow_violations:
         if not preassign_vhg: #run the optim without CDNs
-            subprocess.call(["scip", "-b", os.path.join(OPTIM_FOLDER,"mapping.batch"),"-c", "read %s" % os.path.join(OPTIM_FOLDER,"optim.zpl"),"-c","optimize ", "-c", "write solution %s" %(os.path.join(RESULTS_FOLDER,"solutions.data")),"-c", "q"],stdout=open(os.devnull, 'wb'))
+            subprocess.call(["scip", "-c", "read %s" % os.path.join(OPTIM_FOLDER,"optim.zpl"),"-c","optimize ", "-c", "write solution %s" %(os.path.join(RESULTS_FOLDER,"solutions.data")),"-c", "q"],stdout=open(os.devnull, 'wb'))
         else: #run the optim with CDN using reoptim
-            subprocess.call(["scip", "-b", os.path.join(OPTIM_FOLDER,"mapping.batch"),"-c", "read %s" % os.path.join(OPTIM_FOLDER,"optim.zpl"),"-c", "read %s" % os.path.join(RESULTS_FOLDER,"initial.sol"), "-c", "set reoptimization enable true","-c","optimize ", "-c", "write solution %s" %(os.path.join(RESULTS_FOLDER,"solutions.data")),"-c", "q"],stdout=open(os.devnull, 'wb'))
+            subprocess.call(["scip", "-c", "read %s" % os.path.join(OPTIM_FOLDER,"optim.zpl"),"-c", "read %s" % os.path.join(RESULTS_FOLDER,"initial.sol"), "-c", "set reoptimization enable true","-c","optimize ", "-c", "write solution %s" %(os.path.join(RESULTS_FOLDER,"solutions.data")),"-c", "q"],stdout=open(os.devnull, 'wb'))
 
     else:
-        subprocess.call(["scip", "-b", os.path.join(OPTIM_FOLDER,"mapping.batch"),"-c", "read %s" % os.path.join(OPTIM_FOLDER,"optim.zpl"),"-c","optimize ", "-c", "write solution %s" %(os.path.join(RESULTS_FOLDER,"solutions.data")),"-c", "q"],stdout=open(os.devnull, 'wb'))
+        subprocess.call(["scip", "-c", "read %s" % os.path.join(OPTIM_FOLDER,"optim.zpl"),"-c","optimize ", "-c", "write solution %s" %(os.path.join(RESULTS_FOLDER,"solutions.data")),"-c", "q"],stdout=open(os.devnull, 'wb'))
     # plotting.plotsol()
     # os.subprocess.call(["cat", "./substrate.dot", "|", "dot", "-Tpdf", "-osol.pdf"])
     with open(os.path.join(RESULTS_FOLDER,"solutions.data"), "r") as sol:

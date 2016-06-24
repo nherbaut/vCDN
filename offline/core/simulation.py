@@ -4,7 +4,7 @@ from copy import deepcopy
 
 import numpy as np
 
-import src.core.utils
+import utils
 import substrate
 from result import ResultItem
 from service import Service
@@ -12,7 +12,7 @@ from sla import generate_random_slas
 from solver import solve
 
 
-@src.core.utils.timed
+@utils.timed
 def do_simu(**kwargs):
     '''
 
