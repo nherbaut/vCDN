@@ -1,2 +1,0 @@
-ps -ef |grep dash_pool|grep -v color|sed -rn "s/^root *([0-9]+).*/\1/p"|xargs -I {} kill {}
-ps -ef |grep dash_pool|grep -v color|sed -rn "s/^nherbaut *([0-9]+).*/\1/p"|xargs -I {} kill {}

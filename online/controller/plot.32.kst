@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kst version="2.0">
+    <data>
+        <source reader="ASCII file" file="/home/nherbaut/workspace/algotel2016-code/sdn/controller/31.txt" fileRelative="31.txt">
+            <properties vector="INDEX" interpretation="1" delimiters="#" columntype="2" columndelimiter="," headerstart="1" fields="0" readfields="true" usedot="true" columnwidthisconst="false" readunits="false" units="0"/>
+        </source>
+        <source reader="ASCII file" file="/home/nherbaut/workspace/algotel2016-code/sdn/controller/32.txt" fileRelative="32.txt">
+            <properties vector="INDEX" interpretation="1" delimiters="#" columntype="2" columndelimiter="," headerstart="1" fields="0" readfields="true" usedot="true" columnwidthisconst="false" readunits="false" units="0"/>
+        </source>
+        <source reader="ASCII file" file="/home/nherbaut/workspace/algotel2016-code/sdn/controller/../stalled-h11.log" fileRelative="../stalled-h11.log">
+            <properties vector="INDEX" interpretation="1" delimiters="#" columntype="2" columndelimiter="," headerstart="1" fields="0" readfields="true" usedot="true" columnwidthisconst="false" readunits="false" units="0"/>
+        </source>
+        <source reader="ASCII file" file="/home/nherbaut/workspace/algotel2016-code/sdn/controller/../stalled-10.0.0.1.log" fileRelative="../stalled-10.0.0.1.log">
+            <properties vector="INDEX" interpretation="1" delimiters="#" columntype="2" columndelimiter="," headerstart="1" fields="0" readfields="true" usedot="true" columnwidthisconst="false" readunits="false" units="0"/>
+        </source>
+        <source reader="ASCII file" file="/home/nherbaut/workspace/algotel2016-code/sdn/controller/31.txt" fileRelative="31.txt">
+            <properties vector="INDEX" interpretation="1" delimiters="#" columntype="2" columndelimiter="," headerstart="1" fields="0" readfields="true" usedot="true" columnwidthisconst="false" readunits="false" units="0"/>
+        </source>
+    </data>
+    <variables>
+        <datavector file="/home/nherbaut/workspace/algotel2016-code/sdn/controller/31.txt" fileRelative="31.txt" field="time" start="0" count="-1" skip="-1" doAve="false" initialVNum="78" initialXNum="925"/>
+        <datavector file="/home/nherbaut/workspace/algotel2016-code/sdn/controller/31.txt" fileRelative="31.txt" field="tx_bytesps" start="0" count="-1" skip="-1" doAve="false" initialVNum="79" initialXNum="937"/>
+        <datavector file="/home/nherbaut/workspace/algotel2016-code/sdn/controller/32.txt" fileRelative="32.txt" field="CDN" start="0" count="-1" skip="-1" doAve="false" initialVNum="80" initialXNum="949"/>
+        <datavector file="/home/nherbaut/workspace/algotel2016-code/sdn/controller/../stalled-h11.log" fileRelative="../stalled-h11.log" field="stalled_hd" start="0" count="-1" skip="-1" doAve="false" initialVNum="81" initialXNum="961"/>
+        <datavector file="/home/nherbaut/workspace/algotel2016-code/sdn/controller/../stalled-h11.log" fileRelative="../stalled-h11.log" field="stalled_sd" start="0" count="-1" skip="-1" doAve="false" initialVNum="82" initialXNum="973"/>
+        <datavector file="/home/nherbaut/workspace/algotel2016-code/sdn/controller/../stalled-h11.log" fileRelative="../stalled-h11.log" field="count_users" start="0" count="-1" skip="-1" doAve="false" initialVNum="83" initialXNum="985"/>
+        <datavector file="/home/nherbaut/workspace/algotel2016-code/sdn/controller/../stalled-10.0.0.1.log" fileRelative="../stalled-10.0.0.1.log" field="count_users" start="0" count="-1" skip="-1" doAve="false" initialVNum="84" initialXNum="997"/>
+        <datavector file="/home/nherbaut/workspace/algotel2016-code/sdn/controller/../stalled-10.0.0.1.log" fileRelative="../stalled-10.0.0.1.log" field="stalled_hd" start="0" count="-1" skip="-1" doAve="false" initialVNum="85" initialXNum="1009"/>
+        <datavector file="/home/nherbaut/workspace/algotel2016-code/sdn/controller/../stalled-10.0.0.1.log" fileRelative="../stalled-10.0.0.1.log" field="stalled_sd" start="0" count="-1" skip="-1" doAve="false" initialVNum="86" initialXNum="1021"/>
+        <string value="2016-05-26 23:36:51" initialTNum="1"/>
+        <string value="2016-05-26 23:36:51" initialTNum="2"/>
+        <string value="31.txt" initialTNum="3"/>
+        <string value="/home/nherbaut/workspace/algotel2016-code/sdn/controller" initialTNum="4"/>
+        <string value="2016-05-26 23:36:51" initialTNum="5"/>
+        <string value="2016-05-26 23:36:51" initialTNum="6"/>
+        <string value="32.txt" initialTNum="7"/>
+        <string value="/home/nherbaut/workspace/algotel2016-code/sdn/controller" initialTNum="8"/>
+        <string value="2016-05-26 23:36:51" initialTNum="9"/>
+        <string value="2016-05-26 23:36:51" initialTNum="10"/>
+        <string value="stalled-h11.log" initialTNum="11"/>
+        <string value="/home/nherbaut/workspace/algotel2016-code/sdn/controller/.." initialTNum="12"/>
+        <string value="2016-05-26 23:35:44" initialTNum="13"/>
+        <string value="2016-05-26 23:35:44" initialTNum="14"/>
+        <string value="stalled-10.0.0.1.log" initialTNum="15"/>
+        <string value="/home/nherbaut/workspace/algotel2016-code/sdn/controller/.." initialTNum="16"/>
+        <string orphan="true" editable="true" value="2016-05-26 18:13:52" initialTNum="1"/>
+        <string orphan="true" editable="true" value="2016-05-26 18:13:52" initialTNum="2"/>
+        <string orphan="true" editable="true" value="31.txt" initialTNum="3"/>
+        <string orphan="true" editable="true" value="/home/nherbaut/workspace/algotel2016-code/sdn/controller" initialTNum="4"/>
+        <string orphan="true" editable="true" value="2016-05-26 18:13:52" initialTNum="5"/>
+        <string orphan="true" editable="true" value="2016-05-26 18:13:52" initialTNum="6"/>
+        <string orphan="true" editable="true" value="32.txt" initialTNum="7"/>
+        <string orphan="true" editable="true" value="/home/nherbaut/workspace/algotel2016-code/sdn/controller" initialTNum="8"/>
+        <string orphan="true" editable="true" value="1970-01-01 01:00:00" initialTNum="9"/>
+        <string orphan="true" editable="true" value="1970-01-01 01:00:00" initialTNum="10"/>
+        <string orphan="true" editable="true" value="stalled-h11.log" initialTNum="11"/>
+        <string orphan="true" editable="true" value="/home/nherbaut/workspace/algotel2016-code/sdn" initialTNum="12"/>
+        <string orphan="true" editable="true" value="2016-05-26 14:52:01" initialTNum="221"/>
+        <string orphan="true" editable="true" value="2016-05-26 14:52:01" initialTNum="222"/>
+        <string orphan="true" editable="true" value="stalled-h11.log" initialTNum="223"/>
+        <string orphan="true" editable="true" value="/home/nherbaut/workspace/algotel2016-code/sdn" initialTNum="224"/>
+        <string orphan="true" editable="true" value="2016-05-26 14:52:05" initialTNum="225"/>
+        <string orphan="true" editable="true" value="2016-05-26 14:52:05" initialTNum="226"/>
+        <string orphan="true" editable="true" value="31.txt" initialTNum="227"/>
+        <string orphan="true" editable="true" value="/home/nherbaut/workspace/algotel2016-code/sdn/controller" initialTNum="228"/>
+        <string orphan="true" editable="true" value="2016-05-26 14:52:18" initialTNum="229"/>
+        <string orphan="true" editable="true" value="2016-05-26 14:52:18" initialTNum="230"/>
+        <string orphan="true" editable="true" value="32.txt" initialTNum="231"/>
+        <string orphan="true" editable="true" value="/home/nherbaut/workspace/algotel2016-code/sdn/controller" initialTNum="232"/>
+        <string orphan="true" editable="true" value="2016-05-26 14:52:39" initialTNum="233"/>
+        <string orphan="true" editable="true" value="2016-05-26 14:52:39" initialTNum="234"/>
+        <string orphan="true" editable="true" value="stalled-h11.log" initialTNum="235"/>
+        <string orphan="true" editable="true" value="/home/nherbaut/workspace/algotel2016-code/sdn" initialTNum="236"/>
+        <string orphan="true" editable="true" value="2016-05-26 23:33:26" initialTNum="237"/>
+        <string orphan="true" editable="true" value="2016-05-26 23:33:26" initialTNum="238"/>
+        <string orphan="true" editable="true" value="stalled-10.0.0.1.log" initialTNum="239"/>
+        <string orphan="true" editable="true" value="/home/nherbaut/workspace/algotel2016-code/sdn" initialTNum="240"/>
+        <string value="2016-05-26 23:44:51" initialTNum="241"/>
+        <string value="2016-05-26 23:44:51" initialTNum="242"/>
+        <string value="31.txt" initialTNum="243"/>
+        <string value="/home/nherbaut/workspace/algotel2016-code/sdn/controller" initialTNum="244"/>
+    </variables>
+    <objects/>
+    <relations>
+        <curve xvector="time (V78)" yvector="tx\_bytesps (V79)" color="#000000" headcolor="#000000" haslines="true" linewidth="2" linestyle="1" haspoints="false" pointtype="0" pointdensity="0" hasbars="false" barstyle="1" ignoreautoscale="false" hashead="false" headtype="0" initialCNum="58"/>
+        <curve xvector="time (V78)" yvector="CDN (V80)" color="#2e5778" headcolor="#000000" haslines="true" linewidth="3" linestyle="0" haspoints="false" pointtype="0" pointdensity="0" hasbars="false" barstyle="0" ignoreautoscale="false" hashead="false" headtype="0" initialCNum="59"/>
+        <curve xvector="time (V78)" yvector="stalled\_hd (V81)" color="#0a350a" headcolor="#000000" haslines="true" linewidth="0" linestyle="0" haspoints="true" pointtype="0" pointdensity="0" hasbars="false" barstyle="0" ignoreautoscale="false" hashead="false" headtype="-1" initialCNum="60"/>
+        <curve xvector="time (V78)" yvector="stalled\_sd (V82)" color="#ff0000" headcolor="#000000" haslines="true" linewidth="0" linestyle="0" haspoints="true" pointtype="1" pointdensity="0" hasbars="false" barstyle="0" ignoreautoscale="false" hashead="false" headtype="222720" initialCNum="61"/>
+        <curve xvector="time (V78)" yvector="count\_users (V83)" color="#0000ff" headcolor="#000000" haslines="true" linewidth="0" linestyle="0" haspoints="true" pointtype="0" pointdensity="0" hasbars="false" barstyle="0" ignoreautoscale="false" hashead="false" headtype="808464432" initialCNum="62"/>
+        <curve xvector="time (V78)" yvector="count\_users (V84)" color="#ff00ff" headcolor="#000000" haslines="true" linewidth="0" linestyle="0" haspoints="true" pointtype="0" pointdensity="0" hasbars="false" barstyle="0" ignoreautoscale="false" hashead="false" headtype="0" initialCNum="63"/>
+        <curve xvector="time (V78)" yvector="stalled\_hd (V85)" color="#4682b4" headcolor="#000000" haslines="true" linewidth="0" linestyle="0" haspoints="true" pointtype="0" pointdensity="0" hasbars="false" barstyle="0" ignoreautoscale="false" hashead="false" headtype="0" initialCNum="64"/>
+        <curve xvector="time (V78)" yvector="stalled\_sd (V86)" color="#501010" headcolor="#000000" haslines="true" linewidth="0" linestyle="0" haspoints="true" pointtype="1" pointdensity="0" hasbars="false" barstyle="0" ignoreautoscale="false" hashead="false" headtype="0" initialCNum="65"/>
+    </relations>
+    <graphics>
+        <view name="View &amp;1" width="1361" height="669">
+            <plot tiedxzoom="false" tiedyzoom="false" leftlabelvisible="true" bottomlabelvisible="true" rightlabelvisible="true" toplabelvisible="true" globalfont="Ubuntu,11,-1,5,50,0,0,0,0,0" globalfontscale="11.1554175279993" globalfontcolor="#000000" showlegend="true" hidebottomaxislabel="false" hidetopaxislabel="false" hideleftaxislabel="false" hiderightaxislabel="false" initialPlotNum="33" name="Plot">
+                <position x="46.9654919236417" y="216.676119402985"/>
+                <rect x="0" y="0" width="661.513950073421" height="220.670149253732"/>
+                <relativesize width="0.486049926578561" height="0.329850746268657" centerx="0.277533039647577" centery="0.488805970149254" posx="0.0345080763582966" posy="0.323880597014925"/>
+                <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
+                <pen style="1" width="0" miterlimit="2" cap="16" joinStyle="64">
+                    <brush color="#000000" style="1"/>
+                </pen>
+                <brush color="#ffffff" style="1"/>
+                <legend auto="true" title="" font="Ubuntu,11,-1,5,50,0,0,0,0,0" fontscale="6.6932505167996" verticaldisplay="false" name="Legend">
+                    <position x="38.7036107894193" y="34.7881953867029"/>
+                    <rect x="0" y="0" width="198" height="16"/>
+                    <relativesize width="0.324607684728175" height="0.105492083173422" centerx="0.170757963906301" centery="0.143655132495802" posx="0.00845412154221375" posy="0.0909090909090909"/>
+                    <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
+                    <pen style="1" width="0" miterlimit="2" cap="16" joinStyle="64">
+                        <brush color="#000000" style="1"/>
+                    </pen>
+                    <brush color="#ffffff" style="1"/>
+                </legend>
+                <cartesianrender name="Cartesian Plot" type="1">
+                    <relation tag="stalled\_hd vs time (C64)"/>
+                    <relation tag="stalled\_sd vs time (C65)"/>
+                </cartesianrender>
+                <plotaxis id="xaxis" visible="true" log="false" reversed="false" autobaseoffset="true" baseoffset="false" interpret="false" interpretation="1" display="4" majortickmode="5" minortickcount="5" autominortickcount="true" drawmajorticks="true" drawminorticks="true" drawmajorgridlines="true" drawminorgridlines="false" drawmajorgridlinecolor="#a0a0a4" drawminorgridlinecolor="#a0a0a4" drawmajorgridlinestyle="2" drawminorgridlinestyle="2" drawmajorgridlinewidth="1" drawminorgridlinewidth="1" significantdigits="9" rotation="0" zoommode="0">
+                    <plotmarkers xaxis="true" linecolor="#000000" linestyle="1" linewidth="1" curvemode="0"/>
+                </plotaxis>
+                <plotaxis id="yaxis" visible="true" log="false" reversed="false" autobaseoffset="true" baseoffset="false" interpret="false" interpretation="1" display="4" majortickmode="5" minortickcount="5" autominortickcount="true" drawmajorticks="true" drawminorticks="true" drawmajorgridlines="true" drawminorgridlines="false" drawmajorgridlinecolor="#a0a0a4" drawminorgridlinecolor="#a0a0a4" drawmajorgridlinestyle="2" drawminorgridlinestyle="2" drawmajorgridlinewidth="1" drawminorgridlinewidth="1" significantdigits="9" rotation="0" zoommode="1">
+                    <plotmarkers xaxis="false" linecolor="#000000" linestyle="1" linewidth="1" curvemode="41"/>
+                </plotaxis>
+                <plotlabel id="leftlabel" visible="true" overridetext="" autolabel="true" font="Ubuntu,11,-1,5,50,0,0,0,0,0" fontscale="11.1554175279993" fontcolor="#000000" fontuseglobal="true"/>
+                <plotlabel id="rightlabel" visible="true" overridetext="" autolabel="true" font="Ubuntu,11,-1,5,50,0,0,0,0,0" fontscale="11.1554175279993" fontcolor="#000000" fontuseglobal="true"/>
+                <plotlabel id="toplabel" visible="true" overridetext="" autolabel="true" font="Ubuntu,11,-1,5,50,0,0,0,0,0" fontscale="11.1554175279993" fontcolor="#000000" fontuseglobal="true"/>
+                <plotlabel id="bottomlabel" visible="true" overridetext="" autolabel="true" font="Ubuntu,11,-1,5,50,0,0,0,0,0" fontscale="11.1554175279993" fontcolor="#000000" fontuseglobal="true"/>
+                <plotlabel id="numberlabel" visible="true" overridetext="" autolabel="true" font="Ubuntu,11,-1,5,50,0,0,0,0,0" fontscale="11.1554175279993" fontcolor="#000000" fontuseglobal="true"/>
+                <projectionrect x="1.902879" y="-0.05" width="0.2" height="2.1"/>
+            </plot>
+            <plot tiedxzoom="false" tiedyzoom="false" leftlabelvisible="true" bottomlabelvisible="true" rightlabelvisible="true" toplabelvisible="true" globalfont="Ubuntu,12,-1,5,50,0,0,0,0,0" globalfontscale="11.2" globalfontcolor="#000000" showlegend="true" hidebottomaxislabel="false" hidetopaxislabel="false" hideleftaxislabel="false" hiderightaxislabel="false" descriptiveNameIsManual="true" descriptiveName="CDN and vCDN virtual route consumed Bytes per s" initialPlotNum="34" name="Plot">
+                <position x="680.4552" y="113.498"/>
+                <rect x="-677.5269" y="-110.5165" width="1355.0538" height="221.033"/>
+                <relativesize width="0.9949" height="0.3299" centerx="0.4996" centery="0.1694" posx="0.00215000000000003" posy="0.00444999999999997"/>
+                <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
+                <pen style="1" width="0" miterlimit="2" cap="16" joinStyle="64">
+                    <brush color="#000000" style="1"/>
+                </pen>
+                <brush color="#ffffff" style="1"/>
+                <legend auto="true" title="" font="Ubuntu,12,-1,5,50,0,0,0,0,0" fontscale="6.7" verticaldisplay="false" name="Legend">
+                    <position x="-513.1985828925" y="-68.6423691"/>
+                    <rect x="-101.1494385" y="-7.9969358" width="181" height="17"/>
+                    <relativesize width="0.140537424038697" height="0.111817829023962" centerx="0.0811687120193485" centery="0.140608914511981" posx="0.0108999999999998" posy="0.0847000000000001"/>
+                    <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
+                    <pen style="1" width="0" miterlimit="2" cap="16" joinStyle="64">
+                        <brush color="#000000" style="1"/>
+                    </pen>
+                    <brush color="#ffffff" style="1"/>
+                    <relation tag="tx\_bytesps vs time (C58)"/>
+                    <relation tag="CDN vs time (C59)"/>
+                </legend>
+                <cartesianrender name="Cartesian Plot" type="1">
+                    <relation tag="tx\_bytesps vs time (C58)"/>
+                    <relation tag="CDN vs time (C59)"/>
+                </cartesianrender>
+                <plotaxis id="xaxis" visible="true" log="false" reversed="false" autobaseoffset="true" baseoffset="false" interpret="false" interpretation="1" display="4" majortickmode="5" minortickcount="5" autominortickcount="true" drawmajorticks="true" drawminorticks="true" drawmajorgridlines="true" drawminorgridlines="false" drawmajorgridlinecolor="#a0a0a4" drawminorgridlinecolor="#a0a0a4" drawmajorgridlinestyle="2" drawminorgridlinestyle="2" drawmajorgridlinewidth="1" drawminorgridlinewidth="1" significantdigits="9" rotation="0" zoommode="0">
+                    <plotmarkers xaxis="true" linecolor="#000000" linestyle="1" linewidth="1" curvemode="7602273"/>
+                </plotaxis>
+                <plotaxis id="yaxis" visible="true" log="false" reversed="false" autobaseoffset="true" baseoffset="false" interpret="false" interpretation="1" display="4" majortickmode="5" minortickcount="5" autominortickcount="true" drawmajorticks="true" drawminorticks="true" drawmajorgridlines="true" drawminorgridlines="false" drawmajorgridlinecolor="#a0a0a4" drawminorgridlinecolor="#a0a0a4" drawmajorgridlinestyle="2" drawminorgridlinestyle="2" drawmajorgridlinewidth="1" drawminorgridlinewidth="1" significantdigits="9" rotation="0" zoommode="1">
+                    <plotmarkers xaxis="false" linecolor="#000000" linestyle="1" linewidth="1" curvemode="7602273"/>
+                </plotaxis>
+                <plotlabel id="leftlabel" visible="true" overridetext="tx\_bytesps" autolabel="true" font="Ubuntu,12,-1,5,50,0,0,0,0,0" fontscale="11.2" fontcolor="#000000" fontuseglobal="true"/>
+                <plotlabel id="rightlabel" visible="true" overridetext="" autolabel="true" font="Ubuntu,12,-1,5,50,0,0,0,0,0" fontscale="11.2" fontcolor="#000000" fontuseglobal="true"/>
+                <plotlabel id="toplabel" visible="true" overridetext="CDN and vCDN virtual route consumed Bytes per s" autolabel="false" font="Ubuntu,12,-1,5,50,0,0,0,0,0" fontscale="11.2" fontcolor="#000000" fontuseglobal="true"/>
+                <plotlabel id="bottomlabel" visible="true" overridetext="time" autolabel="true" font="Ubuntu,12,-1,5,50,0,0,0,0,0" fontscale="11.2" fontcolor="#000000" fontuseglobal="true"/>
+                <plotlabel id="numberlabel" visible="true" overridetext="" autolabel="false" font="Ubuntu,12,-1,5,50,0,0,0,0,0" fontscale="11.2" fontcolor="#000000" fontuseglobal="true"/>
+                <projectionrect x="-0.1" y="-0.1" width="0.2" height="0.2"/>
+            </plot>
+            <plot tiedxzoom="false" tiedyzoom="false" leftlabelvisible="true" bottomlabelvisible="true" rightlabelvisible="true" toplabelvisible="true" globalfont="Ubuntu,11,-1,5,50,0,0,0,0,0" globalfontscale="11.1554175279993" globalfontcolor="#000000" showlegend="false" hidebottomaxislabel="false" hidetopaxislabel="false" hideleftaxislabel="false" hiderightaxislabel="false" initialPlotNum="1" name="Plot">
+                <position x="-46.5425844346552" y="222.667164179104"/>
+                <rect x="785" y="0" width="607.553597650514" height="220.670149253732"/>
+                <relativesize width="0.44640234948605" height="0.329850746268657" centerx="0.765785609397944" centery="0.497761194029851" posx="0.542584434654919" posy="0.332835820895522"/>
+                <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
+                <pen style="1" width="0" miterlimit="2" cap="16" joinStyle="64">
+                    <brush color="#000000" style="1"/>
+                </pen>
+                <brush color="#ffffff" style="1"/>
+                <legend auto="true" title="" font="Ubuntu,11,-1,5,50,0,0,0,0,0" fontscale="12" verticaldisplay="false" name="Legend">
+                    <position x="811.516717099412" y="30.913237028026"/>
+                    <rect x="0" y="0" width="0" height="0"/>
+                    <relativesize width="0" height="0" centerx="-0.0637000442412624" centery="0.0653605015673981" posx="-0.0637000442412624" posy="0.0653605015673981"/>
+                    <transform m11="1" m12="0" m13="0" m21="0" m22="1" m23="0" m31="0" m32="0" m33="1"/>
+                    <pen style="1" width="0" miterlimit="2" cap="16" joinStyle="64">
+                        <brush color="#000000" style="1"/>
+                    </pen>
+                    <brush color="#ffffff" style="1"/>
+                </legend>
+                <cartesianrender name="Cartesian Plot" type="1">
+                    <relation tag="count\_users vs time (C63)"/>
+                </cartesianrender>
+                <plotaxis id="xaxis" visible="true" log="false" reversed="false" autobaseoffset="true" baseoffset="false" interpret="false" interpretation="1" display="4" majortickmode="5" minortickcount="5" autominortickcount="true" drawmajorticks="true" drawminorticks="true" drawmajorgridlines="true" drawminorgridlines="false" drawmajorgridlinecolor="#a0a0a4" drawminorgridlinecolor="#a0a0a4" drawmajorgridlinestyle="2" drawminorgridlinestyle="2" drawmajorgridlinewidth="1" drawminorgridlinewidth="1" significantdigits="9" rotation="0" zoommode="0">
+                    <plotmarkers xaxis="true" linecolor="#000000" linestyle="1" linewidth="1" curvemode="3"/>
+                </plotaxis>
+                <plotaxis id="yaxis" visible="true" log="false" reversed="false" autobaseoffset="true" baseoffset="false" interpret="false" interpretation="1" display="4" majortickmode="5" minortickcount="5" autominortickcount="true" drawmajorticks="true" drawminorticks="true" drawmajorgridlines="true" drawminorgridlines="false" drawmajorgridlinecolor="#a0a0a4" drawminorgridlinecolor="#a0a0a4" drawmajorgridlinestyle="2" drawminorgridlinestyle="2" drawmajorgridlinewidth="1" drawminorgridlinewidth="1" significantdigits="9" rotation="0" zoommode="1">
+                    <plotmarkers xaxis="false" linecolor="#000000" linestyle="1" linewidth="1" curvemode="385875968"/>
+                </plotaxis>
+                <plotlabel id="leftlabel" visible="true" overridetext="" autolabel="true" font="Ubuntu,11,-1,5,50,0,0,0,0,0" fontscale="11.1554175279993" fontcolor="#000000" fontuseglobal="true"/>
+                <plotlabel id="rightlabel" visible="true" overridetext="" autolabel="true" font="Ubuntu,11,-1,5,50,0,0,0,0,0" fontscale="11.1554175279993" fontcolor="#000000" fontuseglobal="true"/>
+                <plotlabel id="toplabel" visible="true" overridetext="" autolabel="true" font="Ubuntu,11,-1,5,50,0,0,0,0,0" fontscale="11.1554175279993" fontcolor="#000000" fontuseglobal="true"/>
+                <plotlabel id="bottomlabel" visible="true" overridetext="" autolabel="true" font="Ubuntu,11,-1,5,50,0,0,0,0,0" fontscale="11.1554175279993" fontcolor="#000000" fontuseglobal="true"/>
+                <plotlabel id="numberlabel" visible="true" overridetext="" autolabel="true" font="Ubuntu,11,-1,5,50,0,0,0,0,0" fontscale="11.1554175279993" fontcolor="#000000" fontuseglobal="true"/>
+                <projectionrect x="1.902879" y="-2.5" width="0.2" height="105"/>
+            </plot>
+        </view>
+    </graphics>
+</kst>

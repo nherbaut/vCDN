@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<contentWrapper>
+    <contents>
+        <contents>
+            <cached>true</cached>
+            <created>2016-05-22T21:05:05.522+02:00</created>
+            <id>de00f219-5719-402a-b8f9-c50303a47f55</id>
+            <targetUri>http://10.0.0.4:8000/data_hd</targetUri>
+            <uri>http://10.0.0.5:8000/data_hd</uri>
+        </contents>
+        
+        <contents>
+            <cached>true</cached>
+            <created>2016-05-22T21:05:05.522+02:00</created>
+            <id>de00f219-5719-402a-b8f9-c50303a47f55</id>
+            <targetUri>http://10.0.0.4:8000/data_hdpop</targetUri>
+            <uri>http://10.0.0.5:8000/data_hdpop</uri>
+        </contents>
+        
+        
+        
+        
+        
+        
+    </contents>
+</contentWrapper>
+
