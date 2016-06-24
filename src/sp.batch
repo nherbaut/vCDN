@@ -1,6 +1,0 @@
-read sp.zpl
-
-
-optimize
-write solution solutions.data
-q

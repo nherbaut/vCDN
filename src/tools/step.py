@@ -2,14 +2,19 @@
 
 import argparse
 import os
+
 import pickle
 import sys
 
 import numpy as np
-from service import Service
-from sla import generate_random_slas
-from solver import solve
-from substrate import Substrate
+
+
+from ..core.service import Service
+from ..core.sla import generate_random_slas
+from ..core.solver import solve
+from ..core.substrate import Substrate
+
+GEANT_PATH=os.path.join(os.path.dirname(os.path.realpath(__file__)),'../data/Geant2012.graphml')
 
 
 def valid_grid(gridspec):
@@ -52,7 +57,7 @@ else:
         x,y=args.grid
         su=Substrate.fromSpec(x,y,10**10,1,100)
     else:
-        su = Substrate.fromGraph(rs, 'Geant2012.graphml')
+        su = Substrate.fromGraph(rs, GEANT_PATH)
 
 
 su.write()

@@ -1,9 +1,10 @@
+import logging
 import sys
 from collections import defaultdict
 from itertools import chain, combinations, product
 
-from solver import shortest_path
-import logging
+from src.core.solver import shortest_path
+
 
 def generate_problem_combinaisons(problem):
     res = []

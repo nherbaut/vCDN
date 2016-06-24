@@ -18,6 +18,7 @@ class Sla:
         self.bandwidth = count * bitrate * movie_duration / time_span
         self.max_cdn_to_use=max_cdn_to_use
 
+
     def __str__(self):
         return "%d %d %lf %lf" % (self.start, self.cdn, self.delay, self.bandwidth)
 

@@ -2,8 +2,6 @@
 
 import argparse
 import pickle
-from service import Service
-
 
 parser = argparse.ArgumentParser(description='relax your SLA')
 parser.add_argument('--vhg', help="the number of failure until the algorithm stops", default=1)

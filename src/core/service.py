@@ -1,6 +1,10 @@
 import logging
 
-from combinatorial import clusterStart, get_vhg_cdn_mapping
+from src.core.combinatorial import clusterStart, get_vhg_cdn_mapping
+import os
+OPTIM_FOLDER=os.path.join(os.path.dirname(os.path.realpath(__file__)),'../optim')
+RESULTS_FOLDER=os.path.join(os.path.dirname(os.path.realpath(__file__)),'../results')
+
 
 
 class Node:
@@ -82,7 +86,7 @@ class Service:
             vhg_cdn_assignment = None
 
         # write info on the edge
-        with open("service.edges.data", "w") as f:
+        with open(os.path.join(RESULTS_FOLDER,"service.edges.data"), "w") as f:
             for index, value in enumerate(self.start, start=1):
                 e = Edge(0)
                 self.edges["S0 S%d" % index] = e
@@ -136,17 +140,17 @@ class Service:
                             service_path.append((path_id, "VHG%d" % index_vhg, "vCDN%d" % index_vcdn))
 
         # write path to associate e2e delay
-        with open("service.path.data", "w") as f:
+        with open(os.path.join(RESULTS_FOLDER,"service.path.data"), "w") as f:
             for data in service_path:
                 f.write("%s %s %s\n" % data)
 
         # write e2e delay constraint
-        with open("service.path.delay.data", "w") as f:
+        with open(os.path.join(RESULTS_FOLDER,"service.path.delay.data"), "w") as f:
             for x in set([i[0] for i in service_path]):
                 f.write("%s %e\n" % (x, self.sla_delay))
 
         # write constraints on node capacity
-        with open("service.nodes.data", "w") as f:
+        with open(os.path.join(RESULTS_FOLDER,"service.nodes.data"), "w") as f:
             f.write("S0 0	\n")
             self.nodes["S0"] = Node(0)
             for index, value in enumerate(self.start, start=1):
@@ -171,25 +175,25 @@ class Service:
                 self.nodes["VHG%d" % i] = Node(float(self.vhgcpu))
 
         # write constraints on CDN placement
-        with open("CDN.nodes.data", 'w') as f:
+        with open(os.path.join(RESULTS_FOLDER,"CDN.nodes.data"), 'w') as f:
             for index, value in enumerate(self.cdn, start=1):
                 f.write("CDN%d\t%s\n" % (index, value))
 
         # write constraints on starter placement
-        with open("starters.nodes.data", 'w') as f:
+        with open(os.path.join(RESULTS_FOLDER,"starters.nodes.data"), 'w') as f:
             for index, value in enumerate(self.start, start=1):
                 f.write("S%d\t%s\n" % (index, value))
 
         # write constraints on the maximum amont of cdn to use
-        with open("cdnmax.data", 'w') as f:
+        with open(os.path.join(RESULTS_FOLDER,"cdnmax.data"), 'w') as f:
             f.write("%d" % self.max_cdn_to_use)
 
         # write the names of the VHG Nodes (is it still used?)
-        with open("VHG.nodes.data", 'w') as f:
+        with open(os.path.join(RESULTS_FOLDER,"VHG.nodes.data"), 'w') as f:
             for index in range(1, self.vhgcount + 1):
                 f.write("VHG%d\n" % index)
 
         # write the names of the VCDN nodes (is it still used?)
-        with open("VCDN.nodes.data", 'w') as f:
+        with open(os.path.join(RESULTS_FOLDER,"VCDN.nodes.data"), 'w') as f:
             for index in range(1, self.vcdncount + 1):
                 f.write("vCDN%d\n" % index)

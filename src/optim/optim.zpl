@@ -1,50 +1,50 @@
-set N	:= {read "substrate.nodes.data" as "<1s>"};
-set NS	:= {read "service.nodes.data" as "<1s>"};
+set N	:= {read "../results/substrate.nodes.data" as "<1s>"};
+set NS	:= {read "../results/service.nodes.data" as "<1s>"};
 
-set E := { read "substrate.edges.data" as "<1s,2s>"};
+set E := { read "../results/substrate.edges.data" as "<1s,2s>"};
 set Et := { <u,v> in N cross N with <v,u> in E};
-set ES := { read "service.edges.data" as "<1s,2s>"};
-set CDN := {read "CDN.nodes.data" as "<1s,2s>"};
-set CDN_LABEL := {read "CDN.nodes.data" as "<1s>"};
+set ES := { read "../results/service.edges.data" as "<1s,2s>"};
+set CDN := {read "../results/CDN.nodes.data" as "<1s,2s>"};
+set CDN_LABEL := {read "../results/CDN.nodes.data" as "<1s>"};
 set CDN_LINKS := {<i,j> in ES inter (NS cross CDN_LABEL) with i!=j};
 
 
-set VHG_LABEL := {read "VHG.nodes.data" as "<1s>"};
+set VHG_LABEL := {read "../results/VHG.nodes.data" as "<1s>"};
 set VHG_INCOMING_LINKS := {<i,j> in ES inter (NS cross VHG_LABEL) with i!=j};
 set VHG_OUTGOING_LINKS := {<i,j> in ES inter (VHG_LABEL cross NS) with i!=j};
 
 
-set VCDN_LABEL := {read "VCDN.nodes.data" as "<1s>"};
+set VCDN_LABEL := {read "../results/VCDN.nodes.data" as "<1s>"};
 set VCDN_INCOMING_LINKS := {<i,j> in ES inter (NS cross VCDN_LABEL)};
 
 
 
-set STARTERS_MAPPING := {read "starters.nodes.data" as "<1s,2s>"};
-set STARTERS_LABEL := {read "starters.nodes.data" as "<1s>"};
+set STARTERS_MAPPING := {read "../results/starters.nodes.data" as "<1s,2s>"};
+set STARTERS_LABEL := {read "../results/starters.nodes.data" as "<1s>"};
 set STARTERS_OUTGOING_LINKS := {<i,j> in ES inter (STARTERS_LABEL cross NS) with i!=j};
 set STARTERS_INCOMING_LINKS := {<i,j> in ES inter (NS cross STARTERS_LABEL ) with i!=j};
 
-set SERVICE_PATHS := {read "service.path.data" as "<1s,2s,3s>"};
-set SERVICE_PATHS_DELAY := {read "service.path.delay.data" as "<1s,2n>"};
+set SERVICE_PATHS := {read "../results/service.path.data" as "<1s,2s,3s>"};
+set SERVICE_PATHS_DELAY := {read "../results/service.path.delay.data" as "<1s,2n>"};
 
 
 
 defset delta(u) := { <v> in N with <u,v> in (E union Et)};
-param cpuS[NS] := read "service.nodes.data" as "<1s> 2n";
-param cpu[N] := read "substrate.nodes.data" as "<1s> 2n";
+param cpuS[NS] := read "../results/service.nodes.data" as "<1s> 2n";
+param cpu[N] := read "../results/substrate.nodes.data" as "<1s> 2n";
 
-param delays[E] := read "substrate.edges.data" as "<1s,2s> 4n";
-
-
-param bwS[ES] := read "service.edges.data" as "<1s,2s> 3n";
-param bw[E] := read "substrate.edges.data" as "<1s,2s> 3n";
-param bwt[Et] := read "substrate.edges.data" as "<2s,1s> 3n";
-param source := read "starters.nodes.data" as "2s" use 1;
-param cdn_count := read "cdnmax.data" as "1n" use 1;
+param delays[E] := read "../results/substrate.edges.data" as "<1s,2s> 4n";
 
 
-param cpuCost := read "cpu.cost.data" as "1n" use 1;
-param netCost := read "net.cost.data" as "1n" use 1;
+param bwS[ES] := read "../results/service.edges.data" as "<1s,2s> 3n";
+param bw[E] := read "../results/substrate.edges.data" as "<1s,2s> 3n";
+param bwt[Et] := read "../results/substrate.edges.data" as "<2s,1s> 3n";
+param source := read "../results/starters.nodes.data" as "2s" use 1;
+param cdn_count := read "../results/cdnmax.data" as "1n" use 1;
+
+
+param cpuCost := read "../results/cpu.cost.data" as "1n" use 1;
+param netCost := read "../results/net.cost.data" as "1n" use 1;
 
 var x[N cross NS ] binary;
 var x_cdn[N cross CDN_LABEL ] binary;

@@ -1,12 +1,12 @@
-set N	:= {read "substrate.nodes.data" as "<1s>"};
+set N	:= {read "../results/substrate.nodes.data" as "<1s>"};
 
-set E := { read "substrate.edges.data" as "<1s,2s>"};
+set E := { read "../results/substrate.edges.data" as "<1s,2s>"};
 set Et := { <u,v> in N cross N with <v,u> in E};
-param delays[E] := read "substrate.edges.data" as "<1s,2s> 4n";
+param delays[E] := read "../results/substrate.edges.data" as "<1s,2s> 4n";
 
 
-param node1 := read "node1.data" as "1s" use 1;
-param node2 := read "node2.data" as "1s" use 1;
+param node1 := read "../results/node1.data" as "1s" use 1;
+param node2 := read "../results/node2.data" as "1s" use 1;
 
 
 

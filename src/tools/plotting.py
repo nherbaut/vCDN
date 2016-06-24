@@ -10,7 +10,10 @@ import matplotlib.pyplot as plt
 import numpy
 
 import sys
+import os
 
+OPTIM_FOLDER=os.path.join(os.path.dirname(os.path.realpath(__file__)),'../optim')
+RESULTS_FOLDER=os.path.join(os.path.dirname(os.path.realpath(__file__)),'../results')
 
 x_resolution=5
 
@@ -52,7 +55,7 @@ def plot_results_cpu(res, min_plot,max_plot, id):
                 orientation='landscape', papertype="A4", format="pdf",
                 transparent=False, bbox_inches=None, pad_inches=0.1,
                 frameon=None)
-    subprocess.Popen(["evince", "%d-node-capacitie.pdf" % id])
+    subprocess.Popen(["evince", os.path.join(RESULTS_FOLDER,"%d-node-capacitie.pdf" % id)])
     plt.clf()
 
 
@@ -84,7 +87,7 @@ def plot_results_embedding(res, min_plot,max_plot, id):
                 orientation='landscape', papertype="A4", format="pdf",
                 transparent=False, bbox_inches=None, pad_inches=0.1,
                 frameon=None)
-    subprocess.Popen(["evince", "%d-embedding.pdf" % id])
+    subprocess.Popen(["evince", os.path.join(RESULTS_FOLDER,"%d-embedding.pdf" % id)])
     plt.clf()
 
 
@@ -133,12 +136,12 @@ def plot_results_bw(res, min_plot,max_plot, id):
     plt.ylabel('% of Substrate Bandwidth Usage')
     plt.xlabel('# of Embeded Requests')
     # plt.show()
-    plt.savefig("%d-edge-capacities.pdf" % id, dpi=None, facecolor='w', edgecolor='w',
+    plt.savefig(os.path.join(RESULTS_FOLDER,"%d-edge-capacities.pdf" % id), dpi=None, facecolor='w', edgecolor='w',
                 orientation='landscape', papertype="A4", format="pdf",
                 transparent=False, bbox_inches=None, pad_inches=0.1,
                 frameon=None)
 
-    subprocess.Popen(["evince", "%d-edge-capacities.pdf" % id])
+    subprocess.Popen(["evince", os.path.join(OPTIM_FOLDER,"%d-edge-capacities.pdf" % id)])
     plt.clf()
 
 
@@ -148,28 +151,28 @@ def plotsol(**kwargs):
     cdn_candidates = []
     starters_candiates = []
 
-    with open("CDN.nodes.data", 'r') as f:
+    with open(os.path.join(RESULTS_FOLDER,"CDN.nodes.data"), 'r') as f:
         data = f.read()
         for line in data.split("\n"):
             line = line.split("\t")
             if len(line) == 2:
                 cdn_candidates.append(line[1])
 
-    with open("starters.nodes.data", 'r') as f:
+    with open(os.path.join(RESULTS_FOLDER,"starters.nodes.data"), 'r') as f:
         data = f.read()
         for line in data.split("\n"):
             line = line.split("\t")
             if len(line) == 2:
                 starters_candiates.append(line[1])
 
-    with open("substrate.edges.data", 'r') as f:
+    with open(os.path.join(RESULTS_FOLDER,"substrate.edges.data"), 'r') as f:
         data = f.read()
         for line in data.split("\n"):
             line = line.split("\t")
             if len(line) == 4:
                 edges.append(line)
 
-    with open("substrate.nodes.data", 'r') as f:
+    with open(os.path.join(RESULTS_FOLDER,"substrate.nodes.data"), 'r') as f:
         data = f.read()
         for line in data.split("\n"):
 
@@ -177,7 +180,7 @@ def plotsol(**kwargs):
             if (len(line) == 2):
                 nodesdict[line[0]] = line[1]
 
-    with open("solutions.data", "r") as sol:
+    with open(os.path.join(RESULTS_FOLDER,"solutions.data"), "r") as sol:
         data = sol.read().split("\n")
         nodesSol = []
         edgesSol = []
@@ -191,7 +194,7 @@ def plotsol(**kwargs):
                 edgesSol.append(matches[0])
                 continue
 
-    with open("substrate.dot", 'w') as f:
+    with open(os.path.join(RESULTS_FOLDER,"substrate.dot"), 'w') as f:
         f.write("graph{rankdir=LR;overlap = voronoi;splines = true;\n\n\n\n subgraph{\n\n\n")
 
         avgcpu = reduce(lambda x, y: float(x) + float(y), nodesdict.values(), 0.0) / len(nodesdict)
@@ -255,10 +258,10 @@ if __name__ == "__main__":
     plotsol(service_link_linewidth=args.service_link_linewidth)
     if not dosvg:
         file = tempfile.mkstemp(".pdf")[1]
-        subprocess.Popen(["neato", "./substrate.dot", "-Tpdf", "-o", file]).wait()
+        subprocess.Popen(["neato", os.path.join(RESULTS_FOLDER,"./substrate.dot"), "-Tpdf", "-o", file]).wait()
         subprocess.Popen(["evince", file]).wait()
     else:
         file = tempfile.mkstemp(".svg")[1]
-        subprocess.Popen(["neato", "./substrate.dot", "-Tsvg", "-o", file]).wait()
+        subprocess.Popen(["neato", os.path.join(RESULTS_FOLDER,"./substrate.dot"), "-Tsvg", "-o", file]).wait()
         subprocess.Popen(["eog", file]).wait()
         shutil.copy(file, "./res.svg")

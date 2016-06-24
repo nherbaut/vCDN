@@ -1,16 +1,29 @@
+import copy
+import os
 import re
 import subprocess
-import os
-from mapping import Mapping
-import copy
+
+from src.core.mapping import Mapping
+
+
+
+
+OPTIM_FOLDER=os.path.join(os.path.dirname(os.path.realpath(__file__)),'../optim')
+RESULTS_FOLDER=os.path.join(os.path.dirname(os.path.realpath(__file__)),'../results')
 
 def shortest_path(node1,node2):
-    with open("node1.data","w") as f:
+    with open(os.path.join(RESULTS_FOLDER,"node1.data"),"w") as f:
         f.write("%s\n"%node1)
-    with open("node2.data","w") as f:
+    with open(os.path.join(RESULTS_FOLDER,"node2.data"),"w") as f:
         f.write("%s\n"%node2)
-    subprocess.call(["scip", "-b", "./sp.batch"],stdout=open(os.devnull, 'wb'))
-    with open("solutions.data", "r") as sol:
+    subprocess.call(["scip", "-c", "read %s" % os.path.join(OPTIM_FOLDER,"sp.zpl"),"-c", "read %s" % os.path.join(OPTIM_FOLDER,"sp.zpl"),"-c","optimize ", "-c", "write solution %s" %(os.path.join(RESULTS_FOLDER,"solutions.data")),"-c", "q"],stdout=open(os.devnull, 'wb'))
+    #read sp.zpl
+    #optimize
+    #write solution solutions.data
+    #q
+
+
+    with open(os.path.join(RESULTS_FOLDER,"solutions.data"), "r") as sol:
         data = sol.read()
         data = data.split("\n")
 
@@ -41,14 +54,15 @@ def solve(service, substrate,allow_violations=False,smart_ass=False,preassign_vh
 
     if not allow_violations:
         if not preassign_vhg: #run the optim without CDNs
-            subprocess.call(["scip", "-b", "./mapping.batch"],stdout=open(os.devnull, 'wb'))
+            subprocess.call(["scip", "-b", os.path.join(OPTIM_FOLDER,"mapping.batch"),"-c", "read %s" % os.path.join(OPTIM_FOLDER,"optim.zpl"),"-c","optimize ", "-c", "write solution %s" %(os.path.join(RESULTS_FOLDER,"solutions.data")),"-c", "q"],stdout=open(os.devnull, 'wb'))
         else: #run the optim with CDN using reoptim
-            subprocess.call(["scip", "-b", "./mapping-reopt.batch"],stdout=open(os.devnull, 'wb'))
+            subprocess.call(["scip", "-b", os.path.join(OPTIM_FOLDER,"mapping.batch"),"-c", "read %s" % os.path.join(OPTIM_FOLDER,"optim.zpl"),"-c", "read %s" % os.path.join(RESULTS_FOLDER,"initial.sol"), "-c", "set reoptimization enable true","-c","optimize ", "-c", "write solution %s" %(os.path.join(RESULTS_FOLDER,"solutions.data")),"-c", "q"],stdout=open(os.devnull, 'wb'))
+
     else:
-        subprocess.call(["scip", "-b", "./mapping-debug.batch"],stdout=open(os.devnull, 'wb'))
+        subprocess.call(["scip", "-b", os.path.join(OPTIM_FOLDER,"mapping.batch"),"-c", "read %s" % os.path.join(OPTIM_FOLDER,"optim.zpl"),"-c","optimize ", "-c", "write solution %s" %(os.path.join(RESULTS_FOLDER,"solutions.data")),"-c", "q"],stdout=open(os.devnull, 'wb'))
     # plotting.plotsol()
     # os.subprocess.call(["cat", "./substrate.dot", "|", "dot", "-Tpdf", "-osol.pdf"])
-    with open("solutions.data", "r") as sol:
+    with open(os.path.join(RESULTS_FOLDER,"solutions.data"), "r") as sol:
         data = sol.read()
         if "infeasible" in data or "no solution" in data:
             return None

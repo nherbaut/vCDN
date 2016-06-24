@@ -7,8 +7,7 @@ import argparse
 import pickle
 import sys
 import random
-from plotting import plot_all_results
-from simulation import do_simu
+from src.core.simulation import do_simu
 import os.path
 parser = argparse.ArgumentParser(description='Process some integers.')
 parser.add_argument('--threshold', help="the number of failure until the algorithm stops", default=0)

@@ -2,6 +2,9 @@
 
 from haversine import haversine
 from pygraphml import GraphMLParser
+import os
+RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
+DATA_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../data')
 
 
 class bcolors:
@@ -49,7 +52,7 @@ class Substrate:
         self.cpuCost=cpuCost
         self.netCost=netCost
 
-    def write(self, edges_file="substrate.edges.data", nodes_file="substrate.nodes.data"):
+    def write(self, edges_file=os.path.join(RESULTS_FOLDER,"substrate.edges.data"), nodes_file=os.path.join(RESULTS_FOLDER,"substrate.nodes.data")):
         edges = self.edges
         nodesdict = self.nodesdict
         with open(edges_file, 'w') as f:
@@ -61,19 +64,19 @@ class Substrate:
                 node = nodesdict[nodekey]
                 f.write("%s\t%lf\n" % (nodekey, node))
 
-        with open("pc_" + edges_file, 'w') as f:
+        with open(edges_file+"_pc", 'w') as f:
             for idx, val in enumerate(sorted(edges, key=lambda x: "%s%s" % (str(x[0]), str(x[1])))):
                 f.write("%s\t%s\t%s\t%s\n" % (val[0], val[1], bcolors.color_out(float(val[2])/float(self.edges_init[idx][2])*100), bcolors.color_out(float(val[3])/float(self.edges_init[idx][3])*100)))
 
-        with open("pc_" + nodes_file, 'w') as f:
+        with open(nodes_file+"_pc", 'w') as f:
             for nodekey in sorted(nodesdict.keys()):
                 node = bcolors.color_out(float(nodesdict[nodekey])/float(self.nodesdict_init[nodekey])*100)
                 f.write("%s\t%s\n" % (nodekey, node))
 
-        with open("cpu.cost.data","w") as f:
+        with open(os.path.join(RESULTS_FOLDER,"cpu.cost.data"),"w") as f:
             f.write("%lf\n"%self.cpuCost)
 
-        with open("net.cost.data","w") as f:
+        with open(os.path.join(RESULTS_FOLDER,"net.cost.data"),"w") as f:
             f.write("%lf\n"%self.netCost)
 
 
@@ -102,7 +105,7 @@ class Substrate:
 
 
     @classmethod
-    def fromFile(cls, edges_file="substrate.edges.data", nodes_file="substrate.nodes.data"):
+    def fromFile(cls, edges_file=os.path.join(RESULTS_FOLDER,"substrate.edges.data"), nodes_file=os.path.join(RESULTS_FOLDER,"substrate.nodes.data")):
 
         edges = []
         nodesdict = {}
@@ -186,7 +189,7 @@ def isOK(node1, node2):
     return True
 
 
-def get_substrate(rs, file='Geant2012.graphml'):
+def get_substrate(rs, file=os.path.join(DATA_FOLDER,'Geant2012.graphml')):
 
     su=Substrate.fromGraph(rs,file)
     su.write()

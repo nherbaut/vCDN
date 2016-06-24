@@ -2,5 +2,4 @@ read optim.zpl
 read initial.sol
 set reoptimization enable true
 optimize
-write solution solutions.data
 q
