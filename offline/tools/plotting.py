@@ -219,7 +219,7 @@ def plotsol(**kwargs):
             f.write("%s--%s [penwidth=\"%d\",fontsize=15,len=2,label=\" \"];\n " % (edge[0], edge[1], 3))
 
         for node in nodesSol:
-            if node[1] != "S0":
+            if "S0" not in node[1] :
                 f.write("%s--%s[color=blue,len=1.5,label=\" \"];\n" % node)
                 name=node[1]
                 if "VHG" in node[1]:

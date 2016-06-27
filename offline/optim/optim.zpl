@@ -108,11 +108,10 @@ subto noBigloop:
 			  y[u,v,i,j] <= 1;
 		
 		
-		
 
-subto startsource:
-    x[source,"S0"]==1;
-    
+
+
+
 subto sources:
     forall <name,id> in STARTERS_MAPPING:
         x[id,name]==1;
