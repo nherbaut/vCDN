@@ -18,24 +18,14 @@ class Edge:
 
 
 class Service:
-    idserv=ord('a')
-
-    @classmethod
-    def getId(cls):
-        return unichr(cls.idserv)
-
-    @classmethod
-    def incrementId(cls):
-         cls.idserv+=1
-
 
     @classmethod
     def fromSla(cls, sla):
         return cls(sla.bandwidth, 1, sla.delay, 0.35, 1, 5, 1,
-                   sla.start, sla.cdn, sla.max_cdn_to_use, spvhg=False)
+                   sla.start, sla.cdn, sla.max_cdn_to_use, spvhg=False,id="default")
 
     def __init__(self, sourcebw, vhgcount, sla_delay, vcdnratio, vcdncpu, vhgcpu, vcdncount, start,
-                 cdn, max_cdn_to_use, spvhg):
+                 cdn, max_cdn_to_use, spvhg,id="default"):
         self.sourcebw = sourcebw
 
         self.vhgcount = vhgcount
@@ -54,8 +44,7 @@ class Service:
         self.service_id = 0
         self.vhg_hints = None
         self.spvhg = spvhg
-        self.id=Service.getId()
-        Service.incrementId()
+        self.id=id
 
 
     def relax(self, relax_vhg=True, relax_vcdn=True):
@@ -131,7 +120,7 @@ class Service:
             if self.vhgcount > 1:
                 for i in range(1, int(self.vhgcount) + 1):
                     assigned_vcdn = 1 + (i - 1) % self.vcdncount
-                    e = Edge(bw["VHG%d_s" % (i,self.id)] * self.vcdnratio)
+                    e = Edge(bw["VHG%d_%s" % (i,self.id)] * self.vcdnratio)
                     self.edges["VHG%d_%s vCDN%d_%s" % (i, self.id, assigned_vcdn,self.id)] = e
             else:  # CAN increase vcdn up to len(start) is only relaxing vcdn
                 for i in range(1, int(self.vhgcount) + 1):
