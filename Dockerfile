@@ -18,7 +18,7 @@ ENV PATH /home/scip/scipoptsuite-3.2.1/scip-3.2.1/bin/:$PATH
 
 
 WORKDIR /opt/simuservice/
-COPY src/ /opt/simuservice/
+COPY ./ /opt/simuservice/
 
 
 CMD ./step.py --solve-disable && ./plotting.py --svg --net
