@@ -116,8 +116,6 @@ subto sources:
     forall <name,id> in STARTERS_MAPPING:
         x[id,name]==1;
 
-subto only1CDN:
-  sum <i> in (CDN_LABEL) : cdns_var[i] ==cdn_count;
 
 subto cdnToNode:
 	forall <i,j> in CDN:
@@ -126,7 +124,7 @@ subto cdnToNode:
 subto flowconservation_cdn:
    forall <i,j> in {<i,j> in CDN_LINKS  with i != j}:
       forall <u> in N:
-         sum<v> in {<v> in N with <u,v> in (E union Et)}: (y[u, v, i, j] - y[v, u, i,j]) *cdns_var[j]==( (x[u,i]-x[u,j])*cdns_var[j]);
+         sum<v> in {<v> in N with <u,v> in (E union Et)}: (y[u, v, i, j] - y[v, u, i,j]) ==( (x[u,i]-x[u,j]));
 
 subto bwSubstrate_cdn:
    forall <u,v> in E:

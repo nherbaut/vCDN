@@ -148,16 +148,16 @@ class Substrate:
 
         return cls(edges, nodesdict)
 
-    def consume_service(self, service, mapping):
+    def consume_service(self, serviceSpec, mapping):
         try:
             #print "consuming..."
             for ns in mapping.nodesSol:
-                self.nodesdict[ns[0]] = self.nodesdict[ns[0]] - service.nodes[ns[1]].cpu
+                self.nodesdict[ns[0]] = self.nodesdict[ns[0]] - serviceSpec.nodes[ns[1]].cpu
                 #print "\teater %lf from %s, remaining %s" % (service.nodes[ns[1]].cpu, ns[1], self)
             for es in mapping.edgesSol:
-                if not deduce_bw(es, self.edges, service):
+                if not deduce_bw(es, self.edges, serviceSpec):
                     backward = (es[1], es[0], es[2], es[3])
-                    deduce_bw(backward, self.edges, service)
+                    deduce_bw(backward, self.edges, serviceSpec)
         except ValueError as e:
             print e
         return

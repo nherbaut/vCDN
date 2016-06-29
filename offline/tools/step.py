@@ -13,8 +13,9 @@ from ..core.service import Service
 from ..core.sla import generate_random_slas
 from ..core.solver import solve
 from ..core.substrate import Substrate
-
+from ..db.persistance import DAO
 GEANT_PATH=os.path.join(os.path.dirname(os.path.realpath(__file__)),'../data/Geant2012.graphml')
+RESULTS_PATH=os.path.join(os.path.dirname(os.path.realpath(__file__)),'../results')
 
 
 def valid_grid(gridspec):
@@ -61,12 +62,12 @@ else:
 
 
 su.write()
-if dry and not os.path.isfile("service.pickle"):
+if dry and not os.path.isfile(os.path.join(RESULTS_PATH,"service.pickle")):
     print("must have a service.pickle to dry-run")
     exit(1)
 
 elif dry:
-    with open("service.pickle", "r") as f:
+    with open(os.path.join(RESULTS_PATH,"service.pickle"), "r") as f:
         service = pickle.load(f)
 else:
     sla = generate_random_slas(rs, su, 1,start_count=args.s,max_cdn_to_use=args.cdn,end_count=args.cdn)[0]
@@ -85,7 +86,7 @@ if args.vhg is not None:
 if args.vcdn is not None:
     service.vcdncount = int(args.vcdn)
 
-with open("service.pickle", "w") as f:
+with open(os.path.join(RESULTS_PATH,"service.pickle"), "w") as f:
     pickle.dump(service, f)
 
 service.write()
@@ -95,9 +96,10 @@ mapping = solve(service, su,preassign_vhg=not vhgpa)
 
 if not mapping is None:
     if not dry:
-        su.consume_service(service, mapping)
+        su.consume_service(service.spec, mapping)
         su.write()
     mapping.save()
+    DAO().save(service,mapping)
     # os.remove("service.pickle")
     sys.stdout.write("success: %e\n" % mapping.objective_function)
     exit(0)

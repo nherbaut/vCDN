@@ -34,24 +34,13 @@ def shortest_path(node1,node2):
 
     return None
 
-def solve(service, substrate,allow_violations=False,smart_ass=False,preassign_vhg=False):
+def solve_inplace(allow_violations=False,preassign_vhg=False):
+    '''
+    solve without rewriting intermedia files
+    :return: a mapping
+    '''
 
-
-
-    if preassign_vhg:
-        service_no_cdn=copy.deepcopy(service)
-        service_no_cdn.max_cdn_to_use=0
-        service_no_cdn.cdn=[]
-        mapping=solve(service_no_cdn, substrate,allow_violations=False,smart_ass=smart_ass,preassign_vhg=False)
-        if mapping is None:
-            return None
-        service.vhg_hints=mapping.get_vhg_mapping()
-
-
-    service.write()
-    substrate.write()
     violations=[]
-
     if not allow_violations:
         if not preassign_vhg: #run the optim without CDNs
             subprocess.call(["scip", "-c", "read %s" % os.path.join(OPTIM_FOLDER,"optim.zpl"),"-c","optimize ", "-c", "write solution %s" %(os.path.join(RESULTS_FOLDER,"solutions.data")),"-c", "q"],stdout=open(os.devnull, 'wb'))
@@ -91,3 +80,25 @@ def solve(service, substrate,allow_violations=False,smart_ass=False,preassign_vh
                 continue
 
         return Mapping(nodesSol, edgesSol,objective_function,violations=violations)
+
+def solve(service, substrate,allow_violations=False,smart_ass=False,preassign_vhg=False):
+
+
+
+    if preassign_vhg:
+        service_no_cdn=copy.deepcopy(service)
+        service_no_cdn.max_cdn_to_use=0
+        service_no_cdn.cdn=[]
+        mapping=solve(service_no_cdn, substrate,allow_violations=False,smart_ass=smart_ass,preassign_vhg=False)
+        if mapping is None:
+            return None
+        service.vhg_hints=mapping.get_vhg_mapping()
+
+
+    service.write()
+    substrate.write()
+
+
+    return solve_inplace(allow_violations,preassign_vhg)
+
+
