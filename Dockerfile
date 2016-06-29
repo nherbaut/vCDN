@@ -21,4 +21,4 @@ WORKDIR /opt/simuservice/
 COPY ./ /opt/simuservice/
 
 
-CMD ./step.py --solve-disable && ./plotting.py --svg --net
+CMD python -m offline.tools.step && python -m offline.tools.plotting --svg
