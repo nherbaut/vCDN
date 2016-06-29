@@ -4,10 +4,10 @@ import argparse
 import os
 
 from mininet.cli import CLI
-from mininet.link import TCLink
 from mininet.log import setLogLevel, info
 from mininet.net import Containernet, Mininet
 from mininet.node import RemoteController
+from mininet.link import TCLink
 
 import numpy as np
 
