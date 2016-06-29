@@ -168,19 +168,21 @@ def plotsol(**kwargs):
                 if len(line) == 2:
                     starters_candiates.append(line[1])
 
+        try:
+            with open(os.path.join(RESULTS_FOLDER,"solutions.data"), "r") as sol:
+                data = sol.read().split("\n")
 
-        with open(os.path.join(RESULTS_FOLDER,"solutions.data"), "r") as sol:
-            data = sol.read().split("\n")
-
-            for line in data:
-                matches = re.findall("^x\$(.*)\$([^ \t]+)", line)
-                if (len(matches) > 0):
-                    nodesSol.append(matches[0])
-                    continue
-                matches = re.findall("^y\$(.*)\$(.*)\$(.*)\$([^ \t]+)", line)
-                if (len(matches) > 0):
-                    edgesSol.append(matches[0])
-                    continue
+                for line in data:
+                    matches = re.findall("^x\$(.*)\$([^ \t]+)", line)
+                    if (len(matches) > 0):
+                        nodesSol.append(matches[0])
+                        continue
+                    matches = re.findall("^y\$(.*)\$(.*)\$(.*)\$([^ \t]+)", line)
+                    if (len(matches) > 0):
+                        edgesSol.append(matches[0])
+                        continue
+        except IOError:
+            print "no solution found, displaying topo only"
 
 
     with open(os.path.join(RESULTS_FOLDER,"substrate.edges.data"), 'r') as f:
