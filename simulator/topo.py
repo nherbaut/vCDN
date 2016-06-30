@@ -11,19 +11,14 @@ from mininet.link import TCLink
 
 import numpy as np
 
-
 from simulator.topoloader.topoloader import loadTopo
 
 rs = np.random.RandomState()
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../offline/results')
 
-
-
 parser = argparse.ArgumentParser(description='1 iteration for solver')
 parser.add_argument('--pickle', help="solution file pickle", default="mapping.data", type=str)
 args = parser.parse_args()
-
-
 
 
 # with open("mapping.data", 'r') as f:
@@ -38,21 +33,18 @@ args = parser.parse_args()
 
 
 def topology():
-
     "Create a network with some docker containers acting as hosts."
-    edgefile=os.path.join(RESULTS_FOLDER, "./substrate.edges.data")
-    nodesfile =os.path.join(RESULTS_FOLDER, "./substrate.nodes.data")
-    CDNfile =os.path.join(RESULTS_FOLDER,"CDN.nodes.data")
-    nodesfile =os.path.join(RESULTS_FOLDER, "./substrate.nodes.data")
-    nodesfile =os.path.join(RESULTS_FOLDER, "./substrate.nodes.data")
+    edgefile = os.path.join(RESULTS_FOLDER, "./substrate.edges.data")
+    nodesfile = os.path.join(RESULTS_FOLDER, "./substrate.nodes.data")
+    CDNfile = os.path.join(RESULTS_FOLDER, "CDN.nodes.data")
+    startersFile = os.path.join(RESULTS_FOLDER, "starters.nodes.data")
+    solutionsFile = os.path.join(RESULTS_FOLDER, "solutions.data")
 
-
-    topo= loadTopo(edgefile,nodesfile )
+    topo = loadTopo(edgefile, nodesfile, CDNfile, startersFile, solutionsFile)
 
     c = RemoteController('c', '0.0.0.0', 6633)
     # topodock=  loaddocker(os.path.join(RESULTS_FOLDER, "./substrate.edges.data"), os.path.join(RESULTS_FOLDER, "./substrate.nodes.data"))
     net = Containernet(topo=topo, controller=c, link=TCLink)
-
 
     info('*** Adding controller\n')
     # net.addController(c)
@@ -91,7 +83,6 @@ def topology():
     info('*** Starting network\n')
     net.start()
 
-
     # our extended ping functionality
     # net.ping([d1], manualdestip="10.0.0.252")
     # net.ping([d2, d3], manualdestip="11.0.0.254")
@@ -101,8 +92,8 @@ def topology():
     # we have to specify a manual ip when we add a link at runtime
     # net.addLink(d4, s1, params1={"ip": "10.0.0.254/8"})
     # other options to do this
-    #d4.defaultIntf().ifconfig("10.0.0.254 up")
-    #d4.setIP("10.0.0.254")
+    # d4.defaultIntf().ifconfig("10.0.0.254 up")
+    # d4.setIP("10.0.0.254")
 
 
 
@@ -112,7 +103,7 @@ def topology():
     info('*** Stopping network')
     net.stop()
 
+
 if __name__ == '__main__':
     setLogLevel('info')
     topology()
-

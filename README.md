@@ -54,4 +54,26 @@ python -m offline.tools.plotting --view
 
 # Docker image
 
-coming soon
+```
+docker run -it -v $(pwd)/offline/results:/opt/simuservice/offline/results/ dngroup/simuservice python -m offline.tools.step --grid 1x3
+docker run -it -v $(pwd)/offline/results:/opt/simuservice/offline/results/ dngroup/simuservice python -m offline.tools.plotting --svg
+```
+build image
+
+```
+docker build -t dngroup/simuservice .
+```
+
+
+# Docker network Simulator
+
+package needed
+
+```
+sudo apt-get install -y openvswitch-common
+```
+RUN
+
+```
+docker run -ti --rm=true --net=host --pid=host --privileged=true -v '/var/run/docker.sock:/var/run/docker.sock' dngroup/minicker /bin/bash
+```

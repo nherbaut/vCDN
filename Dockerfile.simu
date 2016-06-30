@@ -1,4 +1,4 @@
-FROM debian
+FROM ubuntu:trusty
 MAINTAINER David Bainbridge <dbainbri@ciena.com>
 
 ENV DEBIAN_FRONTEND noninteractive
@@ -58,10 +58,10 @@ RUN \
     libblas-dev \
     liblapack-dev \
     libatlas-base-dev \
-    gfortran \
+    gfortran
 
 #RUN easy_install python-pip
-    && pip install  \
+RUN pip install  \
         setuptools \
         urllib3 \
         pytest \
