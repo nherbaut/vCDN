@@ -5,14 +5,14 @@ import os
 
 import pickle
 import sys
-
+import shutil
 import numpy as np
 
 
 from ..core.service import Service
 from ..core.sla import generate_random_slas
 from ..core.solver import solve
-from ..core.substrate import Substrate
+from ..core.substrate import Substrate, RESULTS_FOLDER
 from offline.core.sla import Sla
 GEANT_PATH=os.path.join(os.path.dirname(os.path.realpath(__file__)),'../data/Geant2012.graphml')
 
@@ -61,6 +61,7 @@ else:
 
 if args.topo:
     su.write()
+    shutil.copyfile(os.path.join(RESULTS_FOLDER,"substrate.edges.data"), os.path.join(RESULTS_FOLDER,"substrate.edges.empty.data"))
     exit(0)
 
 
@@ -71,6 +72,8 @@ for s in args.cdn:
     assert s in su.nodesdict
 
 su.write()
+if not args.reuse:
+    shutil.copyfile(os.path.join(RESULTS_FOLDER,"substrate.edges.data"), os.path.join(RESULTS_FOLDER,"substrate.edges.empty.data"))
 
 service=Service(args.sourcebw, args.vhg, args.sla_delay, args.vcdnratio, 5, 3, args.vcdn, args.start,
                  args.cdn, len(args.cdn), True)

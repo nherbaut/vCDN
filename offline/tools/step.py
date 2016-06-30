@@ -4,6 +4,7 @@ import argparse
 import os
 
 import pickle
+import shutil
 import sys
 
 import numpy as np
@@ -12,7 +13,7 @@ import numpy as np
 from ..core.service import Service
 from ..core.sla import generate_random_slas
 from ..core.solver import solve
-from ..core.substrate import Substrate
+from ..core.substrate import Substrate, RESULTS_FOLDER
 
 GEANT_PATH=os.path.join(os.path.dirname(os.path.realpath(__file__)),'../data/Geant2012.graphml')
 
@@ -63,7 +64,8 @@ else:
 
 
 su.write()
-
+if not args.reuse:
+    shutil.copyfile(os.path.join(RESULTS_FOLDER,"substrate.edges.data"), os.path.join(RESULTS_FOLDER,"substrate.edges.empty.data"))
 if args.solve_disable:
     print("Not tried to find a solution (--solve-disable)")
     print("finish")

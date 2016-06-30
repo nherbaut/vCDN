@@ -34,7 +34,7 @@ args = parser.parse_args()
 
 def topology():
     "Create a network with some docker containers acting as hosts."
-    edgefile = os.path.join(RESULTS_FOLDER, "./substrate.edges.data")
+    edgefile = os.path.join(RESULTS_FOLDER, "./substrate.edges.empty.data")
     nodesfile = os.path.join(RESULTS_FOLDER, "./substrate.nodes.data")
     CDNfile = os.path.join(RESULTS_FOLDER, "CDN.nodes.data")
     startersFile = os.path.join(RESULTS_FOLDER, "starters.nodes.data")

@@ -44,7 +44,7 @@ class loadTopo(Topo):
                     node1, node2, bw, delay = line.split("\t")
                     edges.append((node1, node2, float(bw), float(delay)))
                     self.addLink(self._switches["s%s" % (node1)], self._switches["s%s" % (node2)],
-                                 bw=float(bw) / 1000000000, delay='%sms' % (float(delay)),
+                                 bw=float(bw) / 1000000, delay='%sms' % (float(delay)),
                                  key="s%s-s%s" % (node1, node2))
 
         with open(solutionsfile, "r") as sol:
