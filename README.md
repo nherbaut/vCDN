@@ -55,7 +55,7 @@ python -m offline.tools.plotting --view
 # Docker image
 
 ```
-docker run -it -v $(pwd)/offline/results:/opt/simuservice/offline/results/ dngroup/simuservice python -m offline.tools.step --grid 1x3
+docker run -it -v $(pwd)/offline/results:/opt/simuservice/offline/results/ dngroup/simuservice python -m offline.tools.dstep --start 0103 0303 --cdn  0301 --sla_delay 30  --grid 3x3 --sourcebw 1000000000  --vcdnratio 0.35
 docker run -it -v $(pwd)/offline/results:/opt/simuservice/offline/results/ dngroup/simuservice python -m offline.tools.plotting --svg
 ```
 build image
