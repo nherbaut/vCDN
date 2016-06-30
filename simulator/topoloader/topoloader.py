@@ -41,11 +41,65 @@ class loadTopo(Topo):
 
         size=4
         #docker = [self.addDocker("d%d"%i, ip='192.168.80.%d'%i,dcmd= '-s', dimage="networkstatic/iperf3") for i in range(1,size+1) ]
-        docker = [self.addHost("d%d"%i, cls=Docker, dimage="ubuntu:trusty") for i in range(1,size+1) ]
+        docker = [self.addHost("d%d"%i) for i in range(1,size+1) ]
+        # docker = [self.addHost("d%d"%i, cls=Docker, dcmd= '-s',dimage="networkstatic/iperf3") for i in range(1,size+1) ]
+        # docker = [self.addHost("d%d"%i, cls=Docker, dimage="ubuntu:trusty") for i in range(1,size+1) ]
 
 
         for i in range(0,size):
             self.addLink(docker[i], np.random.choice(self._switches.keys()))
+
+
+
+
+        # with open(os.path.join(RESULTS_FOLDER,"CDN.nodes.data"), 'r') as f:
+        #     data = f.read()
+        #     for line in data.split("\n"):
+        #         line = line.split("\t")
+        #         if len(line) == 2:
+        #             cdn_candidates.append(line[1])
+        #
+        # with open(os.path.join(RESULTS_FOLDER,"starters.nodes.data"), 'r') as f:
+        #     data = f.read()
+        #     for line in data.split("\n"):
+        #         line = line.split("\t")
+        #         if len(line) == 2:
+        #             starters_candiates.append(line[1])
+        #
+        #
+        # with open(os.path.join(RESULTS_FOLDER,"solutions.data"), "r") as sol:
+        #     data = sol.read().split("\n")
+        #
+        #     for line in data:
+        #         matches = re.findall("^x\$(.*)\$([^ \t]+)", line)
+        #         if (len(matches) > 0):
+        #             nodesSol.append(matches[0])
+        #             continue
+        #         matches = re.findall("^y\$(.*)\$(.*)\$(.*)\$([^ \t]+)", line)
+        #         if (len(matches) > 0):
+        #             edgesSol.append(matches[0])
+        #             continue
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

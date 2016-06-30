@@ -48,8 +48,8 @@ launch() {
 # Start the Open Virtual Switch Service
 service openvswitch-switch start
 service docker start
-docker pull 172.17.0.1:5000/ubuntu:trusty
-docker tag 172.17.0.1:5000/ubuntu:trusty ubuntu:trusty
+#docker pull 172.17.0.1:5000/ubuntu:trusty
+#docker tag 172.17.0.1:5000/ubuntu:trusty ubuntu:trusty
 if [ $# -eq 0 ]; then
    python topo.py
   #launch "$MININET_SCRIPT" $MININET_SCRIPT_OPTIONS

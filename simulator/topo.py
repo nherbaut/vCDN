@@ -40,7 +40,14 @@ args = parser.parse_args()
 def topology():
 
     "Create a network with some docker containers acting as hosts."
-    topo= loadTopo(os.path.join(RESULTS_FOLDER, "./substrate.edges.data"), os.path.join(RESULTS_FOLDER, "./substrate.nodes.data"))
+    edgefile=os.path.join(RESULTS_FOLDER, "./substrate.edges.data")
+    nodesfile =os.path.join(RESULTS_FOLDER, "./substrate.nodes.data")
+    CDNfile =os.path.join(RESULTS_FOLDER,"CDN.nodes.data")
+    nodesfile =os.path.join(RESULTS_FOLDER, "./substrate.nodes.data")
+    nodesfile =os.path.join(RESULTS_FOLDER, "./substrate.nodes.data")
+
+
+    topo= loadTopo(edgefile,nodesfile )
 
     c = RemoteController('c', '0.0.0.0', 6633)
     # topodock=  loaddocker(os.path.join(RESULTS_FOLDER, "./substrate.edges.data"), os.path.join(RESULTS_FOLDER, "./substrate.nodes.data"))
