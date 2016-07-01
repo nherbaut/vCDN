@@ -72,8 +72,7 @@ for s in args.cdn:
     assert s in su.nodesdict
 
 su.write()
-if not args.reuse:
-    shutil.copyfile(os.path.join(RESULTS_FOLDER,"substrate.edges.data"), os.path.join(RESULTS_FOLDER,"substrate.edges.empty.data"))
+shutil.copyfile(os.path.join(RESULTS_FOLDER,"substrate.edges.data"), os.path.join(RESULTS_FOLDER,"substrate.edges.empty.data"))
 
 service=Service(args.sourcebw, args.vhg, args.sla_delay, args.vcdnratio, 5, 3, args.vcdn, args.start,
                  args.cdn, len(args.cdn), True)

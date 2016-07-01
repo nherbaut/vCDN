@@ -55,17 +55,17 @@ vhgpa=args.vhgpa
 rs = np.random.RandomState()
 if args.reuse:
     su = Substrate.fromFile()
+    su.write()
 else:
     if args.grid is not None:
         x,y=args.grid
         su=Substrate.fromSpec(x,y,10**10,1,100)
     else:
         su = Substrate.fromGraph(rs, GEANT_PATH)
-
-
-su.write()
-if not args.reuse:
+    su.write()
     shutil.copyfile(os.path.join(RESULTS_FOLDER,"substrate.edges.data"), os.path.join(RESULTS_FOLDER,"substrate.edges.empty.data"))
+
+
 if args.solve_disable:
     print("Not tried to find a solution (--solve-disable)")
     print("finish")

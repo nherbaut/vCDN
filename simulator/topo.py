@@ -56,7 +56,7 @@ def topology():
     # info('*** Adding docker containers\n')
     # d1 = net.addDocker('d1', ip='10.0.0.251', dimage="ubuntu:trusty")
     # d2 = net.addDocker('d2', ip='10.0.0.252', dimage="ubuntu:trusty", cpu_period=50000, cpu_quota=25000)
-    # d3 = net.addDocker('d3', ip='10.0.0.253', dimage="ubuntu:trusty", cpu_shares=20)
+    d3 = net.addDocker('d3', ip='10.0.0.253', dimage="ubuntu:trusty", cpu_shares=20)
     #
     # info('*** Adding switch\n')
     # s1 = net.addSwitch('s1')
@@ -77,7 +77,7 @@ def topology():
     # # try to add a second interface to a docker container
     # net.addLink(d2, s3)
     # # net.addLink(d3, s3)
-
+    net.addLink("0101", d3, cls=TCLink, delay="100ms", bw=1, loss=10)
 
 
     info('*** Starting network\n')
