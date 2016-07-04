@@ -36,16 +36,21 @@ class loadTopo(Topo):
                 if len(line) > 2:
                     nodeid, cpu = line.split("\t")
                     nodesdict[nodeid] = float(cpu)
-                    self._switches["s%s" % (nodeid)] = self.addSwitch("s%s" % (nodeid))
+
+                    self._switches["s%s" % (nodeid)] = self.addSwitch("s%s" % (nodeid), dpid="%s" % (nodeid))
 
         with open(edges_file, 'r') as f:
             for line in f.read().split("\n"):
                 if len(line) > 2:
                     node1, node2, bw, delay = line.split("\t")
                     edges.append((node1, node2, float(bw), float(delay)))
-                    self.addLink(self._switches["s%s" % (node1)], self._switches["s%s" % (node2)],
-                                 bw=float(bw) / 1000000, delay='%sms' % (float(delay)),
-                                 key="s%s-s%s" % (node1, node2))
+                    self._link["s%s-s%s" % (node1, node2)] = self.addLink(self._switches["s%s" % (node1)],
+                                                                          self._switches["s%s" % (node2)],
+                                                                          port1=int(node2),
+                                                                          port2=int(node1),
+                                                                          bw=float(bw) / 1000000 / 1000,
+                                                                          delay='%sms' % (float(delay)),
+                                                                          key="s%s-s%s" % (node1, node2))
 
         with open(solutionsfile, "r") as sol:
             data = sol.read().split("\n")
@@ -59,64 +64,28 @@ class loadTopo(Topo):
                 if (len(matches) > 0):
                     edgesSol.append(matches[0])
                     continue
-
+        i=0;
         for node in nodesSol:
             if node[1] != "S0":
+                i+=1;
                 name = node[1]
+                ip='10.0.0.%i'%i
                 if "VHG" in node[1]:
-                    self.addHost(node[1], cls=Docker, dcmd='-s', dimage="networkstatic/iperf3")
-                    self.addLink(node[1], "s%s" % node[0])
+                    self._hosts[node[1]] = self.addHost(node[1], cls=Docker, dimage="ubuntu:trusty",ip=ip)
+                    self._link["s%s-s%s" % (node1, node2)] = self.addLink(node[1], "s%s" % node[0])
                 elif "vCDN" in node[1]:
-                    self.addHost(node[1], cls=Docker, dcmd='-s', dimage="networkstatic/iperf3")
-                    self.addLink(node[1], "s%s" % node[0])
+                    self._hosts[node[1]] = self.addHost(node[1], cls=Docker, dimage="ubuntu:trusty",ip=ip)
+                    self._link["s%s-s%s" % (node1, node2)] = self.addLink(node[1], "s%s" % node[0])
                 elif "S" in node[1]:
-                    self.addHost(node[1], cls=Docker, dcmd='-s', dimage="networkstatic/iperf3")
-                    self.addLink(node[1], "s%s" % node[0])
+                    self._hosts[node[1]] = self.addHost(node[1], cls=Docker, dimage="ubuntu:trusty",ip=ip)
+                    self._link["s%s-s%s" % (node1, node2)] = self.addLink(node[1], "s%s" % node[0])
                 elif "CDN" in node[1]:
-                    self.addHost(node[1], cls=Docker, dcmd='-s', dimage="networkstatic/iperf3")
-                    self.addLink(node[1], "s%s" % node[0])
+                    self._hosts[node[1]] = self.addHost(node[1], cls=Docker, dimage="ubuntu:trusty",ip=ip)
+                    self._link["s%s-s%s" % (node1, node2)] = self.addLink(node[1], "s%s" % node[0])
                 else:
                     print 'error'
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-                    # self._switches["s11"] = self.addSw            itch("s11")
-                    # self._switches["s12"] = self.addSw            itch("s12")
-                    # self._switches["s21"] = self.addSw            itch("s21")
-                    # self._switches["s31"] = self.addSw            itch("s31")
-                    # self._switches["s32"] = self.addSwitc            h("s32")
-
-
-
-                    #
-                    # self.addLink(self._switches["s11"], self._switches["s21"], bw=1000, delay='5ms',key="%s-%s" % ("s1            1", "s21"))
-                    # self.addLink(self._switches["s12"], self._switches["s21"], bw=1000, delay='5ms',key="%s-%s" % ("s1            2", "s21"))
-                    # self.addLink(self._switches["s21"], self._switches["s31"], bw=1000, delay='5ms',key="%s-%s" % ("s2            1", "s31"))
-                    # self.addLink(self._switches["s21"], self._switches["s32"], bw=1000, delay='5ms',key="%s-%s" % ("s21", "s32"))
+        pass
 
 
 #
