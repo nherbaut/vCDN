@@ -24,6 +24,8 @@ from ryu.lib.packet import ethernet
 from ryu.lib.packet import ipv4
 from ryu.lib.packet import packet
 from ryu.ofproto import ofproto_v1_3, os
+from ryu.ofproto import ether
+from ryu.ofproto import ether
 # from ryu.ofproto import ofproto_v1_0, os
 from ryu.topology.event import EventSwitchEnter
 
@@ -36,7 +38,8 @@ RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../.
 nodesSol = []
 edgesSol = []
 switch = {}
-hosts = {}
+hostip = {}
+hostmac = {}
 
 
 def loadroutes(solutionsfile):
@@ -74,14 +77,27 @@ def loadroutes(solutionsfile):
             i += 1;
             name = node[1]
             ip = '10.0.0.%i' % i
+            mac = '00:00:00:00:00:%i' % i
             if "VHG" in node[1]:
-                hosts[node[1]] = ip
+                hostip[node[1]] = ip
+                hostmac[node[1]] = mac
+                edge = [node[0], int("2000%s" % re.findall('\d+', node[1])[0]), "*", node[1]]
+                switch[int(node[0], 16)].append(edge)
             elif "vCDN" in node[1]:
-                hosts[node[1]] = ip
+                hostip[node[1]] = ip
+                hostmac[node[1]] = mac
+                edge = [node[0], int("3000%s" % re.findall('\d+', node[1])[0]), "*", node[1]]
+                switch[int(node[0], 16)].append(edge)
             elif "S" in node[1]:
-                hosts[node[1]] = ip
+                hostip[node[1]] = ip
+                hostmac[node[1]] = mac
+                edge = [node[0], int("1000%s" % re.findall('\d+', node[1])[0]), "*", node[1]]
+                switch[int(node[0], 16)].append(edge)
             elif "CDN" in node[1]:
-                hosts[node[1]] = ip
+                hostip[node[1]] = ip
+                hostmac[node[1]] = mac
+                edge = [node[0], int("4000%s" % re.findall('\d+', node[1])[0]), "*", node[1]]
+                switch[int(node[0], 16)].append(edge)
             else:
                 print 'error'
     pass
@@ -89,6 +105,7 @@ def loadroutes(solutionsfile):
 
 class MWCController(app_manager.RyuApp):
     OFP_VERSIONS = [ofproto_v1_3.OFP_VERSION]
+
     # OFP_VERSIONS = [ofproto_v1_0.OFP_VERSION]
 
     def is_slow(self, eth_src):
@@ -143,12 +160,20 @@ class MWCController(app_manager.RyuApp):
         parser = ev.switch.dp.ofproto_parser
         if dpid in switch:
             for flow in switch[dpid]:
-                if ((flow[2] != 'S0') and (flow[3] != 'S0')):
+                if ((flow[2] != 'S0') and (flow[3] != 'S0') and (flow[2] != '*')):
 
+                    self.add_flow(ev.switch.dp,1,match=parser.OFPMatch(ipv4_src=hostip[flow[2]],ipv4_dst=hostip[flow[3]],eth_type=ether.ETH_TYPE_ARP),
+                                  actions=[parser.OFPActionOutput(int(flow[1]))])
+                    self.add_flow(ev.switch.dp,1,match=parser.OFPMatch(ipv4_src=hostip[flow[2]],ipv4_dst=hostip[flow[3]],eth_type=ether.ETH_TYPE_IP),
+                                  actions=[parser.OFPActionOutput(int(flow[1]))])
+                elif (flow[2] == '*'):
                     self.add_flow(ev.switch.dp,
                                   1,
-                                  match=parser.OFPMatch(ipv4_src=self._ipv4_text_to_int(hosts[flow[2]]),
-                                                        ipv4_dst=self._ipv4_text_to_int(hosts[flow[3]])),
+                                  match=parser.OFPMatch(ipv4_dst=self._ipv4_text_to_int(hostip[flow[3]]),eth_type=ether.ETH_TYPE_ARP),
+                                  actions=[parser.OFPActionOutput(int(flow[1]))])
+                    self.add_flow(ev.switch.dp,
+                                  1,
+                                  match=parser.OFPMatch(ipv4_dst=self._ipv4_text_to_int(hostip[flow[3]]),eth_type=ether.ETH_TYPE_IP),
                                   actions=[parser.OFPActionOutput(int(flow[1]))])
 
 
@@ -177,6 +202,7 @@ class MWCController(app_manager.RyuApp):
         pkt = packet.Packet(msg.data)
         eth = pkt.get_protocols(ethernet.ethernet)[0]
         if eth.ethertype not in [0x86DD, 0x88CC]:
+            # self.logger.info("packet in %d @ %ld " % (eth.ethertype, time.time()))
             self.logger.info("packet in %d @ %ld " % (eth.ethertype, time.time()))
 
         self.mac_to_port[eth.src] = in_port
@@ -193,14 +219,30 @@ class MWCController(app_manager.RyuApp):
 
         if datapath.id in switch:
             for flow in switch[datapath.id]:
-                if ((flow[2] != 'S0') and (flow[3] != 'S0')):
-
+                if ((flow[2] != 'S0') and (flow[3] != 'S0') and (flow[2] != '*')):
                     self.add_flow(datapath,
                                   1,
-                                  match=parser.OFPMatch(ipv4_src=hosts[flow[2]],
-                                                        ipv4_dst=hosts[flow[3]]),
+                                  match=parser.OFPMatch(ipv4_src=hostip[flow[2]],
+                                                        ipv4_dst=hostip[flow[3]],eth_type=ether.ETH_TYPE_ARP),
+                                  actions=[parser.OFPActionOutput(int(flow[1]))])
+                    self.add_flow(datapath,
+                                  1,
+                                  match=parser.OFPMatch(ipv4_src=hostip[flow[2]],
+                                                        ipv4_dst=hostip[flow[3]],eth_type=ether.ETH_TYPE_IP),
                                   actions=[parser.OFPActionOutput(int(flow[1]))])
 
+                elif (flow[2] == '*'):
+                    self.add_flow(datapath,
+                                  1,
+                                  match=parser.OFPMatch(ipv4_dst=hostip[flow[3]],eth_type=ether.ETH_TYPE_ARP),
+                                  actions=[parser.OFPActionOutput(int(flow[1]))],)
+                    self.add_flow(datapath,
+                                  1,
+                                  match=parser.OFPMatch(ipv4_dst=hostip[flow[3]],eth_type=ether.ETH_TYPE_IP),
+                                  actions=[parser.OFPActionOutput(int(flow[1]))])
+            pass
+            # self.add_flow(datapath, 1, match=parser.OFPMatch(eth_dst=arps[0].src_mac),
+            #               actions=[parser.OFPActionOutput(in_port)])
 
         # if datapath.id == 0x3000:  # core
         #
@@ -243,12 +285,3 @@ class MWCController(app_manager.RyuApp):
 
         if out:
             datapath.send_msg(out)
-
-    def _ipv4_text_to_int(self, ip_text):
-        """convert ip v4 string to integer."""
-        import struct
-        from ryu.lib import addrconv
-        if ip_text is None:
-            return None
-        assert isinstance(ip_text, str)
-        return struct.unpack('!I', addrconv.ipv4.text_to_bin(ip_text))[0]
