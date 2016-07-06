@@ -162,18 +162,18 @@ class MWCController(app_manager.RyuApp):
             for flow in switch[dpid]:
                 if ((flow[2] != 'S0') and (flow[3] != 'S0') and (flow[2] != '*')):
 
-                    self.add_flow(ev.switch.dp,1,match=parser.OFPMatch(ipv4_src=hostip[flow[2]],ipv4_dst=hostip[flow[3]],eth_type=ether.ETH_TYPE_ARP),
+                    self.add_flow(ev.switch.dp,1,match=parser.OFPMatch(arp_spa=hostip[flow[2]],arp_tpa=hostip[flow[3]],eth_type=ether.ETH_TYPE_ARP),
                                   actions=[parser.OFPActionOutput(int(flow[1]))])
                     self.add_flow(ev.switch.dp,1,match=parser.OFPMatch(ipv4_src=hostip[flow[2]],ipv4_dst=hostip[flow[3]],eth_type=ether.ETH_TYPE_IP),
                                   actions=[parser.OFPActionOutput(int(flow[1]))])
                 elif (flow[2] == '*'):
                     self.add_flow(ev.switch.dp,
                                   1,
-                                  match=parser.OFPMatch(ipv4_dst=self._ipv4_text_to_int(hostip[flow[3]]),eth_type=ether.ETH_TYPE_ARP),
+                                  match=parser.OFPMatch(arp_tpa=hostip[flow[3]],eth_type=ether.ETH_TYPE_ARP),
                                   actions=[parser.OFPActionOutput(int(flow[1]))])
                     self.add_flow(ev.switch.dp,
                                   1,
-                                  match=parser.OFPMatch(ipv4_dst=self._ipv4_text_to_int(hostip[flow[3]]),eth_type=ether.ETH_TYPE_IP),
+                                  match=parser.OFPMatch(ipv4_dst=hostip[flow[3]],eth_type=ether.ETH_TYPE_IP),
                                   actions=[parser.OFPActionOutput(int(flow[1]))])
 
 
@@ -222,8 +222,8 @@ class MWCController(app_manager.RyuApp):
                 if ((flow[2] != 'S0') and (flow[3] != 'S0') and (flow[2] != '*')):
                     self.add_flow(datapath,
                                   1,
-                                  match=parser.OFPMatch(ipv4_src=hostip[flow[2]],
-                                                        ipv4_dst=hostip[flow[3]],eth_type=ether.ETH_TYPE_ARP),
+                                  match=parser.OFPMatch(arp_spa=hostip[flow[2]],
+                                                        arp_tpa=hostip[flow[3]],eth_type=ether.ETH_TYPE_ARP),
                                   actions=[parser.OFPActionOutput(int(flow[1]))])
                     self.add_flow(datapath,
                                   1,
@@ -234,7 +234,7 @@ class MWCController(app_manager.RyuApp):
                 elif (flow[2] == '*'):
                     self.add_flow(datapath,
                                   1,
-                                  match=parser.OFPMatch(ipv4_dst=hostip[flow[3]],eth_type=ether.ETH_TYPE_ARP),
+                                  match=parser.OFPMatch(arp_tpa=hostip[flow[3]],eth_type=ether.ETH_TYPE_ARP),
                                   actions=[parser.OFPActionOutput(int(flow[1]))],)
                     self.add_flow(datapath,
                                   1,
