@@ -6,9 +6,10 @@ import os
 from mininet.cli import CLI
 from mininet.log import setLogLevel, info
 from mininet.net import Containernet, Mininet
-from mininet.node import RemoteController
+from mininet.node import RemoteController, OVSSwitch
 from mininet.link import TCLink
 
+from functools import partial
 import numpy as np
 
 from simulator.topoloader.topoloader import loadTopo
@@ -39,13 +40,14 @@ def topology():
     CDNfile = os.path.join(RESULTS_FOLDER, "CDN.nodes.data")
     startersFile = os.path.join(RESULTS_FOLDER, "starters.nodes.data")
     solutionsFile = os.path.join(RESULTS_FOLDER, "solutions.data")
+    switch = partial( OVSSwitch, protocols='OpenFlow13')
 
     topo = loadTopo(edgefile, nodesfile, CDNfile, startersFile, solutionsFile)
 
     c = RemoteController('c', '0.0.0.0', 6633)
     # topodock=  loaddocker(os.path.join(RESULTS_FOLDER, "./substrate.edges.data"), os.path.join(RESULTS_FOLDER, "./substrate.nodes.data"))
     info('*** Start Containernet\n')
-    net = Containernet(topo=topo, controller=c, link=TCLink)
+    net = Containernet(topo=topo, controller=c, link=TCLink)#,switch=switch)
 
 
 

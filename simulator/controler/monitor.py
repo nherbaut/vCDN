@@ -1,4 +1,5 @@
 import json
+import os
 import threading
 import time
 from SimpleXMLRPCServer import SimpleXMLRPCServer,SimpleXMLRPCRequestHandler
@@ -10,6 +11,7 @@ from ryu.controller.handler import set_ev_cls
 from ryu.lib import hub
 
 import route
+RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../offline/results')
 
 JSON_MAX = 300
 
@@ -149,24 +151,17 @@ class SimpleMonitor(route.MWCController):
             #                  stat.rx_packets, stat.rx_bytes, stat.rx_errors,
             #                  stat.tx_packets, stat.tx_bytes, stat.tx_errors)
 
-            if (ev.msg.datapath.id == route.slow_dpid):
-                # self.logger.info("equal 1000 (slow)")
-                if (stat.port_no == 1):
+            # if (ev.msg.datapath.id == route.):
+            #     # self.logger.info("equal 1000 (slow)")
+            #     if (stat.port_no == 1):
                     # self.logger.info("equal 1")
-                    self.addHostBwStat("slow", stat.rx_bytes, stat.tx_bytes)
-                    b = json.dumps(self.slices["slow"])
-                    self.toJsonFile(b, "slow.json")
+            self.addHostBwStat("%s.%s"%(ev.msg.datapath.id, stat.port_no), stat.rx_bytes, stat.tx_bytes)
+            b = json.dumps(self.slices["%s.%s"%(ev.msg.datapath.id, stat.port_no)])
+            self.toJsonFile(b, "./%s.%s.json"%(ev.msg.datapath.id, stat.port_no))
 
-            if (ev.msg.datapath.id == route.fast_dpid):
-                # self.logger.info("equal 2000 (fast)")
-                if (stat.port_no == 1):
-                    # self.logger.info("equal 1")
-                    self.addHostBwStat("fast", stat.rx_bytes, stat.tx_bytes)
-                    b = json.dumps(self.slices["fast"])
-                    self.toJsonFile(b, "fast.json")
 
     def toJsonFile(self, b, nameFile):
         # print b
-        with open(nameFile, "w") as text_file:
+        with open(os.path.join(RESULTS_FOLDER,nameFile), "w") as text_file:
             text_file.write(str(b))
 

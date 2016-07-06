@@ -64,24 +64,28 @@ class loadTopo(Topo):
                 if (len(matches) > 0):
                     edgesSol.append(matches[0])
                     continue
-        i=0;
+        i = 0;
         for node in nodesSol:
             if node[1] != "S0":
-                i+=1;
+                i += 1;
                 name = node[1]
-                ip='10.0.0.%i'%i
+                ip = '10.0.0.%i' % i
                 if "VHG" in node[1]:
-                    self._hosts[node[1]] = self.addHost(node[1], cls=Docker, dimage="ubuntu:trusty",ip=ip)
-                    self._link["s%s-s%s" % (node1, node2)] = self.addLink(node[1], "s%s" % node[0])
+                    self._hosts[node[1]] = self.addHost(node[1], cls=Docker, dimage="ubuntu:trusty", ip=ip)
+                    self._link["s%s-s%s" % (node1, node2)] = self.addLink(node[1], "s%s" % node[0],
+                                                                          port2=int("2000%s" % re.findall('\d+', node[1])[0]))
                 elif "vCDN" in node[1]:
-                    self._hosts[node[1]] = self.addHost(node[1], cls=Docker, dimage="ubuntu:trusty",ip=ip)
-                    self._link["s%s-s%s" % (node1, node2)] = self.addLink(node[1], "s%s" % node[0])
+                    self._hosts[node[1]] = self.addHost(node[1], cls=Docker, dimage="ubuntu:trusty", ip=ip)
+                    self._link["s%s-s%s" % (node1, node2)] = self.addLink(node[1], "s%s" % node[0],
+                                                                          port2=int("3000%s" % re.findall('\d+', node[1])[0]))
                 elif "S" in node[1]:
-                    self._hosts[node[1]] = self.addHost(node[1], cls=Docker, dimage="ubuntu:trusty",ip=ip)
-                    self._link["s%s-s%s" % (node1, node2)] = self.addLink(node[1], "s%s" % node[0])
+                    self._hosts[node[1]] = self.addHost(node[1], cls=Docker, dimage="ubuntu:trusty", ip=ip, )
+                    self._link["s%s-s%s" % (node1, node2)] = self.addLink(node[1], "s%s" % node[0],
+                                                                          port2=int("1000%s" % re.findall('\d+', node[1])[0]))
                 elif "CDN" in node[1]:
-                    self._hosts[node[1]] = self.addHost(node[1], cls=Docker, dimage="ubuntu:trusty",ip=ip)
-                    self._link["s%s-s%s" % (node1, node2)] = self.addLink(node[1], "s%s" % node[0])
+                    self._hosts[node[1]] = self.addHost(node[1], cls=Docker, dimage="ubuntu:trusty", ip=ip)
+                    self._link["s%s-s%s" % (node1, node2)] = self.addLink(node[1], "s%s" % node[0],
+                                                                          port2=int("4000%s" % re.findall('\d+', node[1])[0]))
                 else:
                     print 'error'
 
