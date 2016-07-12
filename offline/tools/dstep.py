@@ -54,7 +54,7 @@ args = parser.parse_args()
 rs = np.random.RandomState()
 if args.grid is not None:
     x,y=args.grid
-    su=Substrate.fromSpec(x,y,10**10,1,100)
+    su=Substrate.fromSpec(x,y,10**10,15,5)
 else:
     su = Substrate.fromGraph(rs, GEANT_PATH)
 

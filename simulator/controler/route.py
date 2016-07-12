@@ -27,6 +27,7 @@ from ryu.ofproto import ofproto_v1_3, os
 from ryu.ofproto import ether
 from ryu.ofproto import ether
 # from ryu.ofproto import ofproto_v1_0, os
+from ryu.ofproto.ofproto_v1_3 import OFPMC_ADD
 from ryu.topology.event import EventSwitchEnter
 
 import numpy as np
@@ -81,23 +82,27 @@ def loadroutes(solutionsfile):
             if "VHG" in node[1]:
                 hostip[node[1]] = ip
                 hostmac[node[1]] = mac
-                edge = [node[0], int("2000%s" % re.findall('\d+', node[1])[0]), "*", node[1]]
-                switch[int(node[0], 16)].append(edge)
+                edge = [node[0], 20000 + int("%s" % re.findall('\d+', node[1])[0]), "*", node[1]]
+                if int(edge[0], 16) in switch:
+                    switch[int(node[0], 16)].append(edge)
             elif "vCDN" in node[1]:
                 hostip[node[1]] = ip
                 hostmac[node[1]] = mac
-                edge = [node[0], int("3000%s" % re.findall('\d+', node[1])[0]), "*", node[1]]
-                switch[int(node[0], 16)].append(edge)
+                edge = [node[0], 30000 + int("%s" % re.findall('\d+', node[1])[0]), "*", node[1]]
+                if int(edge[0], 16) in switch:
+                    switch[int(node[0], 16)].append(edge)
             elif "S" in node[1]:
                 hostip[node[1]] = ip
                 hostmac[node[1]] = mac
-                edge = [node[0], int("1000%s" % re.findall('\d+', node[1])[0]), "*", node[1]]
-                switch[int(node[0], 16)].append(edge)
+                edge = [node[0], 10000 + int("%s" % re.findall('\d+', node[1])[0]), "*", node[1]]
+                if int(edge[0], 16) in switch:
+                    switch[int(node[0], 16)].append(edge)
             elif "CDN" in node[1]:
                 hostip[node[1]] = ip
                 hostmac[node[1]] = mac
-                edge = [node[0], int("4000%s" % re.findall('\d+', node[1])[0]), "*", node[1]]
-                switch[int(node[0], 16)].append(edge)
+                edge = [node[0], 40000 + int("%s" % re.findall('\d+', node[1])[0]), "*", node[1]]
+                if int(edge[0], 16) in switch:
+                    switch[int(node[0], 16)].append(edge)
             else:
                 print 'error'
     pass
@@ -136,12 +141,13 @@ class MWCController(app_manager.RyuApp):
                                           ofproto.OFPCML_NO_BUFFER)]
         self.add_flow(datapath, 0, match, actions)
 
-    def add_flow(self, datapath, priority, match, actions, buffer_id=None):
+    def add_flow(self, datapath, priority, match, actions, buffer_id=None, instructions=[]):
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
 
         inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS,
                                              actions)]
+        inst = instructions + inst
         if buffer_id:
             mod = parser.OFPFlowMod(datapath=datapath, buffer_id=buffer_id,
                                     priority=priority, match=match,
@@ -152,28 +158,53 @@ class MWCController(app_manager.RyuApp):
         self.logger.debug("%s", str(mod))
         datapath.send_msg(mod)
 
+    def add_meter(self, datapath, meter):
+
+        parser = datapath.ofproto_parser
+        self.logger.debug("%s", str(meter))
+        datapath.send_msg(meter)
+
     @set_ev_cls(EventSwitchEnter, MAIN_DISPATCHER)
     def _welcome(self, ev):
         dpid = ev.switch.dp.id
         # print(int(ev.switch.dp.id,16))
         self.switches[dpid] = ev.switch.dp
         parser = ev.switch.dp.ofproto_parser
+        proto = ev.switch.dp.ofproto
+
+        self.add_meter(ev.switch.dp, parser.OFPMeterMod(
+            datapath=ev.switch.dp,
+            # command=proto.OFPMC_ADD,
+            # flags=proto.OFPMF_KBPS,
+            bands=[parser.OFPMeterBandDrop(rate=10)], meter_id=1))
+
         if dpid in switch:
             for flow in switch[dpid]:
                 if ((flow[2] != 'S0') and (flow[3] != 'S0') and (flow[2] != '*')):
 
-                    self.add_flow(ev.switch.dp,1,match=parser.OFPMatch(arp_spa=hostip[flow[2]],arp_tpa=hostip[flow[3]],eth_type=ether.ETH_TYPE_ARP),
+                    # arp
+                    self.add_flow(ev.switch.dp, 1,
+                                  match=parser.OFPMatch(arp_spa=hostip[flow[2]], arp_tpa=hostip[flow[3]],
+                                                        eth_type=ether.ETH_TYPE_ARP),
                                   actions=[parser.OFPActionOutput(int(flow[1]))])
-                    self.add_flow(ev.switch.dp,1,match=parser.OFPMatch(ipv4_src=hostip[flow[2]],ipv4_dst=hostip[flow[3]],eth_type=ether.ETH_TYPE_IP),
+
+                    # tcp
+                    self.add_flow(ev.switch.dp,
+                                  1,
+                                  match=parser.OFPMatch(ipv4_src=hostip[flow[2]], ipv4_dst=hostip[flow[3]],
+                                                        eth_type=ether.ETH_TYPE_IP),
+                                  instructions=[parser.OFPInstructionMeter(meter_id=1)],
                                   actions=[parser.OFPActionOutput(int(flow[1]))])
+
+
                 elif (flow[2] == '*'):
                     self.add_flow(ev.switch.dp,
                                   1,
-                                  match=parser.OFPMatch(arp_tpa=hostip[flow[3]],eth_type=ether.ETH_TYPE_ARP),
+                                  match=parser.OFPMatch(arp_tpa=hostip[flow[3]], eth_type=ether.ETH_TYPE_ARP),
                                   actions=[parser.OFPActionOutput(int(flow[1]))])
                     self.add_flow(ev.switch.dp,
                                   1,
-                                  match=parser.OFPMatch(ipv4_dst=hostip[flow[3]],eth_type=ether.ETH_TYPE_IP),
+                                  match=parser.OFPMatch(ipv4_dst=hostip[flow[3]], eth_type=ether.ETH_TYPE_IP),
                                   actions=[parser.OFPActionOutput(int(flow[1]))])
 
 
@@ -223,22 +254,22 @@ class MWCController(app_manager.RyuApp):
                     self.add_flow(datapath,
                                   1,
                                   match=parser.OFPMatch(arp_spa=hostip[flow[2]],
-                                                        arp_tpa=hostip[flow[3]],eth_type=ether.ETH_TYPE_ARP),
+                                                        arp_tpa=hostip[flow[3]], eth_type=ether.ETH_TYPE_ARP),
                                   actions=[parser.OFPActionOutput(int(flow[1]))])
                     self.add_flow(datapath,
                                   1,
                                   match=parser.OFPMatch(ipv4_src=hostip[flow[2]],
-                                                        ipv4_dst=hostip[flow[3]],eth_type=ether.ETH_TYPE_IP),
+                                                        ipv4_dst=hostip[flow[3]], eth_type=ether.ETH_TYPE_IP),
                                   actions=[parser.OFPActionOutput(int(flow[1]))])
 
                 elif (flow[2] == '*'):
                     self.add_flow(datapath,
                                   1,
-                                  match=parser.OFPMatch(arp_tpa=hostip[flow[3]],eth_type=ether.ETH_TYPE_ARP),
-                                  actions=[parser.OFPActionOutput(int(flow[1]))],)
+                                  match=parser.OFPMatch(arp_tpa=hostip[flow[3]], eth_type=ether.ETH_TYPE_ARP),
+                                  actions=[parser.OFPActionOutput(int(flow[1]))], )
                     self.add_flow(datapath,
                                   1,
-                                  match=parser.OFPMatch(ipv4_dst=hostip[flow[3]],eth_type=ether.ETH_TYPE_IP),
+                                  match=parser.OFPMatch(ipv4_dst=hostip[flow[3]], eth_type=ether.ETH_TYPE_IP),
                                   actions=[parser.OFPActionOutput(int(flow[1]))])
             pass
             # self.add_flow(datapath, 1, match=parser.OFPMatch(eth_dst=arps[0].src_mac),

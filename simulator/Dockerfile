@@ -1,4 +1,4 @@
-FROM debian
+FROM ubuntu:trusty
 MAINTAINER David Bainbridge <dbainbri@ciena.com>
 
 ENV DEBIAN_FRONTEND noninteractive
@@ -59,9 +59,10 @@ RUN \
     liblapack-dev \
     libatlas-base-dev \
     gfortran \
+    iperf \
 
 #RUN easy_install python-pip
-    && pip install  \
+ && pip install  \
         setuptools \
         urllib3 \
         pytest \
@@ -75,7 +76,7 @@ RUN \
         python-dateutil==2.5.3 \
         pytz==2016.4 \
         six==1.10.0 \
-
+        ryu \
 
 #install docker
  
@@ -110,7 +111,7 @@ RUN \
 
 # Create a start script to start OpenVSwitch
 RUN echo 'DOCKER_OPTS="--insecure-registry 172.17.0.1:5000"' >/etc/default/docker
-COPY docker-entry-point /docker-entry-point
+COPY ./simulator/docker-entry-point /docker-entry-point
 RUN chmod 755 /docker-entry-point
 VOLUME ["/data"]
 WORKDIR /data

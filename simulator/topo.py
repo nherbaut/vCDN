@@ -40,15 +40,20 @@ def topology():
     CDNfile = os.path.join(RESULTS_FOLDER, "CDN.nodes.data")
     startersFile = os.path.join(RESULTS_FOLDER, "starters.nodes.data")
     solutionsFile = os.path.join(RESULTS_FOLDER, "solutions.data")
+    service_edges = os.path.join(RESULTS_FOLDER, "./service.edges.data")
     switch = partial( OVSSwitch, protocols='OpenFlow13')
 
-    topo = loadTopo(edgefile, nodesfile, CDNfile, startersFile, solutionsFile)
+    topo = loadTopo(edgefile, nodesfile, CDNfile, startersFile, solutionsFile,service_edges)
 
     c = RemoteController('c', '0.0.0.0', 6633)
     # topodock=  loaddocker(os.path.join(RESULTS_FOLDER, "./substrate.edges.data"), os.path.join(RESULTS_FOLDER, "./substrate.nodes.data"))
     info('*** Start Containernet\n')
-    net = Containernet(topo=topo, controller=c, link=TCLink)#,switch=switch)
-
+    net = Containernet(topo=topo, controller=c, link=TCLink,switch=switch)
+    for host in net.hosts:
+        if host.name in topo._cmd:
+            for cmd in topo._cmd[host.name]:
+                print "send cmd"
+                print (host.sendCmd(cmd))
 
 
 

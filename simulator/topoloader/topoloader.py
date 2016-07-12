@@ -12,7 +12,7 @@ rs = np.random.RandomState()
 class loadTopo(Topo):
     "Simple topology example."
 
-    def __init__(self, edges_file, nodes_file, CDNfile, startersfile, solutionsfile):
+    def __init__(self, edges_file, nodes_file, CDNfile, startersfile, solutionsfile,service_edges):
         "Create custom topo."
 
         # Initialize topology
@@ -22,6 +22,7 @@ class loadTopo(Topo):
         self._hosts = {}
         self._switches = {}
         self._link = {}
+        self._cmd = {}
 
         edges = []
         nodesdict = {}
@@ -30,6 +31,7 @@ class loadTopo(Topo):
         starters_candiates = []
         nodesSol = []
         edgesSol = []
+        bwSol=[]
 
         with open(nodes_file, 'r') as f:
             for line in f.read().split("\n"):
@@ -38,6 +40,14 @@ class loadTopo(Topo):
                     nodesdict[nodeid] = float(cpu)
 
                     self._switches["s%s" % (nodeid)] = self.addSwitch("s%s" % (nodeid), dpid="%s" % (nodeid))
+
+
+        with open(service_edges, 'r') as f:
+            for line in f.read().split("\n"):
+                if len(line) > 2:
+                    node1,node2, bw = line.split(" ")
+                    bwSol.append(line.split(" "));
+
 
         with open(edges_file, 'r') as f:
             for line in f.read().split("\n"):
@@ -74,23 +84,47 @@ class loadTopo(Topo):
                 if "VHG" in node[1]:
                     self._hosts[node[1]] = self.addHost(node[1], cls=Docker, dimage="ubuntu:trusty", ip=ip, mac=mac)
                     self._link["s%s-s%s" % (node1, node2)] = self.addLink(node[1], "s%s" % node[0],
-                                                                          port2=int(
-                                                                              "2000%s" % re.findall('\d+', node[1])[0]))
+                                                                          port2=20000 + int(
+                                                                              "%s" % re.findall('\d+', node[1])[0]))
                 elif "vCDN" in node[1]:
-                    self._hosts[node[1]] = self.addHost(node[1], cls=Docker, dimage="ubuntu:trusty", ip=ip, mac=mac)
-                    self._link["s%s-s%s" % (node1, node2)] = self.addLink(node[1], "s%s" % node[0],
-                                                                          port2=int(
-                                                                              "3000%s" % re.findall('\d+', node[1])[0]))
+                    self._hosts[node[1]] = self.addHost(node[1], cls=Docker, dimage="ubuntu:trusty")
+
+                    for nodealt in nodesSol:
+                        if nodealt[1] != "S0":
+                            if "S" in nodealt[1]:
+                                # ialt += 1;
+                                ipalt = '10.0.%s.%i/8' % (re.findall('\d+', nodealt[1])[0], i)
+                                macalt = '00:00:00:00:%s:%i' % (re.findall('\d+', nodealt[1])[0], i)
+                                bwsol=0;
+                                for node1alt,node2alt,bw in bwSol:
+                                    if ((node1alt==nodealt[1]) and ("VHG" in node2alt )):
+                                        bwsol=bw
+
+                                self._link["s%s-s%s-%s" % (node1, node2, re.findall('\d+', nodealt[1])[0])] = \
+                                    self.addLink(node[1], "s%s" % node[0],
+                                                 port2=30000 + int("%s" % re.findall('\d+', node[1])[0]) + int(
+                                                     "%s" % re.findall('\d+', nodealt[1])[0]) * 100,
+                                                 params1={"ip": ipalt, "mac": macalt},
+                                                 intfName1='eth%s' % re.findall('\d+', nodealt[1])[0],
+                                                 bw=float(bwsol) / 1000000 / 1000 )
+                                if not node[1] in self._cmd:
+                                    self._cmd[node[1]] = []
+
+                                self._cmd[node[1]].append(
+                                    'ip addr add %s dev %s' % (ipalt, 'eth%s' % re.findall('\d+', nodealt[1])[0]))
+
+
+
                 elif "S" in node[1]:
                     self._hosts[node[1]] = self.addHost(node[1], cls=Docker, dimage="ubuntu:trusty", ip=ip, mac=mac)
                     self._link["s%s-s%s" % (node1, node2)] = self.addLink(node[1], "s%s" % node[0],
-                                                                          port2=int(
-                                                                              "1000%s" % re.findall('\d+', node[1])[0]))
+                                                                          port2=10000 + int(
+                                                                              "%s" % re.findall('\d+', node[1])[0]))
                 elif "CDN" in node[1]:
                     self._hosts[node[1]] = self.addHost(node[1], cls=Docker, dimage="ubuntu:trusty", ip=ip, mac=mac)
                     self._link["s%s-s%s" % (node1, node2)] = self.addLink(node[1], "s%s" % node[0],
-                                                                          port2=int(
-                                                                              "4000%s" % re.findall('\d+', node[1])[0]))
+                                                                          port2=40000 + int(
+                                                                              "%s" % re.findall('\d+', node[1])[0]))
                 else:
                     print 'error'
 
