@@ -44,7 +44,7 @@ args = parser.parse_args()
 rs = np.random.RandomState()
 if args.grid is not None:
     x, y = args.grid
-    su = Substrate.fromSpec(x, y, 10 ** 10, 1, 100)
+    su=Substrate.fromSpec(x,y,10**10,15,5)
 else:
     su = Substrate.fromGraph(rs, GEANT_PATH)
 
@@ -64,7 +64,7 @@ best = sys.float_info.max
 best_service = None
 best_mapping = None
 for vhg in range(1, len(args.start) + 1):
-    for vcdn in range(1, min([len(args.start) + 1, len(args.cdn) + 1])):
+    for vcdn in range(1, min([len(args.start) + 1, vhg+1])):
         service = Service(args.sourcebw, vhg, args.sla_delay, args.vcdnratio, 5, 3, vcdn, args.start,
                           args.cdn, len(args.cdn), True)
         service.write()
