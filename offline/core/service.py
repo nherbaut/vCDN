@@ -98,12 +98,12 @@ class Service:
                 else:
                     assigned_vhg = 1 + (index - 1) % self.vhgcount
 
-                e = Edge(self.sourcebw / self.vhgcount)
+                e = Edge(self.sourcebw )
                 self.edges["S%d VHG%d" % (index, assigned_vhg)] = e
                 if "VHG%d" % assigned_vhg in bw:
-                    bw["VHG%d" % assigned_vhg] = bw["VHG%d" % assigned_vhg] + self.sourcebw / self.vhgcount
+                    bw["VHG%d" % assigned_vhg] = bw["VHG%d" % assigned_vhg] + self.sourcebw
                 else:
-                    bw["VHG%d" % assigned_vhg] = self.sourcebw / self.vhgcount
+                    bw["VHG%d" % assigned_vhg] = self.sourcebw
 
             for i in range(1, int(self.vhgcount) + 1):
                 if len(self.cdn) > 0:
