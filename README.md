@@ -45,6 +45,14 @@ python -m offline.tools.dstep --start 1 2 --topo erdos_renyi,30,0.1,3 --cdn 9 10
 ```
 
 
+from graphfml file 
+
+
+```
+python -m offline.tools.dstep --start 1 2 --topo file,Geant2012.graphml --cdn 9 10
+```
+
+
 
 1 step simulation, deterministic:
 ```
