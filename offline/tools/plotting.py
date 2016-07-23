@@ -202,7 +202,7 @@ def plotsol(**kwargs):
 
 
     with open(os.path.join(RESULTS_FOLDER,"substrate.dot"), 'w') as f:
-        f.write("graph{rankdir=LR;overlap = voronoi;splines = true;\n\n\n\n subgraph{\n\n\n")
+        f.write("graph{rankdir=LR;overlap = voronoi;\n\n\n\n subgraph{\n\n\n")
         #f.write("graph{rankdir=LR;\n\n\n\n subgraph{\n\n\n")
 
         avgcpu = reduce(lambda x, y: float(x) + float(y), nodesdict.values(), 0.0) / len(nodesdict)
