@@ -16,7 +16,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
 
-    df = pd.read_csv(args.file)
+    df = pd.read_csv(args.file,names=["Index","fcmean"])
     plt.figure(); df.plot();
     plt.show()
     # convert time column to proper time

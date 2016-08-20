@@ -25,5 +25,14 @@ class SLA(Base):
 
 
 engine = create_engine('sqlite:///example.db', echo=True)
+
 Base.metadata.create_all(engine)
 session = sessionmaker(bind=engine)()
+
+
+def drop_all():
+    Base.metadata.drop_all(bind=engine)
+
+
+def findSLAByDate(date):
+    return session.query(SLA).filter_by(SLA.start >= date).filter_by(end < date).all()
