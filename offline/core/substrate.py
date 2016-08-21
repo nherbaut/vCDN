@@ -1,15 +1,17 @@
 #!/usr/bin/env python
 
+import os
+
+import networkx
+import numpy.random
 from haversine import haversine
 from pygraphml import GraphMLParser
-import os
+
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
 DATA_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../data')
 
 
 class bcolors:
-
-
     @staticmethod
     def color_out(value):
         HEADER = '\033[95m'
@@ -27,32 +29,32 @@ class bcolors:
         elif value > 40:
             return WARNING + str(value) + ENDC
         elif value > 20:
-            return FAIL +str(value) + ENDC
+            return FAIL + str(value) + ENDC
         else:
-            return FAIL+BOLD+str(value)+ENDC
+            return FAIL + BOLD + str(value) + ENDC
 
 
 class Substrate:
     def __str__(self):
-        #print [x[1] for x in self.nodesdict.items()]
-        return "%e\t%e" % (self.get_edges_sum(),self.get_edges_sum())
+        # print [x[1] for x in self.nodesdict.items()]
+        return "%e\t%e" % (self.get_edges_sum(), self.get_edges_sum())
 
     def get_edges_sum(self):
         return sum([x[2] for x in self.edges])
 
-
     def get_nodes_sum(self):
         return sum([x[1] for x in self.nodesdict.items()])
 
-    def __init__(self, edges, nodesdict,cpuCost=2000,netCost=20000.0/10**9):
+    def __init__(self, edges, nodesdict, cpuCost=2000, netCost=20000.0 / 10 ** 9):
         self.edges = edges
         self.nodesdict = nodesdict
         self.edges_init = sorted(edges, key=lambda x: "%s%s" % (str(x[0]), str(x[1])))
         self.nodesdict_init = nodesdict.copy()
-        self.cpuCost=cpuCost
-        self.netCost=netCost
+        self.cpuCost = cpuCost
+        self.netCost = netCost
 
-    def write(self, edges_file=os.path.join(RESULTS_FOLDER,"substrate.edges.data"), nodes_file=os.path.join(RESULTS_FOLDER,"substrate.nodes.data")):
+    def write(self, edges_file=os.path.join(RESULTS_FOLDER, "substrate.edges.data"),
+              nodes_file=os.path.join(RESULTS_FOLDER, "substrate.nodes.data")):
         edges = self.edges
         nodesdict = self.nodesdict
         with open(edges_file, 'w') as f:
@@ -64,48 +66,120 @@ class Substrate:
                 node = nodesdict[nodekey]
                 f.write("%s\t%lf\n" % (nodekey, node))
 
-        with open(edges_file+"_pc", 'w') as f:
+        with open(edges_file + "_pc", 'w') as f:
             for idx, val in enumerate(sorted(edges, key=lambda x: "%s%s" % (str(x[0]), str(x[1])))):
-                f.write("%s\t%s\t%s\t%s\n" % (val[0], val[1], bcolors.color_out(float(val[2])/float(self.edges_init[idx][2])*100), bcolors.color_out(float(val[3])/float(self.edges_init[idx][3])*100)))
+                f.write("%s\t%s\t%s\t%s\n" % (
+                val[0], val[1], bcolors.color_out(float(val[2]) / float(self.edges_init[idx][2]) * 100),
+                bcolors.color_out(float(val[3]) / float(self.edges_init[idx][3]) * 100)))
 
-        with open(nodes_file+"_pc", 'w') as f:
+        with open(nodes_file + "_pc", 'w') as f:
             for nodekey in sorted(nodesdict.keys()):
-                node = bcolors.color_out(float(nodesdict[nodekey])/float(self.nodesdict_init[nodekey])*100)
+                node = bcolors.color_out(float(nodesdict[nodekey]) / float(self.nodesdict_init[nodekey]) * 100)
                 f.write("%s\t%s\n" % (nodekey, node))
 
-        with open(os.path.join(RESULTS_FOLDER,"cpu.cost.data"),"w") as f:
-            f.write("%lf\n"%self.cpuCost)
+        with open(os.path.join(RESULTS_FOLDER, "cpu.cost.data"), "w") as f:
+            f.write("%lf\n" % self.cpuCost)
 
-        with open(os.path.join(RESULTS_FOLDER,"net.cost.data"),"w") as f:
-            f.write("%lf\n"%self.netCost)
-
+        with open(os.path.join(RESULTS_FOLDER, "net.cost.data"), "w") as f:
+            f.write("%lf\n" % self.netCost)
 
     @classmethod
-    def fromSpec(cls,width,height,bw,delay,cpu):
+    def __fromSpec(cls, args):
+
+        width,height, bw, delay, cpu = args
+        width=int(width)
+        height=int(height)
         edges = []
         nodesdict = {}
 
-        for i in range(1,width+1):
-            for j in range(1,height+1):
-                nodesdict[str("%02d%02d"%(i,j))] = cpu
+        for i in range(1, width + 1):
+            for j in range(1, height + 1):
+                nodesdict[str("%02d%02d" % (i, j))] = cpu
 
-        for i in range(1,width+1):
-            for j in range(1,height+1):
-                if j+1 <= height:
-                    edges.append(("%02d%02d"%(i,j), "%02d%02d"%(i,j+1), bw, delay))
-                if i+1 <= width:
-                    edges.append(("%02d%02d"%(i,j), "%02d%02d"%(i+1,j), bw, delay))
-                if j+1 <= height and i+1 <= width:
-                    edges.append(("%02d%02d"%(i,j), "%02d%02d"%(i+1,j+1), bw, delay))
+        for i in range(1, width + 1):
+            for j in range(1, height + 1):
+                if j + 1 <= height:
+                    edges.append(("%02d%02d" % (i, j), "%02d%02d" % (i, j + 1), bw, delay))
+                if i + 1 <= width:
+                    edges.append(("%02d%02d" % (i, j), "%02d%02d" % (i + 1, j), bw, delay))
+                if j + 1 <= height and i + 1 <= width:
+                    edges.append(("%02d%02d" % (i, j), "%02d%02d" % (i + 1, j + 1), bw, delay))
 
+        return cls(edges, nodesdict)
+
+    @classmethod
+    def fromSpec(cls, specs, rs=numpy.random.RandomState()):
+        if specs[0] == "grid":
+            return cls.__fromSpec(list(specs[1]) + [10 ** 10, 1, 5])
+        elif specs[0] == "file":
+            return cls.fromGraph(rs, specs[1][0])
+        elif specs[0] == "powerlaw":
+            return cls.fromPowerLaw(list(specs[1])  + [10 ** 10, 1, 5])
+        elif specs[0] == "erdos_renyi":
+            return cls.FromErdosRenyi(list(specs[1])  + [10 ** 10, 1, 5])
+        else:
+            return cls.__fromSpec([5,5] + [10 ** 10, 1, 5])
+
+    @classmethod
+    def fromPowerLaw(cls, specs):
+        n, m, p, seed, bw, delay, cpu = specs
+        n=int(n)
+        m=int(m)
+        p=float(p)
+        seed=int(seed)
+        edges = []
+        nodesdict = {}
+        g = networkx.powerlaw_cluster_graph(n, m, p, seed)
+        for node in g.nodes():
+            nodesdict[str(node+1)] = cpu
+
+        for i, j in g.edges():
+            edges.append((str(i+1), str(j+1), bw, delay))
 
         return cls(edges, nodesdict)
 
 
+    @classmethod
+    def FromErdosRenyi(cls, specs):
+        n, p, seed, bw, delay, cpu = specs
+        n=int(n)
+        p=float(p)
+        seed=int(seed)
+        edges = []
+        nodesdict = {}
+        g = networkx.erdos_renyi_graph(n, p, seed)
+        for node in g.nodes():
+            nodesdict[str(node+1)] = cpu
+
+        for i, j in g.edges():
+            edges.append((str(i+1), str(j+1), bw, delay))
+
+        return cls(edges, nodesdict)
 
 
     @classmethod
-    def fromFile(cls, edges_file=os.path.join(RESULTS_FOLDER,"substrate.edges.data"), nodes_file=os.path.join(RESULTS_FOLDER,"substrate.nodes.data")):
+    def fromSpecTree(cls, width, height, bw, delay, cpu):
+        edges = []
+        nodesdict = {}
+
+        for i in range(1, width + 1):
+            for j in range(1, height + 1):
+                nodesdict[str("%02d%02d" % (i, j))] = cpu
+
+        for i in range(1, width + 1):
+            for j in range(1, height + 1):
+                if j + 1 <= height:
+                    edges.append(("%02d%02d" % (i, j), "%02d%02d" % (i, j + 1), bw, delay))
+                if i + 1 <= width:
+                    edges.append(("%02d%02d" % (i, j), "%02d%02d" % (i + 1, j), bw, delay))
+                if j + 1 <= height and i + 1 <= width:
+                    edges.append(("%02d%02d" % (i, j), "%02d%02d" % (i + 1, j + 1), bw, delay))
+
+        return cls(edges, nodesdict)
+
+    @classmethod
+    def fromFile(cls, edges_file=os.path.join(RESULTS_FOLDER, "substrate.edges.data"),
+                 nodes_file=os.path.join(RESULTS_FOLDER, "substrate.nodes.data")):
 
         edges = []
         nodesdict = {}
@@ -124,12 +198,11 @@ class Substrate:
 
         return cls(edges, nodesdict)
 
-
     @classmethod
-    def fromGraph(cls,rs,file):
+    def fromGraph(cls, rs, file):
         parser = GraphMLParser()
 
-        g = parser.parse(file)
+        g = parser.parse(os.path.join(DATA_FOLDER,file))
 
         nodes = {str(n.id): n for n in g.nodes()}
         edges = [(str(e.node1.id), str(e.node2.id), float(e.attributes()["d42"].value),
@@ -148,16 +221,16 @@ class Substrate:
 
         return cls(edges, nodesdict)
 
-    def consume_service(self, serviceSpec, mapping):
+    def consume_service(self, service, mapping):
         try:
-            #print "consuming..."
+            # print "consuming..."
             for ns in mapping.nodesSol:
-                self.nodesdict[ns[0]] = self.nodesdict[ns[0]] - serviceSpec.nodes[ns[1]].cpu
-                #print "\teater %lf from %s, remaining %s" % (service.nodes[ns[1]].cpu, ns[1], self)
+                self.nodesdict[ns[0]] = self.nodesdict[ns[0]] - service.spec.nodes[ns[1]].cpu
+                # print "\teater %lf from %s, remaining %s" % (service.nodes[ns[1]].cpu, ns[1], self)
             for es in mapping.edgesSol:
-                if not deduce_bw(es, self.edges, serviceSpec):
+                if not deduce_bw(es, self.edges, service):
                     backward = (es[1], es[0], es[2], es[3])
-                    deduce_bw(backward, self.edges, serviceSpec)
+                    deduce_bw(backward, self.edges, service)
         except ValueError as e:
             print e
         return
@@ -167,11 +240,12 @@ def deduce_bw(es, edges, service):
     candidate_edges = filter(lambda x: x[0] == es[0] and x[1] == es[1], edges)
     if len(candidate_edges) != 0:
         sub_edge = candidate_edges[0]
-        service_edge = service.edges["%s %s" % (es[2], es[3])]
+        service_edge = service.spec.edges["%s %s" % (es[2], es[3])]
         edges.remove(sub_edge)
         edges.append((sub_edge[0], sub_edge[1], sub_edge[2] - service_edge.bw, sub_edge[3]))
-        if sub_edge[2] - service_edge.bw <0:
-            print "hein?"
+        if sub_edge[2] - service_edge.bw < 0:
+            print
+            "hein?"
         return True
     return False
 
@@ -189,9 +263,8 @@ def isOK(node1, node2):
     return True
 
 
-def get_substrate(rs, file=os.path.join(DATA_FOLDER,'Geant2012.graphml')):
-
-    su=Substrate.fromGraph(rs,file)
+def get_substrate(rs, file=os.path.join(DATA_FOLDER, 'Geant2012.graphml')):
+    su = Substrate.fromGraph(rs, file)
     su.write()
 
     return su

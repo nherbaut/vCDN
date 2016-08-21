@@ -20,8 +20,6 @@ import sys
 
 from functools import reduce
 
-
-
 c = RemoteController('c', '0.0.0.0', 6633)
 #c= OVSController("c0")
 switch = partial( OVSSwitch, protocols='OpenFlow13')
