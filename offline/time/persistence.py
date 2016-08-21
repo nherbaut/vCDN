@@ -3,6 +3,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import sessionmaker
+import os
+
+RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
 
 Base = declarative_base()
 
@@ -24,15 +27,16 @@ class SLA(Base):
     tenant = relationship("Tenant", back_populates="slas")
 
 
-engine = create_engine('sqlite:///example.db', echo=True)
-
+engine = create_engine('sqlite:///%s/example.db'%RESULTS_FOLDER)
 Base.metadata.create_all(engine)
 session = sessionmaker(bind=engine)()
 
 
+
 def drop_all():
     Base.metadata.drop_all(bind=engine)
+    Base.metadata.create_all(engine)
 
 
 def findSLAByDate(date):
-    return session.query(SLA).filter_by(SLA.start >= date).filter_by(end < date).all()
+    return session.query(SLA).filter(SLA.start <= date).filter(SLA.end > date).all()

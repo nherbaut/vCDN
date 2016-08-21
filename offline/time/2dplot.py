@@ -16,8 +16,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
 
-    df = pd.read_csv(args.file,names=["Index","fcmean"])
-    plt.figure(); df.plot();
+    df = pd.read_csv(args.file)
+    plt.figure();
+    df.plot();
     plt.show()
     # convert time column to proper time
     ts = pd.Series(data=df["fcmean"].values,index=df.apply(lambda row: datetime.datetime.strptime(row['Index'], '%Y-%m-%d %H:%M:%S'),axis=1).values)

@@ -11,9 +11,9 @@ library("rPython")
 
 option_list = list(
     make_option(c("-r", "--random"), action="store_true", default=TRUE),
-    make_option(c("-p", "--plot"), action="store_true", default=TRUE),
+    make_option(c("-p", "--plot"), action="store_true", default=FALSE),
     make_option(c("-o", "--out"), type="character", default="./forecast.csv", help="output file name [default= %default]", metavar="character"),
-    make_option(c("-i", "--in"), type="character", default="../data/marseille.csv", help="intput file name [default= %default]", metavar="character"),
+    make_option(c("-i", "--in_file"), type="character", default="../data/marseille.csv", help="intput file name [default= %default]", metavar="character"),
 	make_option(c("-l", "--lengthforecast"), type="numeric", default=30, help="Number of forcast to generate", metavar="numeric"),
 	make_option(c("-t", "--limit"), type="numeric", default=30, help="limit reading the file up to ith element", metavar="numeric")
 	
@@ -28,9 +28,9 @@ if(opt$random==TRUE){
 	python.call("generate_random_traffic",output_path=opt$out,size=100)
 	v<-read.csv(file=opt$out,header=FALSE)
 }else {
-	print("Generating random data")
+	print("using specified file")
 	#read simulation file
-	v<-read.csv(file="../data/marseille.csv",header=FALSE)
+	v<-read.csv(file=opt$in_file,header=FALSE)
 }
 
 
@@ -55,12 +55,13 @@ fc95<-as.xts(append(coredata(fc$x),fc$upper[,"95%"]),v1)
 fc80<-as.xts(append(coredata(fc$x),fc$upper[,"80%"]),v1)
 fc0<-as.xts(v2,v1)
 fc_merged<-merge(fcmean,fc95,fc80,fc0)
-write.zoo(file="forecast.csv",fc_merged,sep = ",")
+write.zoo(file=opt$out,fc_merged,sep = ",")
+print(paste("csv data writter in " , opt$out))
 if(opt$plot){
 outfile<-paste(opt$out,".pdf",sep="")
 pdf(file=outfile)
 plot(fc)
-print(paste("written " , outfile))
+print(paste("pdf data writter in " , outfile))
 }
 
 
