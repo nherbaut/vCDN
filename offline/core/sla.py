@@ -1,11 +1,9 @@
 import scipy
 import scipy.integrate as integrate
 from sqlalchemy import Column, Integer, DateTime, Float, ForeignKey
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
-from sqlalchemy.schema import Table
 
-from ..time.persistence import session, Base, association_table
+from ..time.persistence import session, Base, slas_to_start_nodes
 
 tcp_win = 65535.0
 
@@ -16,45 +14,37 @@ def concurrentUsers(t, m, sigma, duration):
         t)[0]
 
 
-
-
-
-
 class Sla(Base):
     __tablename__ = 'Sla'
     id = Column(Integer, primary_key=True, autoincrement=True)
     start_date = Column(DateTime)
     end_date = Column(DateTime)
     bandwidth = Column(Float)
+    delay = Column(Float)
     tenant_id = Column(Integer, ForeignKey('tenant.id'))
+    max_cdn_to_use = Column(Integer)
     tenant = relationship("Tenant", back_populates="slas")
     start_nodes = relationship(
-        "StartNode",
-        secondary=association_table,
+        "TopoNode",
+        secondary=slas_to_start_nodes,
         back_populates="slas")
-
-    def __init__(self, *args, **kwargs):
-        if len(args) == 6:
-            bitrate, count, time_span, movie_duration, start, cdn = args
-            if "max_cdn_to_use" in kwargs:
-                max_cdn_to_use = kwargs["max_cdn_to_use"]
-            else:
-                max_cdn_to_use = 2
-            self.start = start
-            self.cdn = cdn
-            self.delay = tcp_win / bitrate * 1000.0
-            self.bandwidth = count * bitrate * movie_duration / time_span
-            self.max_cdn_to_use = max_cdn_to_use
-        else:
-            self.start = None
-            self.cdn = None
-            self.delay = None
-            self.bandwidth = None
-            self.max_cdn_to_use = None
+    #end_nodes = relationship(
+     #   "TopoNode",
+#        secondary=slas_to_start_nodes,
+#        back_populates="slas")
 
     def __str__(self):
         return "%d %d %lf %lf" % (self.start, self.cdn, self.delay, self.bandwidth)
 
+    def __init__(self, *args, **kwargs):
+        self.start_date = kwargs.get("start_date", None)
+        self.end_date = kwargs.get("end_date", None)
+        self.bandwidth = kwargs.get("bandwidth", None)
+        self.tenant_id = kwargs.get("tenant_id", None)
+        self.max_cdn_to_use = kwargs.get("max_cdn_to_use", None)
+        self.delay = kwargs.get("delay", None)
+        self.start_nodes = kwargs.get("start_nodes", [])
+        self.end_nodes = kwargs.get("end_nodes", [])
 
 
 def findSLAByDate(date):

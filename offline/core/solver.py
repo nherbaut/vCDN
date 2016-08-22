@@ -67,7 +67,7 @@ def solve_inplace(allow_violations=False, preassign_vhg=False):
                 violations.append(matches[0])
                 continue
 
-        return Mapping(nodesSol, edgesSol, objective_function, violations=violations)
+        return Mapping(nodesSol=nodesSol, edgesSol=edgesSol, objective_function=objective_function, violations=violations)
 
 
 def solve(service, substrate, allow_violations=False, smart_ass=False, preassign_vhg=True):

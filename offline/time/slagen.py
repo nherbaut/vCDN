@@ -1,16 +1,17 @@
 #!/usr/bin/env python
 # Generate SLAS from a forecast
 import argparse
+import datetime
 import locale
 import os
 import subprocess
 
-import namesgenerator
 import pandas as pd
-from SLA3D import *
-from persistence import *
 
 from ..core.sla import Sla
+from ..time.SLA3D import get_tse, chunk_serie_as_sla
+from ..time.namesgenerator import get_random_name
+from ..time.persistence import session, Tenant
 
 TIME_PATH = os.path.dirname(os.path.realpath(__file__))
 
@@ -46,13 +47,16 @@ def fill_db_with_sla(file=None, windows=5, centroids=5):
                                   axis=1).values)
     ts_forecasts = ts[get_forecast_from_date(df):]
     tse = get_tse(ts_forecasts, windows, centroids)
-    tenant = Tenant(name=namesgenerator.get_random_name(), slas=[])
+    tenant = Tenant(name=get_random_name(), slas=[])
     session.add(tenant)
     for sla in chunk_serie_as_sla(tse):
         sla_instance = Sla(start_date=pd.to_datetime(sla.index[0]), end_date=pd.to_datetime(sla.index[-1]),
                            bandwidth=sla[0],
-                           tenant=tenant)
+                           tenant_id=tenant.id)
+
         session.add(sla_instance)
+        tenant.slas.append(sla_instance)
+        session.add(tenant)
 
     session.commit()
     return (ts, ts.index[0], get_forecast_from_date(df), ts.index[-1])

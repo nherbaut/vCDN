@@ -214,8 +214,8 @@ class Substrate:
     def consume_service(self, service, mapping):
         try:
             # print "consuming..."
-            for ns in mapping.nodesSol:
-                self.nodesdict[ns[0]] = self.nodesdict[ns[0]] - service.spec.nodes[ns[1]].cpu
+            for ns in mapping.node_mappings:
+                self.nodesdict[ns.topo_node_id] = self.nodesdict[ns.topo_node_id] - service.spec.nodes[ns.service_node_id].cpu
                 # print "\teater %lf from %s, remaining %s" % (service.nodes[ns[1]].cpu, ns[1], self)
             for es in mapping.edgesSol:
                 if not deduce_bw(es, self.edges, service):

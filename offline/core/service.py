@@ -128,8 +128,8 @@ class Service:
             tmp_int = self.vhg_hints
             self.vhg_hints = []
             for hint in tmp_int:
-                h = hint[1].split("_")
-                self.vhg_hints.append((hint[0], h[0] + "_" + self.id))
+                h = hint.service_node_id.split("_")
+                self.vhg_hints.append((hint.topo_node_id , h[0] + "_" + self.id))
 
             vhg_cdn_assignment = get_vhg_cdn_mapping(self.vhg_hints,
                                                      [(value, "CDN%d_%s" % (index, self.id)) for index, value in
