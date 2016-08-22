@@ -2,16 +2,18 @@
 # Generate SLAS from a forecast
 import argparse
 import locale
+import os
 import subprocess
 
 import namesgenerator
 import pandas as pd
 from SLA3D import *
 from persistence import *
-from sqlalchemy import create_engine
-import os
 
-TIME_PATH=os.path.dirname(os.path.realpath(__file__))
+from ..core.sla import Sla
+
+TIME_PATH = os.path.dirname(os.path.realpath(__file__))
+
 
 def get_forecast_from_date(df):
     dff = df["fcmean"] - df["fc0"]
@@ -33,11 +35,11 @@ def fill_db_with_sla(file=None, windows=5, centroids=5):
     '''
     locale.setlocale(locale.LC_ALL, 'en_US.utf8')
     if file is None:
-        subprocess.call(["%s/compute_forecast.R"%TIME_PATH ,"-o" ,"output.csv", "-r"],cwd=TIME_PATH)
+        subprocess.call(["%s/compute_forecast.R" % TIME_PATH, "-o", "output.csv", "-r"], cwd=TIME_PATH)
     else:
-        subprocess.call(["%s/compute_forecast.R"%TIME_PATH ,"-i", "%s"%file, "-o", "output.csv" ],cwd=TIME_PATH)
+        subprocess.call(["%s/compute_forecast.R" % TIME_PATH, "-i", "%s" % file, "-o", "output.csv"], cwd=TIME_PATH)
 
-    df = pd.read_csv(os.path.join(TIME_PATH,"output.csv"))
+    df = pd.read_csv(os.path.join(TIME_PATH, "output.csv"))
 
     ts = pd.Series(data=df["fcmean"].values,
                    index=df.apply(lambda row: datetime.datetime.strptime(row['Index'], '%Y-%m-%d %H:%M:%S'),
@@ -47,9 +49,10 @@ def fill_db_with_sla(file=None, windows=5, centroids=5):
     tenant = Tenant(name=namesgenerator.get_random_name(), slas=[])
     session.add(tenant)
     for sla in chunk_serie_as_sla(tse):
-        sla_isntance = SLA(start=pd.to_datetime(sla.index[0]), end=pd.to_datetime(sla.index[-1]), bandwidth=sla[0],
+        sla_instance = Sla(start_date=pd.to_datetime(sla.index[0]), end_date=pd.to_datetime(sla.index[-1]),
+                           bandwidth=sla[0],
                            tenant=tenant)
-        session.add(sla_isntance)
+        session.add(sla_instance)
 
     session.commit()
     return (ts, ts.index[0], get_forecast_from_date(df), ts.index[-1])

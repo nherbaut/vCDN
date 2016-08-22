@@ -15,7 +15,7 @@ parser.add_argument('--seed', help="integer seed used for random number generati
 parser.add_argument('--cpuCost', help="unit cost of the cpu", default=2000)
 parser.add_argument('--netCost', help="unit cost of the networking", default=20000)
 
-RESULTS_FOLDER=os.path.join(os.path.dirname(os.path.realpath(__file__)),'../results')
+RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
 
 args = parser.parse_args()
 
@@ -45,8 +45,8 @@ res["VHG"] = do_simu(relax_vhg=True, relax_vcdn=False, seed=args.seed, sla_count
                      cpuCost=int(args.cpuCost), netCost=float(args.netCost) / 10.0 ** 9,
                      smart_ass=True, )
 
-if os.path.isfile(os.path.join(RESULTS_FOLDER,"results.pickle")):
-    with open(os.path.join(RESULTS_FOLDER,"results.pickle"), "r") as f:
+if os.path.isfile(os.path.join(RESULTS_FOLDER, "results.pickle")):
+    with open(os.path.join(RESULTS_FOLDER, "results.pickle"), "r") as f:
         res_file = pickle.load(f)
 else:
     res_file = {}
@@ -54,15 +54,17 @@ else:
 for key in res.keys():
     if key in res_file:
 
-        print "won't add %s to already existing result" % key
+        print
+        "won't add %s to already existing result" % key
         new_key = key + str(random.uniform(1, 10000))
-        print "writing to another result instead : %s" % new_key
+        print
+        "writing to another result instead : %s" % new_key
         res_file[new_key] = res[key]
     else:
         res_file[key] = res[key]
 
 # save results just in case
-with open(os.path.join(RESULTS_FOLDER,"results.pickle"), "w") as f:
+with open(os.path.join(RESULTS_FOLDER, "results.pickle"), "w") as f:
     pickle.dump(res_file, f)
 
 print("saved results with keys:")

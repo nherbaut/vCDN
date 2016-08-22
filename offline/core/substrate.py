@@ -85,27 +85,9 @@ class Substrate:
 
     @classmethod
     def __fromSpec(cls, args):
-
         width,height, bw, delay, cpu = args
-        width=int(width)
-        height=int(height)
-        edges = []
-        nodesdict = {}
+        return cls.fromGrid(width=width, height=height, bw=bw, delay=delay, cpu=cpu)
 
-        for i in range(1, width + 1):
-            for j in range(1, height + 1):
-                nodesdict[str("%02d%02d" % (i, j))] = cpu
-
-        for i in range(1, width + 1):
-            for j in range(1, height + 1):
-                if j + 1 <= height:
-                    edges.append(("%02d%02d" % (i, j), "%02d%02d" % (i, j + 1), bw, delay))
-                if i + 1 <= width:
-                    edges.append(("%02d%02d" % (i, j), "%02d%02d" % (i + 1, j), bw, delay))
-                if j + 1 <= height and i + 1 <= width:
-                    edges.append(("%02d%02d" % (i, j), "%02d%02d" % (i + 1, j + 1), bw, delay))
-
-        return cls(edges, nodesdict)
 
     @classmethod
     def fromSpec(cls, specs, rs=numpy.random.RandomState()):
@@ -122,6 +104,10 @@ class Substrate:
 
     @classmethod
     def fromPowerLaw(cls, specs):
+        '''
+        :param specs: a tupple containing (n, m, p, seed, bw, delay, cpu)
+        :return: a substrate
+        '''
         n, m, p, seed, bw, delay, cpu = specs
         n=int(n)
         m=int(m)
@@ -141,6 +127,10 @@ class Substrate:
 
     @classmethod
     def FromErdosRenyi(cls, specs):
+        '''
+        :param specs: a tuple containing n, p, seed, bw, delay, cpu
+        :return: the substrate
+        '''
         n, p, seed, bw, delay, cpu = specs
         n=int(n)
         p=float(p)
@@ -158,7 +148,7 @@ class Substrate:
 
 
     @classmethod
-    def fromSpecTree(cls, width, height, bw, delay, cpu):
+    def fromGrid(cls, width=5, height=5, bw=10**10, delay=10, cpu=10):
         edges = []
         nodesdict = {}
 
