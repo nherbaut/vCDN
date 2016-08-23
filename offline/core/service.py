@@ -60,12 +60,11 @@ class Service:
     @classmethod
     def fromSla(cls, sla):
         return cls(sla.bandwidth, 1, sla.delay, 0.35, 1, 5, 1,
-                   sla.start, sla.cdn, sla.max_cdn_to_use, spvhg=False, id="default")
+                   sla.get_start_nodes(), sla.get_start_nodes(), sla.max_cdn_to_use, spvhg=False, id="default")
 
     def __init__(self, sourcebw, vhgcount, sla_delay, vcdnratio, vcdncpu, vhgcpu, vcdncount, start,
                  cdn, max_cdn_to_use, spvhg, id="default"):
         self.sourcebw = sourcebw
-
         self.vhgcount = vhgcount
         self.vcdnratio = vcdnratio
         self.sla_delay = sla_delay
@@ -132,7 +131,7 @@ class Service:
                 self.vhg_hints.append((hint.topo_node_id , h[0] + "_" + self.id))
 
             vhg_cdn_assignment = get_vhg_cdn_mapping(self.vhg_hints,
-                                                     [(value, "CDN%d_%s" % (index, self.id)) for index, value in
+                                                     [(value.toponode_id, "CDN%d_%s" % (index, self.id)) for index, value in
                                                       enumerate(self.cdn, start=1)])
         else:
             vhg_cdn_assignment = None
@@ -146,7 +145,7 @@ class Service:
             for index, value in enumerate(self.start, start=1):
 
                 if self.spvhg:
-                    assigned_vhg = source_vhg_assignment[value]
+                    assigned_vhg = source_vhg_assignment[value.toponode_id]
                 else:
                     assigned_vhg = 1 + (index - 1) % self.vhgcount
 
@@ -233,12 +232,13 @@ class Service:
         # write constraints on CDN placement
         with open(os.path.join(RESULTS_FOLDER, "CDN.nodes.data"), mode) as f:
             for index, value in enumerate(self.cdn, start=1):
-                f.write("CDN%d_%s %s\n" % (index, self.id, value))
+                f.write("CDN%d_%s %s\n" % (index, self.id, value.toponode_id))
+
 
         # write constraints on starter placement
         with open(os.path.join(RESULTS_FOLDER, "starters.nodes.data"), mode) as f:
             for index, value in enumerate(self.start, start=1):
-                f.write("S%d_%s %s\n" % (index, self.id, value))
+                f.write("S%d_%s %s\n" % (index, self.id, value.toponode_id))
 
         # write constraints on the maximum amont of cdn to use
         with open(os.path.join(RESULTS_FOLDER, "cdnmax.data"), 'w') as f:

@@ -6,12 +6,10 @@ import sys
 
 from ..core.mapping import Mapping
 from ..core.service import Service
+from ..time.persistence import NodeMapping, EdgeMapping, session
 
 OPTIM_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../optim')
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
-
-
-
 
 
 def solve_inplace(allow_violations=False, preassign_vhg=False):
@@ -45,17 +43,28 @@ def solve_inplace(allow_violations=False, preassign_vhg=False):
             return None
 
         data = data.split("\n")
-        nodesSol = []
+        nodesSols = []
         edgesSol = []
         objective_function = None
         for line in data:
+
+            # search node
             matches = re.findall("^x\$(.*)\$([^ \t]+)", line)
             if (len(matches) > 0):
-                nodesSol.append(matches[0])
+                nodeMapping = NodeMapping(topo_node_id=matches[0][0], service_node_id=matches[0][1])
+                # session.add(nodeMapping)
+                nodesSols.append(nodeMapping)
                 continue
+
+            # search edge
             matches = re.findall("^y\$(.*)\$(.*)\$(.*)\$([^ \t]+)", line)
             if (len(matches) > 0):
-                edgesSol.append(matches[0])
+                start_topo_node_id, end_topo_node_id, start_service_node_id, end_service_node_id = matches[0]
+                edgeMapping = EdgeMapping(start_topo_node_id=start_topo_node_id, end_topo_node_id=end_topo_node_id,
+                                          start_service_node_id=start_service_node_id,
+                                          end_service_node_id=end_service_node_id)
+                #session.add(edgeMapping)
+                edgesSol.append(edgeMapping)
                 continue
             matches = re.findall("^objective value: *([0-9\.]*)$", line)
             if (len(matches) > 0):
@@ -66,8 +75,9 @@ def solve_inplace(allow_violations=False, preassign_vhg=False):
             if (len(matches) > 0):
                 violations.append(matches[0])
                 continue
-
-        return Mapping(nodesSol=nodesSol, edgesSol=edgesSol, objective_function=objective_function, violations=violations)
+        mapping = Mapping(node_mappings=nodesSols, edge_mappings=edgesSol, objective_function=objective_function,
+                          violations=violations)
+        return mapping
 
 
 def solve(service, substrate, allow_violations=False, smart_ass=False, preassign_vhg=True):
@@ -97,18 +107,18 @@ def solve_optim(sla, substrate):
     best_service = None
     best_mapping = None
     best_price = sys.maxint
-    for vmg in range(1, len(sla.start)+1):
-        for vcdn in range(1, vmg+1):
+    for vmg in range(1, len(sla.get_start_nodes()) + 1):
+        for vcdn in range(1, vmg + 1):
             service = Service.fromSla(sla)
             service.vcdncount = vcdn
             service.vhgcount = vmg
             m = solve(service, substrate, smart_ass=True)
-            if (m.objective_function < best_price):
+            if ( m is not None and m.objective_function < best_price):
                 best_price = m.objective_function
                 best_service = service
-                best_mapping=m
+                best_mapping = m
 
     if best_service is None:
         raise ValueError
     else:
-        return best_service,best_mapping
+        return best_service, best_mapping

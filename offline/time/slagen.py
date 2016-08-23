@@ -10,8 +10,7 @@ import pandas as pd
 
 from ..core.sla import Sla
 from ..time.SLA3D import get_tse, chunk_serie_as_sla
-from ..time.namesgenerator import get_random_name
-from ..time.persistence import session, Tenant
+from ..time.persistence import session
 
 TIME_PATH = os.path.dirname(os.path.realpath(__file__))
 
@@ -21,7 +20,7 @@ def get_forecast_from_date(df):
     return df["Index"].values[-df.index[len(df) - len(dff[dff == 0])]]
 
 
-def fill_db_with_sla(file=None, windows=5, centroids=5):
+def fill_db_with_sla(tenant, file=None, windows=5, centroids=5, **kwargs):
     '''
 
     :param file: the file to read the data from
@@ -47,16 +46,16 @@ def fill_db_with_sla(file=None, windows=5, centroids=5):
                                   axis=1).values)
     ts_forecasts = ts[get_forecast_from_date(df):]
     tse = get_tse(ts_forecasts, windows, centroids)
-    tenant = Tenant(name=get_random_name(), slas=[])
-    session.add(tenant)
+
     for sla in chunk_serie_as_sla(tse):
         sla_instance = Sla(start_date=pd.to_datetime(sla.index[0]), end_date=pd.to_datetime(sla.index[-1]),
                            bandwidth=sla[0],
-                           tenant_id=tenant.id)
+                           tenant_id=tenant.id,
+                           start_nodes=kwargs.get("start_nodes", []),
+                           cdn_nodes=kwargs.get("cdn_nodes", []), )
 
         session.add(sla_instance)
-        tenant.slas.append(sla_instance)
-        session.add(tenant)
+
 
     session.commit()
     return (ts, ts.index[0], get_forecast_from_date(df), ts.index[-1])

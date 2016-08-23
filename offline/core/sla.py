@@ -1,9 +1,9 @@
 import scipy
 import scipy.integrate as integrate
-from sqlalchemy import Column, Integer, DateTime, Float, ForeignKey
+from sqlalchemy import Column, Integer, DateTime, Float, ForeignKey, String
 from sqlalchemy.orm import relationship
 
-from ..time.persistence import session, Base, slas_to_start_nodes
+from ..time.persistence import session, Base
 
 tcp_win = 65535.0
 
@@ -14,6 +14,16 @@ def concurrentUsers(t, m, sigma, duration):
         t)[0]
 
 
+class SlaNodeSpec(Base):
+    __tablename__ = 'SlaNodeSpec'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    sla_id = Column(Integer, ForeignKey("Sla.id"), nullable=False)
+    sla = relationship("Sla", cascade="save-update")
+    toponode_id = Column(String(16), ForeignKey("TopoNode.id"), nullable=False)
+    topoNode = relationship("TopoNode", cascade="save-update")
+    type = Column(String(16))
+
+
 class Sla(Base):
     __tablename__ = 'Sla'
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -21,17 +31,10 @@ class Sla(Base):
     end_date = Column(DateTime)
     bandwidth = Column(Float)
     delay = Column(Float)
-    tenant_id = Column(Integer, ForeignKey('tenant.id'))
+    tenant_id = Column(Integer, ForeignKey('tenant.id'), nullable=False)
     max_cdn_to_use = Column(Integer)
-    tenant = relationship("Tenant", back_populates="slas")
-    start_nodes = relationship(
-        "TopoNode",
-        secondary=slas_to_start_nodes,
-        back_populates="slas")
-    #end_nodes = relationship(
-     #   "TopoNode",
-#        secondary=slas_to_start_nodes,
-#        back_populates="slas")
+    tenant = relationship("Tenant", back_populates="slas", cascade="save-update")
+    sla_node_specs = relationship("SlaNodeSpec", cascade="save-update")
 
     def __str__(self):
         return "%d %d %lf %lf" % (self.start, self.cdn, self.delay, self.bandwidth)
@@ -43,8 +46,16 @@ class Sla(Base):
         self.tenant_id = kwargs.get("tenant_id", None)
         self.max_cdn_to_use = kwargs.get("max_cdn_to_use", None)
         self.delay = kwargs.get("delay", None)
-        self.start_nodes = kwargs.get("start_nodes", [])
-        self.end_nodes = kwargs.get("end_nodes", [])
+        for start_node in kwargs.get("start_nodes", []):
+            self.sla_node_specs.append(SlaNodeSpec(toponode_id=start_node, type="start"))
+        for cdn_node in kwargs.get("cdn_nodes", []):
+            self.sla_node_specs.append(SlaNodeSpec(toponode_id=cdn_node, type="cdn"))
+
+    def get_start_nodes(self):
+        return filter(lambda x: x.type == "start", self.sla_node_specs)
+
+    def get_cdn_nodes(self):
+        return filter(lambda x: x.type == "cdn", self.sla_node_specs)
 
 
 def findSLAByDate(date):
@@ -57,16 +68,6 @@ def write_sla(sla, seed=None):
 
     with open("starters.nodes.data", 'w') as f:
         f.write("%s \n" % sla.start)
-
-
-def getRandomBitrate(rs):
-    n = rs.uniform(0, 100)
-    if n < 25:  # LD
-        return 666666
-    elif n < 75:
-        return 1555555  # SD
-    else:
-        return 5000000  # HD
 
 
 def generate_random_slas(rs, substrate, count=1000, start_count=None, end_count=2, max_cdn_to_use=2):
@@ -82,13 +83,25 @@ def generate_random_slas(rs, substrate, count=1000, start_count=None, end_count=
             start_count_drawn = rs.choice([1, 2, 3, 4])
         else:
             start_count_drawn = start_count
-        draws = rs.choice(substrate.nodesdict.keys(), size=start_count_drawn + end_count, replace=False).tolist()
+        draws = rs.choice(substrate.nodesdict.keys(), size=start_count_drawn + end_count,
+                          replace=False).tolist()
         start = []
         cdn = []
         for i in range(1, start_count_drawn + 1):
             start.append(draws.pop())
         for i in range(1, end_count + 1):
             cdn.append(draws.pop())
-        res.append(Sla(bitrate, concurent_users, time_span, movie_duration, start, cdn, max_cdn_to_use=max_cdn_to_use))
+        res.append(
+            Sla(bitrate, concurent_users, time_span, movie_duration, start, cdn, max_cdn_to_use=max_cdn_to_use))
 
     return res
+
+
+def getRandomBitrate(rs):
+    n = rs.uniform(0, 100)
+    if n < 25:  # LD
+        return 666666
+    elif n < 75:
+        return 1555555  # SD
+    else:
+        return 5000000  # HD

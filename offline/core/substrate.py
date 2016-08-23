@@ -6,6 +6,7 @@ import networkx
 import numpy.random
 from haversine import haversine
 from pygraphml import GraphMLParser
+from ..time.persistence import EdgeMapping
 
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
 DATA_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../data')
@@ -36,18 +37,18 @@ class bcolors:
 
 class Substrate:
     def __str__(self):
-        # print [x[1] for x in self.nodesdict.items()]
+        # print [x[1] for x in self.nodes.items()]
         return "%e\t%e" % (self.get_edges_sum(), self.get_edges_sum())
 
     def get_edges_sum(self):
         return sum([x[2] for x in self.edges])
 
     def get_nodes_sum(self):
-        return sum([x[1] for x in self.nodesdict.items()])
+        return sum([x[1] for x in self.nodes.items()])
 
     def __init__(self, edges, nodesdict, cpuCost=2000, netCost=20000.0 / 10 ** 9):
         self.edges = edges
-        self.nodesdict = nodesdict
+        self.nodes = nodesdict
         self.edges_init = sorted(edges, key=lambda x: "%s%s" % (str(x[0]), str(x[1])))
         self.nodesdict_init = nodesdict.copy()
         self.cpuCost = cpuCost
@@ -56,7 +57,7 @@ class Substrate:
     def write(self, edges_file=os.path.join(RESULTS_FOLDER, "substrate.edges.data"),
               nodes_file=os.path.join(RESULTS_FOLDER, "substrate.nodes.data")):
         edges = self.edges
-        nodesdict = self.nodesdict
+        nodesdict = self.nodes
         with open(edges_file, 'w') as f:
             for l in sorted(edges, key=lambda x: "%s%s" % (str(x[0]), str(x[1]))):
                 f.write("%s\t%s\t%e\t%e\n" % (l[0], l[1], float(l[2]), l[3]))
@@ -69,8 +70,8 @@ class Substrate:
         with open(edges_file + "_pc", 'w') as f:
             for idx, val in enumerate(sorted(edges, key=lambda x: "%s%s" % (str(x[0]), str(x[1])))):
                 f.write("%s\t%s\t%s\t%s\n" % (
-                val[0], val[1], bcolors.color_out(float(val[2]) / float(self.edges_init[idx][2]) * 100),
-                bcolors.color_out(float(val[3]) / float(self.edges_init[idx][3]) * 100)))
+                    val[0], val[1], bcolors.color_out(float(val[2]) / float(self.edges_init[idx][2]) * 100),
+                    bcolors.color_out(float(val[3]) / float(self.edges_init[idx][3]) * 100)))
 
         with open(nodes_file + "_pc", 'w') as f:
             for nodekey in sorted(nodesdict.keys()):
@@ -85,9 +86,8 @@ class Substrate:
 
     @classmethod
     def __fromSpec(cls, args):
-        width,height, bw, delay, cpu = args
+        width, height, bw, delay, cpu = args
         return cls.fromGrid(width=width, height=height, bw=bw, delay=delay, cpu=cpu)
-
 
     @classmethod
     def fromSpec(cls, specs, rs=numpy.random.RandomState()):
@@ -96,11 +96,11 @@ class Substrate:
         elif specs[0] == "file":
             return cls.fromGraph(rs, specs[1][0])
         elif specs[0] == "powerlaw":
-            return cls.fromPowerLaw(list(specs[1])  + [10 ** 10, 1, 5])
+            return cls.fromPowerLaw(list(specs[1]) + [10 ** 10, 1, 5])
         elif specs[0] == "erdos_renyi":
-            return cls.FromErdosRenyi(list(specs[1])  + [10 ** 10, 1, 5])
+            return cls.FromErdosRenyi(list(specs[1]) + [10 ** 10, 1, 5])
         else:
-            return cls.__fromSpec([5,5] + [10 ** 10, 1, 5])
+            return cls.__fromSpec([5, 5] + [10 ** 10, 1, 5])
 
     @classmethod
     def fromPowerLaw(cls, specs):
@@ -109,21 +109,20 @@ class Substrate:
         :return: a substrate
         '''
         n, m, p, seed, bw, delay, cpu = specs
-        n=int(n)
-        m=int(m)
-        p=float(p)
-        seed=int(seed)
+        n = int(n)
+        m = int(m)
+        p = float(p)
+        seed = int(seed)
         edges = []
         nodesdict = {}
         g = networkx.powerlaw_cluster_graph(n, m, p, seed)
         for node in g.nodes():
-            nodesdict[str(node+1)] = cpu
+            nodesdict[str(node + 1)] = cpu
 
         for i, j in g.edges():
-            edges.append((str(i+1), str(j+1), bw, delay))
+            edges.append((str(i + 1), str(j + 1), bw, delay))
 
         return cls(edges, nodesdict)
-
 
     @classmethod
     def FromErdosRenyi(cls, specs):
@@ -132,23 +131,22 @@ class Substrate:
         :return: the substrate
         '''
         n, p, seed, bw, delay, cpu = specs
-        n=int(n)
-        p=float(p)
-        seed=int(seed)
+        n = int(n)
+        p = float(p)
+        seed = int(seed)
         edges = []
         nodesdict = {}
         g = networkx.erdos_renyi_graph(n, p, seed)
         for node in g.nodes():
-            nodesdict[str(node+1)] = cpu
+            nodesdict[str(node + 1)] = cpu
 
         for i, j in g.edges():
-            edges.append((str(i+1), str(j+1), bw, delay))
+            edges.append((str(i + 1), str(j + 1), bw, delay))
 
         return cls(edges, nodesdict)
 
-
     @classmethod
-    def fromGrid(cls, width=5, height=5, bw=10**10, delay=10, cpu=10):
+    def fromGrid(cls, width=5, height=5, bw=10 ** 10, delay=10, cpu=10):
         edges = []
         nodesdict = {}
 
@@ -192,7 +190,7 @@ class Substrate:
     def fromGraph(cls, rs, file):
         parser = GraphMLParser()
 
-        g = parser.parse(os.path.join(DATA_FOLDER,file))
+        g = parser.parse(os.path.join(DATA_FOLDER, file))
 
         nodes = {str(n.id): n for n in g.nodes()}
         edges = [(str(e.node1.id), str(e.node2.id), float(e.attributes()["d42"].value),
@@ -215,22 +213,23 @@ class Substrate:
         try:
             # print "consuming..."
             for ns in mapping.node_mappings:
-                self.nodesdict[ns.topo_node_id] = self.nodesdict[ns.topo_node_id] - service.spec.nodes[ns.service_node_id].cpu
-                # print "\teater %lf from %s, remaining %s" % (service.nodes[ns[1]].cpu, ns[1], self)
-            for es in mapping.edgesSol:
+                self.nodes[ns.topo_node_id] = self.nodes[ns.topo_node_id] - service.spec.nodes[
+                    ns.service_node_id].cpu
+                # print "\teater %lf flurom %s, remaining %s" % (service.nodes[ns[1]].cpu, ns[1], self)
+            for es in mapping.edge_mappings:
                 if not deduce_bw(es, self.edges, service):
-                    backward = (es[1], es[0], es[2], es[3])
+                    backward = EdgeMapping.backward(es)
                     deduce_bw(backward, self.edges, service)
         except ValueError as e:
-            print e
+            print(e)
         return
 
 
 def deduce_bw(es, edges, service):
-    candidate_edges = filter(lambda x: x[0] == es[0] and x[1] == es[1], edges)
+    candidate_edges = filter(lambda x: x[0] == es.start_topo_node_id and x[1] == es.end_topo_node_id, edges)
     if len(candidate_edges) != 0:
         sub_edge = candidate_edges[0]
-        service_edge = service.spec.edges["%s %s" % (es[2], es[3])]
+        service_edge = service.spec.edges["%s %s" % (es.start_service_node_id, es.end_service_node_id)]
         edges.remove(sub_edge)
         edges.append((sub_edge[0], sub_edge[1], sub_edge[2] - service_edge.bw, sub_edge[3]))
         if sub_edge[2] - service_edge.bw < 0:

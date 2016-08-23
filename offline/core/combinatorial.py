@@ -1,18 +1,26 @@
 import logging
-import sys
-import subprocess
 import os
 import re
+import subprocess
+import sys
 from collections import defaultdict
 from itertools import chain, combinations, product
-
-
 
 OPTIM_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../optim')
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
 
 
 def shortest_path(node1, node2):
+    '''
+
+    :param node1: a name of a topo node
+    :param node2: a name of a topo node
+    :return: the shortest_path length
+    '''
+
+    if node1==node2:
+        return 0
+
     with open(os.path.join(RESULTS_FOLDER, "node1.data"), "w") as f:
         f.write("%s\n" % node1)
     with open(os.path.join(RESULTS_FOLDER, "node2.data"), "w") as f:
@@ -37,6 +45,7 @@ def shortest_path(node1, node2):
             return float(matches[0])
 
     return None
+
 
 def generate_problem_combinaisons(problem):
     res = []
@@ -111,7 +120,6 @@ def do_dist(bunch):
         for i in filter(lambda x: x[0] != x[1],
                         map(lambda x: x.split(" "), set([" ".join(sorted(i)) for i in product(bunch, bunch)]))):
 
-
             value = shortest_path_cached(str(i[0]), str(i[1]))
 
             if value is not None:
@@ -147,39 +155,37 @@ def build_exhaustive_tree(data, settings, tree):
             continue
 
 
+def shortest_path_cached(node1, node2):
+    if (node1, node2) not in cache:
+        cache[(node1, node2)] = shortest_path(node1, node2)
+
+    return cache[(node1, node2)]
 
 
-def shortest_path_cached(node1,node2):
-    if (node1,node2) not in cache:
-        cache[(node1,node2)]=shortest_path(node1,node2)
-
-    return cache[(node1,node2)]
-
-
-def get_vhg_cdn_mapping(vhgs,cdns):
+def get_vhg_cdn_mapping(vhgs, cdns):
     '''
 
     :param vhgs: [ ("1025",'vhg1'), ("1026",'vhg2')]
     :param cdns: [ ("1025",'cdn1'), ("1026",'cdn3')]
     :return: [ "vhg1":"cdn3"]
     '''
-    logging.debug("managing %d vhgs and %d cdns" % (len(vhgs),len(cdns)))
-    res={}
+    logging.debug("managing %d vhgs and %d cdns" % (len(vhgs), len(cdns)))
+    res = {}
     for vhg in vhgs:
-        best=sys.maxint
+        best = sys.maxint
         for cdn in cdns:
-            value=shortest_path_cached(vhg[0],cdn[0])
+            value = shortest_path_cached(vhg[0], cdn[0])
             if value is not None:
-                logging.debug("from %s to %s we have %lf"%( vhg[1], cdn[1], value))
+                logging.debug("from %s to %s we have %lf" % (vhg[1], cdn[1], value))
                 if value < best:
-                    best=value
-                    res[vhg[1]]=cdn[1]
-    #print res
+                    best = value
+                    res[vhg[1]] = cdn[1]
+    # print res
     return res
 
 
 def clusterStart(nodes, class_count):
-    logging.debug("clusterStart %s %d"%(nodes,class_count))
+    logging.debug("clusterStart %s %d" % (nodes, class_count))
     data = defaultdict(list)
     for i in powerset(nodes):
         if len(i) > 0:
@@ -200,12 +206,11 @@ def clusterStart(nodes, class_count):
             min_score = tree.score
             candidate = tree.best_leaf
 
-
-    i=1
-    res={}
+    i = 1
+    res = {}
     for x in candidate:
         for y in x:
-          res[y]=i
-        i+=1
+            res[y] = i
+        i += 1
 
     return res

@@ -1,10 +1,10 @@
 import os
 import pickle
 
-from sqlalchemy import Column, Integer, Float
+from sqlalchemy import Column, Integer, Float, ForeignKey
 from sqlalchemy.orm import relationship
 
-from ..time.persistence import Base, NodeMapping
+from ..time.persistence import Base
 
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
 
@@ -12,6 +12,8 @@ RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../r
 class Mapping(Base):
     __tablename__ = 'Mapping'
     id = Column(Integer, primary_key=True, autoincrement=True)
+    sla_id = Column(Integer, ForeignKey('Sla.id'),nullable=False)
+    sla = relationship("Sla", cascade="save-update")
     node_mappings = relationship("NodeMapping", cascade="save-update")
     edge_mappings = relationship("EdgeMapping", cascade="save-update")
     objective_function = Column(Float)
@@ -33,11 +35,10 @@ class Mapping(Base):
         back_populates="slas")
     '''
 
-    def __init__(self, nodesSol, edgesSol, objective_function, violations=[]):
-        for (ntopo, nservice) in nodesSol:
-            self.node_mappings.append(NodeMapping(topo_node_id=ntopo, service_node_id=nservice))
-
-        self.edgesSol = edgesSol
+    def __init__(self, node_mappings=node_mappings, edge_mappings=edge_mappings, objective_function=objective_function,
+                 violations=[]):
+        self.node_mappings = node_mappings
+        self.edge_mappings = edge_mappings
         self.objective_function = objective_function
         self.violations = violations
 
