@@ -88,7 +88,7 @@ class EdgeMapping(Base):
 
 
 # engine = create_engine('sqlite:///%s/example.db' % RESULTS_FOLDER, echo=True)
-engine = create_engine('mysql+mysqldb://root:root@localhost/paper4', echo=True)
+engine = create_engine('mysql+mysqldb://root:root@127.0.0.1/paper4', echo=True)
 
 session = sessionmaker(bind=engine)()
 

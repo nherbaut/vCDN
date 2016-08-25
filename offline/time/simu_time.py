@@ -70,7 +70,7 @@ tenant_cdn_nodes = rs.choice(su.nodes, size=rs.randint(low=1, high=2), replace=F
 # fill_db_with_sla()
 #fill_db_with_sla(tenant, substrate=su)
 ts, date_start, date_start_forecast, date_end_forecast = fill_db_with_sla(tenant, start_nodes=tenant_start_nodes,
-                                                                          cdn_nodes=tenant_cdn_nodes, substrate=su)
+                                                                          cdn_nodes=tenant_cdn_nodes, substrate=su,delay=50)
 
 slas=session.query(Sla).all()[0:2]
 slas_spec={}

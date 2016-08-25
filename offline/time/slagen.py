@@ -53,7 +53,9 @@ def fill_db_with_sla(tenant, file=None, windows=5, centroids=5, **kwargs):
                            tenant_id=tenant.id,
                            start_nodes=kwargs.get("start_nodes", []),
                            cdn_nodes=kwargs.get("cdn_nodes", []),
-                           substrate=kwargs.get("substrate",None))
+                           substrate=kwargs.get("substrate",None),
+                           delay=kwargs.get("delay", 50)
+                           )
 
         session.add(sla_instance)
 

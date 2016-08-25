@@ -155,3 +155,18 @@ class Service(Base):
             for sla in self.slas:
                 for index in range(1, len(sla.get_cdn_nodes()) + 1):
                     f.write("vCDN%d_%s\n" % (index, sla.id))
+
+                    # write path to associate e2e delay
+
+        with open(os.path.join(RESULTS_FOLDER,"service.path.delay.data"), "w") as f:
+            for sla in self.slas:
+                topo = self.topo[sla]
+                for data in topo.dump_delay_paths():
+                    f.write("%s\n" % data)
+
+        # write e2e delay constraint
+        with open(os.path.join(RESULTS_FOLDER,  "service.path.data"), "w") as f:
+            for sla in self.slas:
+                topo = self.topo[sla]
+                for data in topo.dump_delay_routes():
+                    f.write("%s\n" % data)
