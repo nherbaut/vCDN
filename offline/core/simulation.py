@@ -3,9 +3,8 @@ import sys
 from copy import deepcopy
 
 import numpy as np
-
-import utils
 import substrate
+import utils
 from result import ResultItem
 from service import Service
 from sla import generate_random_slas
@@ -35,7 +34,7 @@ def do_simu(**kwargs):
     rs = np.random.RandomState(seed=kwargs["seed"])
 
     su = substrate.get_substrate(rs)
-    #su=Substrate.fromSpec(5,5,10**10,1,100)
+    # su=Substrate.fromSpec(5,5,10**10,1,100)
     su.cpuCost = kwargs["cpuCost"]
     su.netCost = kwargs["netCost"]
 
@@ -48,11 +47,12 @@ def do_simu(**kwargs):
 
     result.append(ResultItem(deepcopy(su), 0, 0, None, None))
 
-    relax_vhg=kwargs["relax_vhg"]
-    relax_vcdn=kwargs["relax_vcdn"]
+    relax_vhg = kwargs["relax_vhg"]
+    relax_vcdn = kwargs["relax_vcdn"]
 
     while (kwargs["rejected_threshold"] > 0 and rejected < kwargs["rejected_threshold"]) or (
-            kwargs["iteration_threshold"] > 0 and (kwargs["sla_count"] - len(slas) < kwargs["iteration_threshold"])):
+                    kwargs["iteration_threshold"] > 0 and (
+                    kwargs["sla_count"] - len(slas) < kwargs["iteration_threshold"])):
         best_objective_function = None
         best_mapping = None
         count_transformation_loop = 0
@@ -62,28 +62,25 @@ def do_simu(**kwargs):
         mapping = None
         mapping_res = []
 
-
         if relax_vhg:
-            vhg_max= len(service.start)
+            vhg_max = len(service.start)
         else:
-            vhg_max=1
-
+            vhg_max = 1
 
         if relax_vcdn:
             if relax_vhg:
-                vcdn_max=vhg_max
+                vcdn_max = vhg_max
             else:
-                vcdn_max=len(service.start)
+                vcdn_max = len(service.start)
         else:
-            vcdn_max=1
+            vcdn_max = 1
 
         # run this algo until relaxation is over
-        for vhg_count in range(1, vhg_max+1):
-            for vcdn_count in range(1, vcdn_max+1):
+        for vhg_count in range(1, vhg_max + 1):
+            for vcdn_count in range(1, vcdn_max + 1):
 
-
-                service.vcdncount=vcdn_count
-                service.vhgcount=vhg_count
+                service.vcdncount = vcdn_count
+                service.vhgcount = vhg_count
 
                 logging.debug(
                     "solving for vhg=%d vcdn=%d start=%d" % (service.vhgcount, service.vcdncount, len(service.start)))
@@ -101,8 +98,8 @@ def do_simu(**kwargs):
         else:
             mapping_res = sorted(mapping_res, key=lambda x: x[1].objective_function)
             for mres in mapping_res:
-                logging.debug("key: %s, %ld" % (  str(mres[0].vhgcount)+" "+str(mres[0].vcdncount) ,mres[1].objective_function ) )
-
+                logging.debug(
+                    "key: %s, %ld" % (str(mres[0].vhgcount) + " " + str(mres[0].vcdncount), mres[1].objective_function))
 
             service = mapping_res[0][0]
             mapping = mapping_res[0][1]

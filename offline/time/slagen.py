@@ -52,7 +52,8 @@ def fill_db_with_sla(tenant, file=None, windows=5, centroids=5, **kwargs):
                            bandwidth=sla[0],
                            tenant_id=tenant.id,
                            start_nodes=kwargs.get("start_nodes", []),
-                           cdn_nodes=kwargs.get("cdn_nodes", []), )
+                           cdn_nodes=kwargs.get("cdn_nodes", []),
+                           substrate=kwargs.get("substrate",None))
 
         session.add(sla_instance)
 

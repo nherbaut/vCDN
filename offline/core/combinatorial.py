@@ -18,7 +18,7 @@ def shortest_path(node1, node2):
     :return: the shortest_path length
     '''
 
-    if node1==node2:
+    if node1 == node2:
         return 0
 
     with open(os.path.join(RESULTS_FOLDER, "node1.data"), "w") as f:
@@ -117,6 +117,7 @@ def do_dist(bunch):
         return cache[bunch]
     else:
         asum = 0
+
         for i in filter(lambda x: x[0] != x[1],
                         map(lambda x: x.split(" "), set([" ".join(sorted(i)) for i in product(bunch, bunch)]))):
 
@@ -184,8 +185,15 @@ def get_vhg_cdn_mapping(vhgs, cdns):
     return res
 
 
-def clusterStart(nodes, class_count):
-    logging.debug("clusterStart %s %d" % (nodes, class_count))
+def get_node_clusters(nodes, class_count, substrate):
+    '''
+    split the provided nodes into class according to proximity on the graph
+    :param nodes: a list of nodes from the graph
+    :param class_count: the the number of class
+    :param substrate: the substrate on which to perform the computation
+    :return: a dict with where keys are nodes and values are their respective class
+    '''
+    logging.debug("get_node_clusters %s %d" % (nodes, class_count))
     data = defaultdict(list)
     for i in powerset(nodes):
         if len(i) > 0:
@@ -197,6 +205,8 @@ def clusterStart(nodes, class_count):
 
     min_score = sys.maxint
     candidate = None
+
+    substrate.write()
 
     for i in combinaisons:
         tree = Tree(distance=do_dist)

@@ -6,36 +6,35 @@ import networkx
 import numpy.random
 from haversine import haversine
 from pygraphml import GraphMLParser
-from ..time.persistence import EdgeMapping
+from sqlalchemy import Column, Integer, Float, ForeignKey, String
+from sqlalchemy.orm import relationship
+from sqlalchemy.schema import Table
+
+from ..time.persistence import EdgeMapping, Base
+from ..time.persistence import Node, Edge
 
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
 DATA_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../data')
 
+substrate_to_node = Table('substrate_to_nodes', Base.metadata,
+                          Column('node_id', String(16), ForeignKey('Node.id')),
+                          Column('substrate_id', Integer, ForeignKey('Substrate.id'))
+                          )
 
-class bcolors:
-    @staticmethod
-    def color_out(value):
-        HEADER = '\033[95m'
-        OKBLUE = '\033[94m'
-        OKGREEN = '\033[92m'
-        WARNING = '\033[93m'
-        FAIL = '\033[91m'
-        ENDC = '\033[0m'
-        BOLD = '\033[1m'
-        UNDERLINE = '\033[4m'
-        if value > 80:
-            return OKGREEN + str(value) + ENDC
-        elif value > 60:
-            return OKBLUE + str(value) + ENDC
-        elif value > 40:
-            return WARNING + str(value) + ENDC
-        elif value > 20:
-            return FAIL + str(value) + ENDC
-        else:
-            return FAIL + BOLD + str(value) + ENDC
+substrate_to_edge = Table('substrate_to_edges', Base.metadata,
+                          Column('edge_id', Integer, ForeignKey('Edge.id')),
+                          Column('substrate_id', Integer, ForeignKey('Substrate.id'))
+                          )
 
 
-class Substrate:
+class Substrate(Base):
+    __tablename__ = "Substrate"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    nodes = relationship("Node", secondary=substrate_to_node)
+    edges = relationship("Edge", secondary=substrate_to_edge)
+    cpuCost = Column(Float)
+    netCost = Column(Float)
+
     def __str__(self):
         # print [x[1] for x in self.nodes.items()]
         return "%e\t%e" % (self.get_edges_sum(), self.get_edges_sum())
@@ -47,10 +46,16 @@ class Substrate:
         return sum([x[1] for x in self.nodes.items()])
 
     def __init__(self, edges, nodesdict, cpuCost=2000, netCost=20000.0 / 10 ** 9):
+        '''
+
+        :param edges: a list of edge spec
+        :param nodesdict: a dict of nodes spec
+        :param cpuCost: the global cost for CPU
+        :param netCost:  the global cost for network
+        '''
         self.edges = edges
         self.nodes = nodesdict
-        self.edges_init = sorted(edges, key=lambda x: "%s%s" % (str(x[0]), str(x[1])))
-        self.nodesdict_init = nodesdict.copy()
+        self.edges_init = sorted(edges, key=lambda x: "%s%s" % (str(x.node_1), str(x.node_2)))
         self.cpuCost = cpuCost
         self.netCost = netCost
 
@@ -59,24 +64,12 @@ class Substrate:
         edges = self.edges
         nodesdict = self.nodes
         with open(edges_file, 'w') as f:
-            for l in sorted(edges, key=lambda x: "%s%s" % (str(x[0]), str(x[1]))):
-                f.write("%s\t%s\t%e\t%e\n" % (l[0], l[1], float(l[2]), l[3]))
+            for edge in self.edges:
+                f.write("%s\n" % edge)
 
         with open(nodes_file, 'w') as f:
-            for nodekey in sorted(nodesdict.keys()):
-                node = nodesdict[nodekey]
-                f.write("%s\t%lf\n" % (nodekey, node))
-
-        with open(edges_file + "_pc", 'w') as f:
-            for idx, val in enumerate(sorted(edges, key=lambda x: "%s%s" % (str(x[0]), str(x[1])))):
-                f.write("%s\t%s\t%s\t%s\n" % (
-                    val[0], val[1], bcolors.color_out(float(val[2]) / float(self.edges_init[idx][2]) * 100),
-                    bcolors.color_out(float(val[3]) / float(self.edges_init[idx][3]) * 100)))
-
-        with open(nodes_file + "_pc", 'w') as f:
-            for nodekey in sorted(nodesdict.keys()):
-                node = bcolors.color_out(float(nodesdict[nodekey]) / float(self.nodesdict_init[nodekey]) * 100)
-                f.write("%s\t%s\n" % (nodekey, node))
+            for node in self.nodes:
+                f.write("%s\n" % node)
 
         with open(os.path.join(RESULTS_FOLDER, "cpu.cost.data"), "w") as f:
             f.write("%lf\n" % self.cpuCost)
@@ -148,22 +141,25 @@ class Substrate:
     @classmethod
     def fromGrid(cls, width=5, height=5, bw=10 ** 10, delay=10, cpu=10):
         edges = []
-        nodesdict = {}
+        nodes = []
 
         for i in range(1, width + 1):
             for j in range(1, height + 1):
-                nodesdict[str("%02d%02d" % (i, j))] = cpu
+                nodes.append(Node(id=str("%02d%02d" % (i, j)), cpu_capacity=cpu))
 
         for i in range(1, width + 1):
             for j in range(1, height + 1):
                 if j + 1 <= height:
-                    edges.append(("%02d%02d" % (i, j), "%02d%02d" % (i, j + 1), bw, delay))
+                    edge = Edge(node_1="%02d%02d" % (i, j), node_2="%02d%02d" % (i, j + 1), bandwidth=bw, delay=delay)
                 if i + 1 <= width:
-                    edges.append(("%02d%02d" % (i, j), "%02d%02d" % (i + 1, j), bw, delay))
+                    edge = Edge(node_1="%02d%02d" % (i, j), node_2="%02d%02d" % (i + 1, j), bandwidth=bw, delay=delay)
                 if j + 1 <= height and i + 1 <= width:
-                    edges.append(("%02d%02d" % (i, j), "%02d%02d" % (i + 1, j + 1), bw, delay))
+                    edge = Edge(node_1="%02d%02d" % (i, j), node_2="%02d%02d" % (i + 1, j + 1), bandwidth=bw,
+                                delay=delay)
 
-        return cls(edges, nodesdict)
+                edges.append(edge)
+
+        return cls(edges, nodes)
 
     @classmethod
     def fromFile(cls, edges_file=os.path.join(RESULTS_FOLDER, "substrate.edges.data"),
@@ -257,3 +253,26 @@ def get_substrate(rs, file=os.path.join(DATA_FOLDER, 'Geant2012.graphml')):
     su.write()
 
     return su
+
+
+class bcolors:
+    @staticmethod
+    def color_out(value):
+        HEADER = '\033[95m'
+        OKBLUE = '\033[94m'
+        OKGREEN = '\033[92m'
+        WARNING = '\033[93m'
+        FAIL = '\033[91m'
+        ENDC = '\033[0m'
+        BOLD = '\033[1m'
+        UNDERLINE = '\033[4m'
+        if value > 80:
+            return OKGREEN + str(value) + ENDC
+        elif value > 60:
+            return OKBLUE + str(value) + ENDC
+        elif value > 40:
+            return WARNING + str(value) + ENDC
+        elif value > 20:
+            return FAIL + str(value) + ENDC
+        else:
+            return FAIL + BOLD + str(value) + ENDC

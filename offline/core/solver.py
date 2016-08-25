@@ -5,8 +5,7 @@ import subprocess
 import sys
 
 from ..core.mapping import Mapping
-from ..core.service import Service
-from ..time.persistence import NodeMapping, EdgeMapping, session
+from ..time.persistence import NodeMapping, EdgeMapping, session, Edge, ServiceEdge
 
 OPTIM_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../optim')
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
@@ -51,19 +50,18 @@ def solve_inplace(allow_violations=False, preassign_vhg=False):
             # search node
             matches = re.findall("^x\$(.*)\$([^ \t]+)", line)
             if (len(matches) > 0):
-                nodeMapping = NodeMapping(topo_node_id=matches[0][0], service_node_id=matches[0][1])
-                # session.add(nodeMapping)
+                nodeMapping = NodeMapping(node_id=matches[0][0], service_node_id=matches[0][1])
                 nodesSols.append(nodeMapping)
                 continue
 
             # search edge
             matches = re.findall("^y\$(.*)\$(.*)\$(.*)\$([^ \t]+)", line)
             if (len(matches) > 0):
-                start_topo_node_id, end_topo_node_id, start_service_node_id, end_service_node_id = matches[0]
-                edgeMapping = EdgeMapping(start_topo_node_id=start_topo_node_id, end_topo_node_id=end_topo_node_id,
-                                          start_service_node_id=start_service_node_id,
-                                          end_service_node_id=end_service_node_id)
-                #session.add(edgeMapping)
+                node_1, node_2, snode_1, snode_2 = matches[0]
+                edge_id= session.query(Edge.id).filter(Edge.node_1 == node_1).filter(Edge.node_2 == node_2).one()
+                sedge_id= session.query(ServiceEdge.id).filter(ServiceEdge.node_1 == snode_1).filter(
+                    ServiceEdge.node_2 == snode_2).one()
+                edgeMapping = EdgeMapping(edge_id=sedge_id, service_edge_id=sedge_id)
                 edgesSol.append(edgeMapping)
                 continue
             matches = re.findall("^objective value: *([0-9\.]*)$", line)
@@ -75,50 +73,15 @@ def solve_inplace(allow_violations=False, preassign_vhg=False):
             if (len(matches) > 0):
                 violations.append(matches[0])
                 continue
-        mapping = Mapping(node_mappings=nodesSols, edge_mappings=edgesSol, objective_function=objective_function,
-                          violations=violations)
+        mapping = Mapping(node_mappings=nodesSols, edge_mappings=edgesSol, objective_function=objective_function)
         return mapping
 
 
-def solve(service, substrate, allow_violations=False, smart_ass=False, preassign_vhg=True):
-    if preassign_vhg:
-        service_no_cdn = copy.deepcopy(service)
-        service_no_cdn.max_cdn_to_use = 0
-        service_no_cdn.cdn = []
-        mapping = solve(service_no_cdn, substrate, allow_violations=False, smart_ass=smart_ass, preassign_vhg=False)
-        if mapping is None:
-            return None
-        service.vhg_hints = mapping.get_vhg_mapping()
+def solve(service, substrate):
 
-    service.write()
+    service.write(cdn=False)
     substrate.write()
+    return solve_inplace()
 
-    return solve_inplace(allow_violations, preassign_vhg)
 
 
-def solve_optim(sla, substrate):
-    '''
-    solve optimally the provided sla given the substrate
-    :param sla:
-    :param substrate:
-    :return:
-    '''
-
-    best_service = None
-    best_mapping = None
-    best_price = sys.maxint
-    for vmg in range(1, len(sla.get_start_nodes()) + 1):
-        for vcdn in range(1, vmg + 1):
-            service = Service.fromSla(sla)
-            service.vcdncount = vcdn
-            service.vhgcount = vmg
-            m = solve(service, substrate, smart_ass=True)
-            if ( m is not None and m.objective_function < best_price):
-                best_price = m.objective_function
-                best_service = service
-                best_mapping = m
-
-    if best_service is None:
-        raise ValueError
-    else:
-        return best_service, best_mapping

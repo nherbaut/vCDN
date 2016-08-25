@@ -1,7 +1,13 @@
-import logging
-import os
+import sys
 
-from offline.core.combinatorial import clusterStart, get_vhg_cdn_mapping
+import networkx as nx
+from networkx.algorithms.components.connected import node_connected_component
+from sqlalchemy import Column, Integer
+from sqlalchemy.orm import relationship
+
+from ..core.combinatorial import get_node_clusters
+from ..core.solver import solve
+from ..time.persistence import *
 
 OPTIM_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../optim')
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
@@ -17,34 +23,93 @@ class Edge:
         self.bw = bw
 
 
-class ServiceSpec:
-    def __init__(self):
-        self.nodes = {}
-        self.edges = {}
-
+class ServiceSpecFactory:
     @classmethod
-    def fromFiles(cls):
-        res = cls()
-        with open(os.path.join(RESULTS_FOLDER, "service.edges.data"), 'r') as f:
-            for data in f.read().split("\n"):
-                if len(data) > 0:
-                    data = data.replace("\t", " ").split(" ")
-                    res.edges[data[0] + " " + data[1]] = Edge(float(data[2]))
+    def instance(cls, sla, su, vmg_count, vcdn_count):
+        return ServiceSpec(sla.get_start_nodes(), sla.get_cdn_nodes(), su)
 
-        with open(os.path.join(RESULTS_FOLDER, "service.nodes.data"), 'r') as f:
-            for data in f.read().split("\n"):
-                if len(data) > 0:
-                    data = data.replace("\t", " ").split(" ")
 
-                    res.nodes[data[0]] = Node(float(data[1]))
+class ServiceSpec:
+    def __init__(self, su, cdn_ratio=0.35, cpu_vmg=1, cpu_vcdn=5, start_nodes=[], cdn_nodes=[], vmg_count=0,
+                 vcdn_count=0):
+        self.cdn_ratio = cdn_ratio
+        self.cpu_vmg = cpu_vmg
+        self.cpu_vcdn = cpu_vcdn
+        self.start_nodes = start_nodes
+        self.cdn_nodes = cdn_nodes
+        self.su = su
+        self.vmg_count = vmg_count
+        self.vcdn_count = vcdn_count
 
+    def get_vmg_id(self, start_node_id):
+        return 0
+
+    def get_vcdn_id(self, vhg_id):
+        return 0
+
+
+class ServiceTopo:
+    def __init__(self, sla, vhg_count, vcdn_count):
+        self.sla = sla
+        self.servicetopo = self.__compute_service_topo(sla, vhg_count, vcdn_count)
+
+        print self.dump_nodes()
+
+    def __compute_service_topo(self, sla, vhg_count, vcdn_count):
+        service = nx.Graph(sla=sla)
+        service.add_node("S0", cpu=0)
+
+        for i in range(1, vhg_count + 1):
+            service.add_node("VHG%d" % i, type="VHG",cpu=1)
+
+        for i in range(1, vcdn_count + 1):
+            service.add_node("vCDN%d" % i, type="VCDN",cpu=5)
+
+        for index, cdn in enumerate(sla.get_cdn_nodes(), start=1):
+            service.add_node("CDN%d" % index, type="CDN",cpu=0)
+
+        for key, topoNode in enumerate(sla.get_start_nodes(), start=1):
+            service.add_node("S%d" % key, cpu=0, type="S", mapping=topoNode.toponode_id)
+            service.add_edge("S0", "S%d" % key, delay=sys.maxint, bandwidth=10)
+
+        for toponode_id, vmg_id in get_node_clusters(map(lambda x: x.toponode_id, sla.get_start_nodes()), vhg_count,
+                                                     substrate=sla.substrate).items():
+            service.add_edge("VHG%d" % vmg_id, "S%d" % vmg_id, delay=sys.maxint, bandwidth=0)
+
+        return service
+
+    def dump_nodes(self):
+        '''
+        :return: a list of tuples containing nodes and their properties
+        '''
+        res = []
+        for node in node_connected_component(self.servicetopo, "S0"):
+            res.append((node, self.servicetopo.node[node]["cpu"]))
         return res
 
 
-class Service:
+def get_count_by_type(self, type):
+    return filter(lambda x: x[2]["type"] == 'x', self.servicetopo.edges_iter(data=True))
+
+
+def get_vhg_count(self):
+    return len(self.get_count_by_type("VHG"))
+
+
+def get_vcdn_count(self):
+    return len(self.get_count_by_type("VCDN"))
+
+
+class Service(Base):
+    __tablename__ = "Service"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    serviceNodes = relationship("ServiceNode", cascade="all")
+    serviceEdges = relationship("ServiceEdge", cascade="all")
+    slas = relationship("Sla", secondary=service_to_sla, back_populates="services")
+    mapping = relationship("Mapping", cascade="all")
+
     @classmethod
     def cleanup(cls):
-
         for f in [os.path.join(RESULTS_FOLDER, "service.edges.data"),
                   os.path.join(RESULTS_FOLDER, "service.path.data"),
                   os.path.join(RESULTS_FOLDER, "service.path.delay.data"),
@@ -57,128 +122,63 @@ class Service:
             if os.path.isfile(f):
                 os.remove(f)
 
-    @classmethod
-    def fromSla(cls, sla):
-        return cls(sla.bandwidth, 1, sla.delay, 0.35, 1, 5, 1,
-                   sla.get_start_nodes(), sla.get_start_nodes(), sla.max_cdn_to_use, spvhg=False, id="default")
+    def get_service_specs(self, include_cdn=True):
+        serviceSpecs = {}
+        for sla in self.slas:
+            spec = self.serviceSpecFactory.fromSla(sla)
+            if not include_cdn:
+                spec.vcdn_count = 0
+            serviceSpecs[sla] = spec
 
-    def __init__(self, sourcebw, vhgcount, sla_delay, vcdnratio, vcdncpu, vhgcpu, vcdncount, start,
-                 cdn, max_cdn_to_use, spvhg, id="default"):
-        self.sourcebw = sourcebw
-        self.vhgcount = vhgcount
-        self.vcdnratio = vcdnratio
-        self.sla_delay = sla_delay
-        self.vcdncpu = vcdncpu
-        self.vhgcpu = vhgcpu
-        self.vcdncount = vcdncount
-        self.start = start
-        self.vhgcount = min(vhgcount, len(start))
+        return serviceSpecs
 
-        self.spec = ServiceSpec()
-        self.cdn = cdn
-        self.max_cdn_to_use = max_cdn_to_use
-        self.service_id = 0
-        self.vhg_hints = None
-        self.spvhg = spvhg
-        self.id = id
+    def __init__(self, slas, serviceSpecFactory=ServiceSpecFactory):
+        self.slas = slas
+        self.serviceSpecFactory = serviceSpecFactory
+        self.processors = {a: ServiceTopo(a, 3, 3) for a in self.slas}
 
-    def relax(self, relax_vhg=True, relax_vcdn=True):
-        logging.debug("relax_vhg %s, relax_vcdn %s" % (relax_vhg, relax_vcdn))
+    def __compute_vhg_vcdn_assignment__(self):
 
-        if relax_vhg and relax_vcdn:
-            if (self.vcdncount + self.vhgcount) % 2 == 0:
-                self.vhgcount = self.vhgcount + 1
-            else:
-                self.vcdncount = self.vcdncount + 1
+        sla_max_cdn_to_use = self.sla.max_cdn_to_use
+        sla_node_specs = self.sla.sla_node_specs
+        self.sla.max_cdn_to_use = 0
+        self.sla.sla_node_specs = filter(lambda x: x.type == "cdn", self.sla.sla_node_specs)
 
-        elif relax_vhg:
-            self.vhgcount = self.vhgcount + 1
-        elif relax_vcdn:
-            self.vcdncount = self.vcdncount + 1
+        mapping = solve(self)
+        if mapping is None:
+            vhg_hints = None
         else:
-            return False  # norelax
+            vhg_hints = mapping.get_vhg_mapping()
 
-        # overrun
-        if (relax_vcdn and not relax_vhg):
-            return self.vcdncount <= len(self.start)
-        else:  # CAN increase vcdn up to len(start) is only relaxing vcdn
-            return (self.vcdncount <= self.vhgcount) and (self.vhgcount <= len(self.start))
+        self.sla.max_cdn_to_use = sla_max_cdn_to_use
+        self.sla.sla_node_specs = sla_node_specs
+        return vhg_hints
 
-    def write(self, append=False):
-        '''
-        write a service to the disk, as optimization parameters
-        :return:  nothing
-        '''
-        if append:
-            mode = "a"
-        else:
-            mode = "w"
+    def write(self):
 
-        bw = {}
-        self.spec.nodes = {}
-        self.spec.edges = {}
-        # VHG assignment
-        if self.spvhg:
-            source_vhg_assignment = clusterStart(self.start, self.vhgcount)
-
-        if self.vhg_hints is not None:
-
-            # match the vhg_hits with the service id
-            tmp_int = self.vhg_hints
-            self.vhg_hints = []
-            for hint in tmp_int:
-                h = hint.service_node_id.split("_")
-                self.vhg_hints.append((hint.topo_node_id , h[0] + "_" + self.id))
-
-            vhg_cdn_assignment = get_vhg_cdn_mapping(self.vhg_hints,
-                                                     [(value.toponode_id, "CDN%d_%s" % (index, self.id)) for index, value in
-                                                      enumerate(self.cdn, start=1)])
-        else:
-            vhg_cdn_assignment = None
+        mode = "a"
 
         # write info on the edge
         with open(os.path.join(RESULTS_FOLDER, "service.edges.data"), mode) as f:
-            for index, value in enumerate(self.start, start=1):
-                e = Edge(0)
-                self.spec.edges["S0_%s S%d_%s" % (self.id, index, self.id)] = e
+            for sla in self.slas:
+                processor = self.processors[sla]
+                for index, value in enumerate(sla.get_start_nodes(), start=1):
+                    f.write("S0_%s S%d_%s" % (sla.id, index, sla.id))
 
-            for index, value in enumerate(self.start, start=1):
+                for index, value in enumerate(sla.get_start_nodes(), start=1):
+                    assigned_vhg = processor.get_vhg(value.toponode_id)
+                    bandwidth = 10
+                    f.write("S%d_%s VHG%d_%s %ld" % (index, sla.id, assigned_vhg, sla.id, bandwidth))
 
-                if self.spvhg:
-                    assigned_vhg = source_vhg_assignment[value.toponode_id]
-                else:
-                    assigned_vhg = 1 + (index - 1) % self.vhgcount
+                for i in range(1, processor.get_vhg_count() + 1):
+                    if processor.get_vcdn_count() > 0:
+                        bandwidth = 10
+                        f.write("VHG%d_%s CDN%d_%s %lf" % (i, sla.id, assigned_vhg, self.id, bandwidth))
 
-                e = Edge(self.sourcebw / self.vhgcount)
-                self.spec.edges["S%d_%s VHG%d_%s" % (index, self.id, assigned_vhg, self.id)] = e
-                if "VHG%d" % assigned_vhg in bw:
-                    bw["VHG%d_%s" % (assigned_vhg, self.id)] = bw["VHG%d_%s" % (
-                        assigned_vhg, self.id)] + self.sourcebw / self.vhgcount
-                else:
-                    bw["VHG%d_%s" % (assigned_vhg, self.id)] = self.sourcebw / self.vhgcount
-
-            for i in range(1, int(self.vhgcount) + 1):
-                if len(self.cdn) > 0:
-                    if vhg_cdn_assignment is None:
-                        assigned_vhg = 1 + (i - 1) % len(self.cdn)
-                    else:
-                        assigned_vhg = int(vhg_cdn_assignment["VHG%d_%s" % (i, self.id)].split("CDN")[1].split("_")[0])
-                    e = Edge(bw["VHG%d_%s" % (i, self.id)] * (1 - self.vcdnratio))
-                    self.spec.edges["VHG%d_%s CDN%d_%s" % (i, self.id, assigned_vhg, self.id)] = e
-
-            if self.vhgcount > 1:
-                for i in range(1, int(self.vhgcount) + 1):
-                    assigned_vcdn = 1 + (i - 1) % self.vcdncount
-                    e = Edge(bw["VHG%d_%s" % (i, self.id)] * self.vcdnratio)
-                    self.spec.edges["VHG%d_%s vCDN%d_%s" % (i, self.id, assigned_vcdn, self.id)] = e
-            else:  # CAN increase vcdn up to len(start) is only relaxing vcdn
-                for i in range(1, int(self.vhgcount) + 1):
-                    for j in range(1, int(self.vcdncount) + 1):
-                        e = Edge(bw["VHG%d_%s" % (i, self.id)] * self.vcdnratio / self.vcdncount)
-                        self.spec.edges["VHG%d_%s vCDN%d_%s" % (i, self.id, j, self.id)] = e
-
-            for key, value in self.spec.edges.items():
-                f.write((key + " %e\n") % (value.bw))
+                for i in range(1, processor.get_vhg_count() + 1):
+                    assigned_vcdn = processor.get_vcdn(i)
+                    bandwidth = 10
+                    f.write("VHG%d_%s vCDN%d_%s %lf" % (i, self.id, assigned_vcdn, self.id, bandwidth))
 
         # compute info for delays
         service_path = []
@@ -233,7 +233,6 @@ class Service:
         with open(os.path.join(RESULTS_FOLDER, "CDN.nodes.data"), mode) as f:
             for index, value in enumerate(self.cdn, start=1):
                 f.write("CDN%d_%s %s\n" % (index, self.id, value.toponode_id))
-
 
         # write constraints on starter placement
         with open(os.path.join(RESULTS_FOLDER, "starters.nodes.data"), mode) as f:

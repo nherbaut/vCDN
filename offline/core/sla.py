@@ -3,7 +3,7 @@ import scipy.integrate as integrate
 from sqlalchemy import Column, Integer, DateTime, Float, ForeignKey, String
 from sqlalchemy.orm import relationship
 
-from ..time.persistence import session, Base
+from ..time.persistence import session, Base, service_to_sla
 
 tcp_win = 65535.0
 
@@ -19,8 +19,8 @@ class SlaNodeSpec(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     sla_id = Column(Integer, ForeignKey("Sla.id"), nullable=False)
     sla = relationship("Sla", cascade="save-update")
-    toponode_id = Column(String(16), ForeignKey("TopoNode.id"), nullable=False)
-    topoNode = relationship("TopoNode", cascade="save-update")
+    toponode_id = Column(String(16), ForeignKey("Node.id"), nullable=False)
+    topoNode = relationship("Node", cascade="save-update")
     type = Column(String(16))
 
 
@@ -35,6 +35,9 @@ class Sla(Base):
     max_cdn_to_use = Column(Integer)
     tenant = relationship("Tenant", back_populates="slas", cascade="save-update")
     sla_node_specs = relationship("SlaNodeSpec", cascade="save-update")
+    services = relationship("Service", secondary=service_to_sla, back_populates="slas")
+    substrate_id = Column(Integer, ForeignKey("Substrate.id"), nullable=False)
+    substrate = relationship("Substrate")
 
     def __str__(self):
         return "%d %d %lf %lf" % (self.start, self.cdn, self.delay, self.bandwidth)
@@ -47,9 +50,10 @@ class Sla(Base):
         self.max_cdn_to_use = kwargs.get("max_cdn_to_use", None)
         self.delay = kwargs.get("delay", None)
         for start_node in kwargs.get("start_nodes", []):
-            self.sla_node_specs.append(SlaNodeSpec(toponode_id=start_node, type="start"))
+            self.sla_node_specs.append(SlaNodeSpec(toponode_id=start_node.id, type="start"))
         for cdn_node in kwargs.get("cdn_nodes", []):
-            self.sla_node_specs.append(SlaNodeSpec(toponode_id=cdn_node, type="cdn"))
+            self.sla_node_specs.append(SlaNodeSpec(toponode_id=cdn_node.id, type="cdn"))
+        self.substrate = kwargs.get("substrate", None)
 
     def get_start_nodes(self):
         return filter(lambda x: x.type == "start", self.sla_node_specs)
