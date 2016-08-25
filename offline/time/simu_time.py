@@ -73,7 +73,11 @@ ts, date_start, date_start_forecast, date_end_forecast = fill_db_with_sla(tenant
                                                                           cdn_nodes=tenant_cdn_nodes, substrate=su)
 
 slas=session.query(Sla).all()[0:2]
-service=Service(slas)
+slas_spec={}
+slas_spec[slas[0].id]={"vhg":2,"vcdn":2}
+slas_spec[slas[1].id]={"vhg":3,"vcdn":2}
+
+service=Service(slas,slas_spec=slas_spec)
 service.write()
 
 

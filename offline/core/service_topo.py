@@ -53,7 +53,7 @@ class ServiceTopo:
         :return: a list of tuples containing nodes and their properties
         '''
         res = []
-        for node in node_connected_component(self.servicetopo, "S0"):
+        for node in node_connected_component(self.servicetopo.to_undirected(), "S0"):
             res.append((node + "_%d" % self.sla.id, self.servicetopo.node[node]["cpu"]))
         return res
 

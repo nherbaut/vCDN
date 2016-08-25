@@ -88,10 +88,10 @@ class Service(Base):
 
         return serviceSpecs
 
-    def __init__(self, slas, serviceSpecFactory=ServiceSpecFactory):
+    def __init__(self, slas, serviceSpecFactory=ServiceSpecFactory, slas_spec={}):
         self.slas = slas
         self.serviceSpecFactory = serviceSpecFactory
-        self.topo = {a: ServiceTopo(a, 3, 3) for a in self.slas}
+        self.topo = {sla: ServiceTopo(sla, slas_spec.get(sla.id,{}).get("vhg",1), slas_spec.get(sla.id,{}).get("vcdn",1)) for sla in self.slas}
 
     def __compute_vhg_vcdn_assignment__(self):
 
@@ -117,7 +117,7 @@ class Service(Base):
         # write info on the edge
         with open(os.path.join(RESULTS_FOLDER, "service.edges.data"), mode) as f:
             for sla in self.slas:
-                topo=self.topo[sla]
+                topo = self.topo[sla]
                 for line in topo.dump_edges():
                     f.write(" ".join(str(a) for a in line) + "\n")
         with open(os.path.join(RESULTS_FOLDER, "service.nodes.data"), mode) as f:
@@ -126,65 +126,26 @@ class Service(Base):
                 for line in topo.dump_nodes():
                     f.write(" ".join(str(a) for a in line) + "\n")
 
-
-
-
-
-        # write path to associate e2e delay
-        with open(os.path.join(RESULTS_FOLDER, "service.path.data"), mode) as f:
-            for data in service_path:
-                f.write("%s %s %s\n" % data)
-
-        # write e2e delay constraint
-        with open(os.path.join(RESULTS_FOLDER, "service.path.delay.data"), mode) as f:
-            for x in set([i[0] for i in service_path]):
-                f.write("%s %e\n" % (x, self.sla_delay))
-
-        # write constraints on node capacity
-        with open(os.path.join(RESULTS_FOLDER, "service.nodes.data"), mode) as f:
-            f.write("S0_%s 0	\n" % self.id)
-            self.spec.nodes["S0_%s" % self.id] = Node(0)
-            for index, value in enumerate(self.start, start=1):
-                f.write("S%d_%s 0	\n" % (index, self.id))
-                self.spec.nodes["S%d_%s" % (index, self.id)] = Node(0)
-
-            for index, value in enumerate(self.cdn, start=1):
-                f.write("CDN%d_%s 0\n" % (index, self.id))
-                self.spec.nodes["CDN%d_%s" % (index, self.id)] = Node(0)
-
-            if self.vhgcount > 1:
-                for j in range(1, min(int(self.vcdncount) + 1, int(self.vhgcount) + 1)):
-                    f.write("vCDN%d_%s	%e	\n" % (j, self.id, self.vcdncpu))
-                    self.spec.nodes["vCDN%d_%s" % (j, self.id)] = Node(self.vcdncpu)
-            else:  # can increase vcdn if vhg == 1
-                for j in range(1, int(self.vcdncount) + 1):
-                    f.write("vCDN%d_%s	%e	\n" % (j, self.id, self.vcdncpu))
-                    self.spec.nodes["vCDN%d_%s" % (j, self.id)] = Node(self.vcdncpu)
-
-            for i in range(1, int(self.vhgcount) + 1):
-                f.write("VHG%d_%s %e\n" % (i, self.id, float(self.vhgcpu)))
-                self.spec.nodes["VHG%d_%s" % (i, self.id)] = Node(float(self.vhgcpu))
-
         # write constraints on CDN placement
         with open(os.path.join(RESULTS_FOLDER, "CDN.nodes.data"), mode) as f:
-            for index, value in enumerate(self.cdn, start=1):
-                f.write("CDN%d_%s %s\n" % (index, self.id, value.toponode_id))
+            for sla in self.slas:
+                for index, value in enumerate(sla.get_cdn_nodes(), start=1):
+                    f.write("CDN%d_%s %s\n" % (index, sla.id, value.toponode_id))
 
         # write constraints on starter placement
         with open(os.path.join(RESULTS_FOLDER, "starters.nodes.data"), mode) as f:
-            for index, value in enumerate(self.start, start=1):
-                f.write("S%d_%s %s\n" % (index, self.id, value.toponode_id))
+            for sla in self.slas:
+                for index, value in enumerate(sla.get_start_nodes(), start=1):
+                    f.write("S%d_%s %s\n" % (index, sla.id, value.toponode_id))
 
-        # write constraints on the maximum amont of cdn to use
-        with open(os.path.join(RESULTS_FOLDER, "cdnmax.data"), 'w') as f:
-            f.write("%d" % self.max_cdn_to_use)
-
-        # write the names of the VHG Nodes (is it still used?)
+        # write the names of the VHG Nodes
         with open(os.path.join(RESULTS_FOLDER, "VHG.nodes.data"), mode) as f:
-            for index in range(1, self.vhgcount + 1):
-                f.write("VHG%d_%s\n" % (index, self.id))
+            for sla in self.slas:
+                for index in range(1, len(sla.get_start_nodes()) + 1):
+                    f.write("VHG%d_%s\n" % (index, sla.id))
 
         # write the names of the VCDN nodes (is it still used?)
         with open(os.path.join(RESULTS_FOLDER, "VCDN.nodes.data"), mode) as f:
-            for index in range(1, self.vcdncount + 1):
-                f.write("vCDN%d_%s\n" % (index, self.id))
+            for sla in self.slas:
+                for index in range(1, len(sla.get_cdn_nodes()) + 1):
+                    f.write("vCDN%d_%s\n" % (index, sla.id))
