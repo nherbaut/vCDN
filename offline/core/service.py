@@ -53,20 +53,18 @@ class ServiceTopo:
         self.sla = sla
         self.servicetopo = self.__compute_service_topo(sla, vhg_count, vcdn_count)
 
-        print self.dump_nodes()
-
     def __compute_service_topo(self, sla, vhg_count, vcdn_count):
         service = nx.Graph(sla=sla)
         service.add_node("S0", cpu=0)
 
         for i in range(1, vhg_count + 1):
-            service.add_node("VHG%d" % i, type="VHG",cpu=1)
+            service.add_node("VHG%d" % i, type="VHG", cpu=1)
 
         for i in range(1, vcdn_count + 1):
-            service.add_node("vCDN%d" % i, type="VCDN",cpu=5)
+            service.add_node("vCDN%d" % i, type="VCDN", cpu=5)
 
         for index, cdn in enumerate(sla.get_cdn_nodes(), start=1):
-            service.add_node("CDN%d" % index, type="CDN",cpu=0)
+            service.add_node("CDN%d" % index, type="CDN", cpu=0)
 
         for key, topoNode in enumerate(sla.get_start_nodes(), start=1):
             service.add_node("S%d" % key, cpu=0, type="S", mapping=topoNode.toponode_id)
@@ -84,7 +82,18 @@ class ServiceTopo:
         '''
         res = []
         for node in node_connected_component(self.servicetopo, "S0"):
-            res.append((node, self.servicetopo.node[node]["cpu"]))
+            res.append((node+"_%d"%self.sla.id, self.servicetopo.node[node]["cpu"]))
+        return res
+
+    def dump_edges(self):
+        '''
+        :return: a list of tuples containing nodes and their properties
+        '''
+        res = []
+        for start, ends in self.servicetopo.edge.items():
+            for end in ends:
+                edge = self.servicetopo[start][end]
+                res.append((start+"_%d"%self.sla.id, end+"_%d"%self.sla.id, edge["delay"], edge["bandwidth"]))
         return res
 
 
@@ -135,7 +144,7 @@ class Service(Base):
     def __init__(self, slas, serviceSpecFactory=ServiceSpecFactory):
         self.slas = slas
         self.serviceSpecFactory = serviceSpecFactory
-        self.processors = {a: ServiceTopo(a, 3, 3) for a in self.slas}
+        self.topo = {a: ServiceTopo(a, 3, 3) for a in self.slas}
 
     def __compute_vhg_vcdn_assignment__(self):
 
@@ -156,43 +165,23 @@ class Service(Base):
 
     def write(self):
 
-        mode = "a"
+        mode = "w"
 
         # write info on the edge
         with open(os.path.join(RESULTS_FOLDER, "service.edges.data"), mode) as f:
             for sla in self.slas:
-                processor = self.processors[sla]
-                for index, value in enumerate(sla.get_start_nodes(), start=1):
-                    f.write("S0_%s S%d_%s" % (sla.id, index, sla.id))
+                topo=self.topo[sla]
+                for line in topo.dump_edges():
+                    f.write(" ".join(str(a) for a in line) + "\n")
+        with open(os.path.join(RESULTS_FOLDER, "service.nodes.data"), mode) as f:
+            for sla in self.slas:
+                topo = self.topo[sla]
+                for line in topo.dump_nodes():
+                    f.write(" ".join(str(a) for a in line) + "\n")
 
-                for index, value in enumerate(sla.get_start_nodes(), start=1):
-                    assigned_vhg = processor.get_vhg(value.toponode_id)
-                    bandwidth = 10
-                    f.write("S%d_%s VHG%d_%s %ld" % (index, sla.id, assigned_vhg, sla.id, bandwidth))
 
-                for i in range(1, processor.get_vhg_count() + 1):
-                    if processor.get_vcdn_count() > 0:
-                        bandwidth = 10
-                        f.write("VHG%d_%s CDN%d_%s %lf" % (i, sla.id, assigned_vhg, self.id, bandwidth))
 
-                for i in range(1, processor.get_vhg_count() + 1):
-                    assigned_vcdn = processor.get_vcdn(i)
-                    bandwidth = 10
-                    f.write("VHG%d_%s vCDN%d_%s %lf" % (i, self.id, assigned_vcdn, self.id, bandwidth))
 
-        # compute info for delays
-        service_path = []
-        for index_src, src in enumerate(self.start, start=1):
-            for index_vhg in range(1, int(self.vhgcount) + 1):
-                for index_vcdn in range(1, int(self.vcdncount) + 1):
-                    if "S%d_%s VHG%d_%s" % (index_src, self.id, index_vhg, self.id) in self.spec.edges.keys():
-                        if "VHG%d_%s vCDN%d_%s" % (index_vhg, self.id, index_vcdn, self.id) in self.spec.edges.keys():
-                            path_id = "S%d_%s_VHG%d_%s_vCDN%d_%s" % (
-                                index_src, self.id, index_vhg, self.id, index_vcdn, self.id)
-                            service_path.append(
-                                (path_id, "S%d_%s" % (index_src, self.id), "VHG%d_%s" % (index_vhg, self.id)))
-                            service_path.append(
-                                (path_id, "VHG%d_%s" % (index_vhg, self.id), "vCDN%d_%s" % (index_vcdn, self.id)))
 
         # write path to associate e2e delay
         with open(os.path.join(RESULTS_FOLDER, "service.path.data"), mode) as f:
