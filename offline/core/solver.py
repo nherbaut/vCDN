@@ -79,7 +79,7 @@ def solve_inplace(allow_violations=False, preassign_vhg=False):
 
 def solve(service, substrate):
 
-    service.write(cdn=False)
+    service.write()
     substrate.write()
     return solve_inplace()
 

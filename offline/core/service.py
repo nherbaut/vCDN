@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer
 from sqlalchemy.orm import relationship
 
+from ..core.solver import solve
 from ..core.service_topo import ServiceTopo
 from ..core.solver import solve
 from ..time.persistence import *
@@ -92,6 +93,11 @@ class Service(Base):
         self.slas = slas
         self.serviceSpecFactory = serviceSpecFactory
         self.topo = {sla: ServiceTopo(sla, slas_spec.get(sla.id,{}).get("vhg",1), slas_spec.get(sla.id,{}).get("vcdn",1)) for sla in self.slas}
+        mapping=self.solve()
+
+    def solve(self):
+        return solve(self,self.slas[0].substrate)
+
 
     def __compute_vhg_vcdn_assignment__(self):
 
