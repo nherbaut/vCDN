@@ -9,15 +9,6 @@ OPTIM_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../opt
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
 
 
-class Node:
-    def __init__(self, cpu):
-        self.cpu = cpu
-
-
-class Edge:
-    def __init__(self, bw):
-        self.bw = bw
-
 
 class ServiceSpecFactory:
     @classmethod
@@ -98,6 +89,8 @@ class Service(Base):
 
 
         hint_mapping=self.solve()
+        if hint_mapping is None:
+            print "deep shit, we can't even create the service"
         self.topo= {sla: ServiceTopo(sla=sla, vhg_count=slas_spec.get(sla.id, {}).get("vhg", 1),
                                       vcdn_count=slas_spec.get(sla.id, {}).get("vcdn", 1), hint_mapping=hint_mapping)
                      for sla in

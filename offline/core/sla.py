@@ -20,7 +20,7 @@ class SlaNodeSpec(Base):
     sla_id = Column(Integer, ForeignKey("Sla.id"), nullable=False)
     sla = relationship("Sla", cascade="save-update")
     toponode_id = Column(String(16), ForeignKey("Node.id"), nullable=False)
-    topoNode = relationship("Node", cascade="save-update")
+    topoNode = relationship("Node", cascade="save-update",order_by="Node.id")
     type = Column(String(16))
 
 

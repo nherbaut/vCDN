@@ -42,7 +42,7 @@ class Edge(Base):
     bandwidth = Column(Float, )
 
     def __str__(self):
-        return "%s\t%s\t%e\t%e" % (self.node_1, self.node_2, self.delay, self.bandwidth)
+        return "%s\t%s\t%e\t%e" % (self.node_1, self.node_2, self.bandwidth,self.delay )
 
 
 class ServiceNode(Base):

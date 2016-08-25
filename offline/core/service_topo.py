@@ -13,7 +13,7 @@ class ServiceTopo:
     def __init__(self, sla, vhg_count, vcdn_count, hint_mapping=None):
 
         mapped_start_nodes = sla.get_start_nodes()
-        mapped_cdn_nodes = sla.get_start_nodes()
+        mapped_cdn_nodes = sla.get_cdn_nodes()
         self.sla_id=sla.id
         self.delay=sla.delay
 
@@ -107,11 +107,12 @@ class ServiceTopo:
 
         # add CDN edges if available
         if hint_mapping is not None:
-            vhg_mapping = [(nm.node_id, nm.service_node_id) for nm in hint_mapping.node_mappings if
-                           nm.service_node_id in self.__get_nodes_by_type("VHG", service)]
-            cdn_mapping = [(nm.node_id, nm.service_node_id) for nm in mapped_cdn_nodes]
-            for vhg, cdn in get_vhg_cdn_mapping(vhg_mapping, cdn_mapping):
+            vhg_mapping = [(nm.node_id, nm.service_node_id.split("_")[0]) for nm in hint_mapping.node_mappings if
+                           nm.service_node_id.split("_")[0] in self.__get_nodes_by_type("VHG", service)]
+            cdn_mapping = [(nm.toponode_id, "CDN%d"%index) for index, nm in enumerate(mapped_cdn_nodes,start=1)]
+            for vhg, cdn in get_vhg_cdn_mapping(vhg_mapping, cdn_mapping).items():
                 service.add_edge(vhg, cdn, bandwidth=service.node[vhg]["bandwidth"])
+
 
         return service, delay_path, delay_route
 
@@ -134,6 +135,7 @@ class ServiceTopo:
         res = []
         for start, ends in self.servicetopo.edge.items():
             for end in ends:
+                print end
                 edge = self.servicetopo[start][end]
                 res.append((start + "_%d" % self.sla_id, end + "_%d" % self.sla_id, edge["bandwidth"]))
         return res
