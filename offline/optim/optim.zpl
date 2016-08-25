@@ -40,7 +40,7 @@ param bwS[ES] := read "../results/service.edges.data" as "<1s,2s> 3n";
 param bw[E] := read "../results/substrate.edges.data" as "<1s,2s> 3n";
 param bwt[Et] := read "../results/substrate.edges.data" as "<2s,1s> 3n";
 param source := read "../results/starters.nodes.data" as "2s" use 1;
-param cdn_count := read "../results/cdnmax.data" as "1n" use 1;
+
 
 
 param cpuCost := read "../results/cpu.cost.data" as "1n" use 1;
@@ -51,7 +51,7 @@ var x_cdn[N cross CDN_LABEL ] binary;
 var y [(E union Et) cross ES ] binary;
 var y_cdn [(E union Et) cross ES ] binary;
 var w binary;
-var cdns_var [CDN_LABEL] binary;
+
 
 
 minimize cost:
@@ -117,9 +117,7 @@ subto sources:
         x[id,name]==1;
 
 
-subto cdnToNode:
-	forall <i,j> in CDN:
-		x[j,i]==cdns_var[i];
+
 
 subto flowconservation_cdn:
    forall <i,j> in {<i,j> in CDN_LINKS  with i != j}:
@@ -128,8 +126,8 @@ subto flowconservation_cdn:
 
 subto bwSubstrate_cdn:
    forall <u,v> in E:
-       sum<i,j> in CDN_LINKS: (y[u,v,i,j]+y[v,u,i,j]) * bwS[i,j]/cdn_count <= bw[u,v];
+       sum<i,j> in CDN_LINKS: (y[u,v,i,j]+y[v,u,i,j]) * bwS[i,j] <= bw[u,v];
 
 subto bwtSubstrate_cdn:
    forall <u,v> in Et:
-       sum<i,j> in CDN_LINKS: (y[u,v,i,j]+y[v,u,i,j]) * bwS[i,j]/cdn_count <= bwt[u,v];
+       sum<i,j> in CDN_LINKS: (y[u,v,i,j]+y[v,u,i,j]) * bwS[i,j] <= bwt[u,v];

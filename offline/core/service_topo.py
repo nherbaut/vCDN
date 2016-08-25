@@ -6,15 +6,24 @@ import networkx as nx
 from networkx.algorithms.components.connected import node_connected_component
 from networkx.algorithms.shortest_paths.generic import shortest_path
 
-from offline.core.combinatorial import get_node_clusters
+from ..core.combinatorial import get_node_clusters, get_vhg_cdn_mapping
 
 
 class ServiceTopo:
-    def __init__(self, sla, vhg_count, vcdn_count):
-        self.sla = sla
-        self.servicetopo, self.delay_paths, self.delay_routes = self.__compute_service_topo(sla, vhg_count, vcdn_count)
+    def __init__(self, sla, vhg_count, vcdn_count, hint_mapping=None):
 
-    def __compute_service_topo(self, sla, vhg_count, vcdn_count):
+        mapped_start_nodes = sla.get_start_nodes()
+        mapped_cdn_nodes = sla.get_start_nodes()
+        self.sla_id=sla.id
+        self.delay=sla.delay
+
+        self.servicetopo, self.delay_paths, self.delay_routes = self.__compute_service_topo(
+            mapped_start_nodes=mapped_start_nodes, mapped_cdn_nodes=mapped_cdn_nodes, vhg_count=vhg_count,
+            vcdn_count=vcdn_count,
+            hint_mapping=hint_mapping, substrate=sla.substrate)
+
+    def __compute_service_topo(self, substrate, mapped_start_nodes, mapped_cdn_nodes, vhg_count, vcdn_count,
+                               hint_mapping=None):
         service = nx.DiGraph()
         service.add_node("S0", cpu=0)
 
@@ -22,26 +31,26 @@ class ServiceTopo:
             service.add_node("VHG%d" % i, type="VHG", cpu=1)
 
         for i in range(1, vcdn_count + 1):
-            service.add_node("VCDN%d" % i, type="VCDN", cpu=5, delay=sla.delay)
+            service.add_node("VCDN%d" % i, type="VCDN", cpu=5, delay=self.delay)
 
-        for index, cdn in enumerate(sla.get_cdn_nodes(), start=1):
+        for index, cdn in enumerate(mapped_cdn_nodes, start=1):
             service.add_node("CDN%d" % index, type="CDN", cpu=0)
 
-        for key, topoNode in enumerate(sla.get_start_nodes(), start=1):
+        for key, topoNode in enumerate(mapped_start_nodes, start=1):
             service.add_node("S%d" % key, cpu=0, type="S", mapping=topoNode.toponode_id)
             service.add_edge("S0", "S%d" % key, delay=sys.maxint, bandwidth=0)
 
         # create s<-> vhg edges
-        for toponode_id, vmg_id in get_node_clusters(map(lambda x: x.toponode_id, sla.get_start_nodes()), vhg_count,
-                                                     substrate=sla.substrate).items():
+        for toponode_id, vmg_id in get_node_clusters(map(lambda x: x.toponode_id, mapped_start_nodes), vhg_count,
+                                                     substrate=substrate).items():
             s = [n[0] for n in service.nodes(data=True) if n[1].get("mapping", None) == toponode_id][0]
             service.add_edge(s, "VHG%d" % vmg_id, delay=sys.maxint, bandwidth=0)
 
         # create vhg <-> vcdn edges
         # here, each S "votes" for a vCDN and tell its VHG
 
-        for toponode_id, vCDN_id in get_node_clusters(map(lambda x: x.toponode_id, sla.get_start_nodes()), vcdn_count,
-                                                      substrate=sla.substrate).items():
+        for toponode_id, vCDN_id in get_node_clusters(map(lambda x: x.toponode_id, mapped_start_nodes), vcdn_count,
+                                                      substrate=substrate).items():
             # get the S from the toponode_id
             s = [n[0] for n in service.nodes(data=True) if n[1].get("mapping", None) == toponode_id][0]
 
@@ -89,12 +98,20 @@ class ServiceTopo:
                 try:
                     sp = shortest_path(service, s, vcdn)
                     key = "_".join(sp)
-                    delay_path[key] = sla.delay
+                    delay_path[key] = self.delay
                     for i in range(len(sp) - 1):
                         delay_route[key].append((sp[i], sp[i + 1]))
 
                 except:
                     continue
+
+        # add CDN edges if available
+        if hint_mapping is not None:
+            vhg_mapping = [(nm.node_id, nm.service_node_id) for nm in hint_mapping.node_mappings if
+                           nm.service_node_id in self.__get_nodes_by_type("VHG", service)]
+            cdn_mapping = [(nm.node_id, nm.service_node_id) for nm in mapped_cdn_nodes]
+            for vhg, cdn in get_vhg_cdn_mapping(vhg_mapping, cdn_mapping):
+                service.add_edge(vhg, cdn, bandwidth=service.node[vhg]["bandwidth"])
 
         return service, delay_path, delay_route
 
@@ -107,7 +124,7 @@ class ServiceTopo:
         '''
         res = []
         for node in node_connected_component(self.servicetopo.to_undirected(), "S0"):
-            res.append((node + "_%d" % self.sla.id, self.servicetopo.node[node].get("cpu", 0)))
+            res.append((node + "_%d" % self.sla_id, self.servicetopo.node[node].get("cpu", 0)))
         return res
 
     def dump_edges(self):
@@ -118,13 +135,13 @@ class ServiceTopo:
         for start, ends in self.servicetopo.edge.items():
             for end in ends:
                 edge = self.servicetopo[start][end]
-                res.append((start + "_%d" % self.sla.id, end + "_%d" % self.sla.id, edge["bandwidth"]))
+                res.append((start + "_%d" % self.sla_id, end + "_%d" % self.sla_id, edge["bandwidth"]))
         return res
 
     def dump_delay_paths(self):
         res = []
         for path in self.delay_paths:
-            res.append("%s_%d %lf" % (path, self.sla.id, self.sla.delay))
+            res.append("%s_%d %lf" % (path, self.sla_id, self.delay))
 
         return res
 
@@ -132,6 +149,6 @@ class ServiceTopo:
         res = []
         for path, segments in self.delay_routes.items():
             for segment in segments:
-                res.append("%s_%d %s_%d %s_%d" % (path, self.sla.id, segment[0], self.sla.id, segment[1], self.sla.id))
+                res.append("%s_%d %s_%d %s_%d" % (path, self.sla_id, segment[0], self.sla_id, segment[1], self.sla_id))
 
         return res

@@ -1,7 +1,6 @@
 from sqlalchemy import Column, Integer
 from sqlalchemy.orm import relationship
 
-from ..core.solver import solve
 from ..core.service_topo import ServiceTopo
 from ..core.solver import solve
 from ..time.persistence import *
@@ -92,12 +91,20 @@ class Service(Base):
     def __init__(self, slas, serviceSpecFactory=ServiceSpecFactory, slas_spec={}):
         self.slas = slas
         self.serviceSpecFactory = serviceSpecFactory
-        self.topo = {sla: ServiceTopo(sla, slas_spec.get(sla.id,{}).get("vhg",1), slas_spec.get(sla.id,{}).get("vcdn",1)) for sla in self.slas}
-        mapping=self.solve()
+
+
+        self.topo= {sla: ServiceTopo(sla=sla, vhg_count=slas_spec.get(sla.id, {}).get("vhg", 1),
+                                      vcdn_count=slas_spec.get(sla.id, {}).get("vcdn", 1), hint_mapping=None) for sla in self.slas}
+
+
+        hint_mapping=self.solve()
+        self.topo= {sla: ServiceTopo(sla=sla, vhg_count=slas_spec.get(sla.id, {}).get("vhg", 1),
+                                      vcdn_count=slas_spec.get(sla.id, {}).get("vcdn", 1), hint_mapping=hint_mapping)
+                     for sla in
+                     self.slas}
 
     def solve(self):
-        return solve(self,self.slas[0].substrate)
-
+        return solve(self, self.slas[0].substrate)
 
     def __compute_vhg_vcdn_assignment__(self):
 
@@ -158,14 +165,14 @@ class Service(Base):
 
                     # write path to associate e2e delay
 
-        with open(os.path.join(RESULTS_FOLDER,"service.path.delay.data"), "w") as f:
+        with open(os.path.join(RESULTS_FOLDER, "service.path.delay.data"), "w") as f:
             for sla in self.slas:
                 topo = self.topo[sla]
                 for data in topo.dump_delay_paths():
                     f.write("%s\n" % data)
 
         # write e2e delay constraint
-        with open(os.path.join(RESULTS_FOLDER,  "service.path.data"), "w") as f:
+        with open(os.path.join(RESULTS_FOLDER, "service.path.data"), "w") as f:
             for sla in self.slas:
                 topo = self.topo[sla]
                 for data in topo.dump_delay_routes():

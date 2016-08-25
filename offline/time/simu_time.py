@@ -49,7 +49,7 @@ rs = np.random.RandomState(1)
 drop_all()
 
 # create the topo and load it
-su = Substrate.fromGrid()
+su = Substrate.fromGrid(delay=1)
 
 for node in su.nodes:
     session.add(node)
@@ -70,12 +70,12 @@ tenant_cdn_nodes = rs.choice(su.nodes, size=rs.randint(low=1, high=2), replace=F
 # fill_db_with_sla()
 #fill_db_with_sla(tenant, substrate=su)
 ts, date_start, date_start_forecast, date_end_forecast = fill_db_with_sla(tenant, start_nodes=tenant_start_nodes,
-                                                                          cdn_nodes=tenant_cdn_nodes, substrate=su,delay=50)
+                                                                          cdn_nodes=tenant_cdn_nodes, substrate=su,delay=200)
 
 slas=session.query(Sla).all()[0:2]
 slas_spec={}
-slas_spec[slas[0].id]={"vhg":2,"vcdn":2}
-slas_spec[slas[1].id]={"vhg":3,"vcdn":2}
+slas_spec[slas[0].id]={"vhg":1,"vcdn":1}
+slas_spec[slas[1].id]={"vhg":1,"vcdn":1}
 
 service=Service(slas,slas_spec=slas_spec)
 service.write()
