@@ -63,7 +63,7 @@ session.commit()
 tenant = Tenant(name=get_random_name())
 session.add(tenant)
 session.commit()
-tenant_start_nodes = rs.choice(su.nodes, size=rs.randint(low=1, high=2), replace=False)
+tenant_start_nodes = rs.choice(su.nodes, size=rs.randint(low=2, high=3), replace=False)
 tenant_cdn_nodes = rs.choice(su.nodes, size=rs.randint(low=1, high=2), replace=False)
 
 # fill the db with some data
@@ -72,12 +72,13 @@ tenant_cdn_nodes = rs.choice(su.nodes, size=rs.randint(low=1, high=2), replace=F
 ts, date_start, date_start_forecast, date_end_forecast = fill_db_with_sla(tenant, start_nodes=tenant_start_nodes,
                                                                           cdn_nodes=tenant_cdn_nodes, substrate=su,delay=200)
 
-slas=session.query(Sla).all()[0:1]
+slas=session.query(Sla).all()[0:2]
 slas_spec={}
 slas_spec[slas[0].id]={"vhg":1,"vcdn":1}
-#slas_spec[slas[1].id]={"vhg":1,"vcdn":1}
+slas_spec[slas[1].id]={"vhg":1,"vcdn":1}
 
 service=Service(slas,slas_spec=slas_spec)
+session.add(service)
 service.write()
 
 

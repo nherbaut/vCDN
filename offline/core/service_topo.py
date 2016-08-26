@@ -14,8 +14,8 @@ class ServiceTopo:
 
         mapped_start_nodes = sla.get_start_nodes()
         mapped_cdn_nodes = sla.get_cdn_nodes()
-        self.sla_id=sla.id
-        self.delay=sla.delay
+        self.sla_id = sla.id
+        self.delay = sla.delay
 
         self.servicetopo, self.delay_paths, self.delay_routes = self.__compute_service_topo(
             mapped_start_nodes=mapped_start_nodes, mapped_cdn_nodes=mapped_cdn_nodes, vhg_count=vhg_count,
@@ -109,10 +109,9 @@ class ServiceTopo:
         if hint_mapping is not None:
             vhg_mapping = [(nm.node_id, nm.service_node_id.split("_")[0]) for nm in hint_mapping.node_mappings if
                            nm.service_node_id.split("_")[0] in self.__get_nodes_by_type("VHG", service)]
-            cdn_mapping = [(nm.toponode_id, "CDN%d"%index) for index, nm in enumerate(mapped_cdn_nodes,start=1)]
+            cdn_mapping = [(nm.toponode_id, "CDN%d" % index) for index, nm in enumerate(mapped_cdn_nodes, start=1)]
             for vhg, cdn in get_vhg_cdn_mapping(vhg_mapping, cdn_mapping).items():
                 service.add_edge(vhg, cdn, bandwidth=service.node[vhg]["bandwidth"])
-
 
         return service, delay_path, delay_route
 
@@ -121,36 +120,58 @@ class ServiceTopo:
 
     def dump_nodes(self):
         '''
-        :return: a list of tuples containing nodes and their properties
+        :return: [("S2",15.12)]
         '''
         res = []
         for node in node_connected_component(self.servicetopo.to_undirected(), "S0"):
-            res.append((node + "_%d" % self.sla_id, self.servicetopo.node[node].get("cpu", 0)))
+            res.append((node, self.servicetopo.node[node].get("cpu", 0)))
         return res
+
+    def getServiceNodes(self):
+        for node in self.servicetopo.nodes(data=True):
+            yield node[0], node[1].get("bandwidth", 0)
 
     def dump_edges(self):
         '''
-        :return: a list of tuples containing nodes and their properties
+        :return: start , end , edge["bandwidth"]
         '''
         res = []
         for start, ends in self.servicetopo.edge.items():
             for end in ends:
-                print end
                 edge = self.servicetopo[start][end]
-                res.append((start + "_%d" % self.sla_id, end + "_%d" % self.sla_id, edge["bandwidth"]))
+                res.append((start , end , edge["bandwidth"]))
         return res
 
+    def getServiceEdges(self):
+        '''
+
+        :return: start, end, edge["bandwidth"]
+        '''
+        for start, ends in self.servicetopo.edge.items():
+            for end in ends:
+                edge = self.servicetopo[start][end]
+                yield start, end, edge["bandwidth"]
+
     def dump_delay_paths(self):
+        '''
+
+        :return: (path, self.delay)
+        '''
         res = []
         for path in self.delay_paths:
-            res.append("%s_%d %lf" % (path, self.sla_id, self.delay))
+            res.append((path, self.delay))
 
         return res
 
     def dump_delay_routes(self):
+        '''
+
+        :param service_id:
+        :return: (path,  segment[0], segment[1]
+        '''
         res = []
         for path, segments in self.delay_routes.items():
             for segment in segments:
-                res.append("%s_%d %s_%d %s_%d" % (path, self.sla_id, segment[0], self.sla_id, segment[1], self.sla_id))
+                res.append((path,  segment[0], segment[1]))
 
         return res

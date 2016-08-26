@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer
+from sqlalchemy import and_
 from sqlalchemy.orm import relationship
 
 from ..core.service_topo import ServiceTopo
@@ -7,7 +8,6 @@ from ..time.persistence import *
 
 OPTIM_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../optim')
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
-
 
 
 class ServiceSpecFactory:
@@ -83,15 +83,32 @@ class Service(Base):
         self.slas = slas
         self.serviceSpecFactory = serviceSpecFactory
 
+        self.topo = {sla: ServiceTopo(sla=sla, vhg_count=slas_spec.get(sla.id, {}).get("vhg", 1),
+                                      vcdn_count=slas_spec.get(sla.id, {}).get("vcdn", 1), hint_mapping=None) for sla in
+                     self.slas}
 
-        self.topo= {sla: ServiceTopo(sla=sla, vhg_count=slas_spec.get(sla.id, {}).get("vhg", 1),
-                                      vcdn_count=slas_spec.get(sla.id, {}).get("vcdn", 1), hint_mapping=None) for sla in self.slas}
+        for sla in slas:
+            for node, cpu in self.topo[sla].getServiceNodes():
+                self.serviceNodes.append(ServiceNode(node_id=node, cpu=cpu, sla_id=sla.id))
+                session.commit()
+            for node_1, node_2, bandwidth in self.topo[sla].getServiceEdges():
+                snode_1_id = session.query(ServiceNode.id).filter(
+                    and_(ServiceNode.sla_id == sla.id, ServiceNode.service_id == self.id,
+                         ServiceNode.node_id == node_1)).one()[0]
 
+                snode_2_id = session.query(ServiceNode.id).filter(
+                    and_(ServiceNode.sla_id == sla.id, ServiceNode.service_id == self.id,
+                         ServiceNode.node_id == node_2)).one()[0]
 
-        hint_mapping=self.solve()
+                self.serviceEdges.append(
+                    ServiceEdge(node_1=snode_1_id, node_2=snode_2_id, bandwidth=bandwidth, sla_id=sla.id))
+                session.commit()
+
+        hint_mapping = self.solve()
         if hint_mapping is None:
-            print "deep shit, we can't even create the service"
-        self.topo= {sla: ServiceTopo(sla=sla, vhg_count=slas_spec.get(sla.id, {}).get("vhg", 1),
+            print
+            "deep shit, we can't even create the service"
+        self.topo = {sla: ServiceTopo(sla=sla, vhg_count=slas_spec.get(sla.id, {}).get("vhg", 1),
                                       vcdn_count=slas_spec.get(sla.id, {}).get("vcdn", 1), hint_mapping=hint_mapping)
                      for sla in
                      self.slas}
@@ -123,32 +140,36 @@ class Service(Base):
         # write info on the edge
         with open(os.path.join(RESULTS_FOLDER, "service.edges.data"), mode) as f:
             for sla in self.slas:
+                postfix = "%d_%d" % (self.id, sla.id)
                 topo = self.topo[sla]
-                for line in topo.dump_edges():
-                    f.write(" ".join(str(a) for a in line) + "\n")
+                for start, end, bw in topo.dump_edges():
+                    f.write("%s_%s %s_%s %lf\n" % (start, postfix, end, postfix, bw))
         with open(os.path.join(RESULTS_FOLDER, "service.nodes.data"), mode) as f:
             for sla in self.slas:
-                topo = self.topo[sla]
-                for line in topo.dump_nodes():
-                    f.write(" ".join(str(a) for a in line) + "\n")
+                postfix = "%d_%d" % (self.id, sla.id)
+                for snode_id, cpu in topo.dump_nodes():
+                    f.write("%s_%s %lf\n" % (snode_id, postfix, cpu))
 
-        # write constraints on CDN placement
+
+
+
+                    # write constraints on CDN placement
         with open(os.path.join(RESULTS_FOLDER, "CDN.nodes.data"), mode) as f:
             for sla in self.slas:
                 for index, value in enumerate(sla.get_cdn_nodes(), start=1):
-                    f.write("CDN%d_%s %s\n" % (index, sla.id, value.toponode_id))
+                    f.write("CDN%d_%d_%d %s\n" % (index, self.id,sla.id, value.toponode_id))
 
         # write constraints on starter placement
         with open(os.path.join(RESULTS_FOLDER, "starters.nodes.data"), mode) as f:
             for sla in self.slas:
                 for index, value in enumerate(sla.get_start_nodes(), start=1):
-                    f.write("S%d_%s %s\n" % (index, sla.id, value.toponode_id))
+                    f.write("S%d_%d_%d %s\n" % (index, self.id, sla.id, value.toponode_id))
 
         # write the names of the VHG Nodes
         with open(os.path.join(RESULTS_FOLDER, "VHG.nodes.data"), mode) as f:
             for sla in self.slas:
                 for index in range(1, len(sla.get_start_nodes()) + 1):
-                    f.write("VHG%d_%s\n" % (index, sla.id))
+                    f.write("VHG%d_%d_%ds\n" % (index, self.id,sla.id))
 
         # write the names of the VCDN nodes (is it still used?)
         with open(os.path.join(RESULTS_FOLDER, "VCDN.nodes.data"), mode) as f:
@@ -160,13 +181,15 @@ class Service(Base):
 
         with open(os.path.join(RESULTS_FOLDER, "service.path.delay.data"), "w") as f:
             for sla in self.slas:
+                postfix = "%d_%d" % (self.id, sla.id)
                 topo = self.topo[sla]
-                for data in topo.dump_delay_paths():
-                    f.write("%s\n" % data)
+                for path, delay in topo.dump_delay_paths():
+                    f.write("%s_%s %lf\n" % (path, postfix,delay ))
 
         # write e2e delay constraint
         with open(os.path.join(RESULTS_FOLDER, "service.path.data"), "w") as f:
             for sla in self.slas:
+                postfix = "%d_%d" % (self.id, sla.id)
                 topo = self.topo[sla]
-                for data in topo.dump_delay_routes():
-                    f.write("%s\n" % data)
+                for path, s1, s2 in topo.dump_delay_routes():
+                    f.write("%s_%s %s_%s %s_%s\n"%(path, postfix , s1,postfix , s2,postfix ))

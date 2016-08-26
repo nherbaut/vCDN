@@ -47,26 +47,29 @@ class Edge(Base):
 
 class ServiceNode(Base):
     __tablename__ = "ServiceNode"
-    id = Column(String(16), primary_key=True)
+    id = Column(Integer, primary_key=True,autoincrement=True)
+    node_id=Column(String(16))
     service_id = Column(Integer, ForeignKey("Service.id"))
-    cpu_demand = Column(Float, )
+    sla_id = Column(Integer, ForeignKey("Sla.id"))
+    cpu= Column(Float, )
 
 
 class ServiceEdge(Base):
     __tablename__ = "ServiceEdge"
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True,autoincrement=True)
     service_id = Column(Integer, ForeignKey("Service.id"))
-    node_1 = Column(String(16), ForeignKey("ServiceNode.id"))
-    node_2 = Column(String(16), ForeignKey("ServiceNode.id"))
+    sla_id = Column(Integer, ForeignKey("Sla.id"))
+    node_1 = Column(Integer, ForeignKey("ServiceNode.id"))
+    node_2 = Column(Integer, ForeignKey("ServiceNode.id"))
+    bandwidth = Column(Float)
 
 
 class NodeMapping(Base):
     __tablename__ = "NodeMapping"
     id = Column(Integer, primary_key=True, autoincrement=True)
     mapping_id = Column(Integer, ForeignKey('Mapping.id'))
-
     node_id = Column(String(16), ForeignKey('Node.id'))
-    service_node_id = Column(String(16), ForeignKey('ServiceNode.id'))
+    service_node_id = Column(Integer, ForeignKey('ServiceNode.id'))
 
 
 class EdgeMapping(Base):
