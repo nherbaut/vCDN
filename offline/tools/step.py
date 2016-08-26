@@ -67,8 +67,9 @@ if __name__ == "__main__":
             service = pickle.load(f)
     else:
         sla = generate_random_slas(rs, su, 1, start_count=args.s, max_cdn_to_use=args.cdn, end_count=args.cdn)[0]
+        sla.substrate=su
 
-        service = Service.fromSla(sla)
+        service = Service([sla])
 
     if spvhg_disable:
         service.spvhg = False
@@ -86,16 +87,14 @@ if __name__ == "__main__":
         pickle.dump(service, f)
 
     service.write()
+    service.solve()
 
-    mapping = solve(service, su, preassign_vhg=not vhgpa)
 
-    if not mapping is None:
+    if not service.mapping is None:
         if not dry:
-            su.consume_service(service, mapping)
+            su.consume_service(service)
             su.write()
-        mapping.save()
-        # os.remove("service.pickle")
-        sys.stdout.write("success: %e\n" % mapping.objective_function)
+
         exit(0)
     else:
         sys.stdout.write("failure\n")

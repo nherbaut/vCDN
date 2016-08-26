@@ -35,9 +35,9 @@ def fill_db_with_sla(tenant, file=None, windows=5, centroids=5, **kwargs):
     '''
     locale.setlocale(locale.LC_ALL, 'en_US.utf8')
     if file is None:
-        subprocess.call(["%s/compute_forecast.R" % TIME_PATH, "-o", "output.csv", "-r"], cwd=TIME_PATH)
+        subprocess.call(["%s/compute_forecast.R" % TIME_PATH, "-o", "output.csv", "-r"], cwd=TIME_PATH,stdout=open(os.devnull, 'wb'),stderr=open(os.devnull, 'wb'))
     else:
-        subprocess.call(["%s/compute_forecast.R" % TIME_PATH, "-i", "%s" % file, "-o", "output.csv"], cwd=TIME_PATH)
+        subprocess.call(["%s/compute_forecast.R" % TIME_PATH, "-i", "%s" % file, "-o", "output.csv"], cwd=TIME_PATH,stdout=open(os.devnull, 'wb'),stderr=open(os.devnull, 'wb'))
 
     df = pd.read_csv(os.path.join(TIME_PATH, "output.csv"))
 

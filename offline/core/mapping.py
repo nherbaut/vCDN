@@ -12,10 +12,12 @@ RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../r
 class Mapping(Base):
     __tablename__ = 'Mapping'
     id = Column(Integer, primary_key=True, autoincrement=True)
+
     service_id = Column(Integer, ForeignKey('Service.id'), nullable=False)
     service = relationship("Service", cascade="save-update",back_populates="mapping")
-    node_mappings = relationship("NodeMapping", cascade="save-update")
-    edge_mappings = relationship("EdgeMapping", cascade="save-update")
+
+    node_mappings = relationship("NodeMapping", cascade="all")
+    edge_mappings = relationship("EdgeMapping", cascade="all")
     objective_function = Column(Float)
 
 

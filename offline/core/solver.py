@@ -5,7 +5,7 @@ import subprocess
 from sqlalchemy import or_, and_
 
 from ..core.mapping import Mapping
-from ..time.persistence import NodeMapping, EdgeMapping, session, Edge, ServiceEdge, ServiceNode
+from ..time.persistence import  session, Edge, ServiceEdge, ServiceNode, NodeMapping, EdgeMapping
 
 OPTIM_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../optim')
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
@@ -55,7 +55,7 @@ def solve_inplace(allow_violations=False, preassign_vhg=False):
                 service_node_id = session.query("ServiceNode.id").filter(
                     and_(ServiceNode.sla_id == sla_id, ServiceNode.service_id == service_id,
                          ServiceNode.node_id == snode_id)).one()[0]
-                nodeMapping = NodeMapping(node_id=node_id, service_node_id=service_node_id)
+                nodeMapping = NodeMapping(node_id=node_id, service_node_id=service_node_id,service_id=service_id,sla_id=sla_id)
                 nodesSols.append(nodeMapping)
                 continue
 
@@ -66,9 +66,9 @@ def solve_inplace(allow_violations=False, preassign_vhg=False):
                 snode_1, service_id, sla_id = snode_1.split("_")
                 snode_2, service_id, sla_id = snode_2.split("_")
                 session.query()
+
                 edge_id = session.query(Edge.id).filter(or_(and_(Edge.node_1 == node_1, Edge.node_2 == node_2),
                                                             and_(Edge.node_1 == node_2, Edge.node_2 == node_1))).one()[0]
-
                 snode_1_id = session.query(ServiceNode.id).filter(
                     and_(ServiceNode.sla_id == sla_id, ServiceNode.service_id == service_id,
                          ServiceNode.node_id == snode_1)).one()[0]
@@ -77,7 +77,8 @@ def solve_inplace(allow_violations=False, preassign_vhg=False):
                          ServiceNode.node_id == snode_2)).one()[0]
                 sedge_id = session.query(ServiceEdge.id).filter(
                     and_(ServiceEdge.node_1 == snode_1_id, ServiceEdge.node_2 == snode_2_id,
-                         ServiceEdge.service_id == service_id, ServiceEdge.sla_id == sla_id)).one()
+                         ServiceEdge.service_id == service_id, ServiceEdge.sla_id == sla_id)).one()[0]
+
                 edgeMapping = EdgeMapping(edge_id=edge_id, serviceEdge_id=sedge_id)
                 edgesSol.append(edgeMapping)
                 continue
@@ -97,4 +98,7 @@ def solve_inplace(allow_violations=False, preassign_vhg=False):
 def solve(service, substrate):
     service.write()
     substrate.write()
-    return solve_inplace()
+    mapping=solve_inplace()
+    service.mapping=mapping
+
+

@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer
 from sqlalchemy import and_
 from sqlalchemy.orm import relationship
+from sqlalchemy import or_, and_
 
 from ..core.service_topo import ServiceTopo
 from ..core.solver import solve
@@ -53,7 +54,7 @@ class Service(Base):
     serviceNodes = relationship("ServiceNode", cascade="all")
     serviceEdges = relationship("ServiceEdge", cascade="all")
     slas = relationship("Sla", secondary=service_to_sla, back_populates="services")
-    mapping = relationship("Mapping", cascade="all")
+    mapping = relationship("Mapping",uselist=False, cascade="all",back_populates="service")
 
     @classmethod
     def cleanup(cls):
@@ -104,17 +105,22 @@ class Service(Base):
                     ServiceEdge(node_1=snode_1_id, node_2=snode_2_id, bandwidth=bandwidth, sla_id=sla.id))
                 session.commit()
 
-        hint_mapping = self.solve()
-        if hint_mapping is None:
-            print
-            "deep shit, we can't even create the service"
-        self.topo = {sla: ServiceTopo(sla=sla, vhg_count=slas_spec.get(sla.id, {}).get("vhg", 1),
-                                      vcdn_count=slas_spec.get(sla.id, {}).get("vcdn", 1), hint_mapping=hint_mapping)
-                     for sla in
-                     self.slas}
+        # create temp mapping for vhg<->vcdn hints
+        self.solve()
+
+        if self.mapping is not None:
+            self.topo = {sla: ServiceTopo(sla=sla, vhg_count=slas_spec.get(sla.id, {}).get("vhg", 1),vcdn_count=slas_spec.get(sla.id, {}).get("vcdn", 1), hint_mapping=self.mapping)for sla in self.slas}
+            #remove temp mapping for vhg<->vcdn hints
+            session.delete(self.mapping)
 
     def solve(self):
-        return solve(self, self.slas[0].substrate)
+        solve(self, self.slas[0].substrate)
+        if self.mapping is not None:
+            session.add(self.mapping)
+            session.commit()
+        else:
+            print "mapping failed"
+
 
     def __compute_vhg_vcdn_assignment__(self):
 
@@ -193,3 +199,15 @@ class Service(Base):
                 topo = self.topo[sla]
                 for path, s1, s2 in topo.dump_delay_routes():
                     f.write("%s_%s %s_%s %s_%s\n"%(path, postfix , s1,postfix , s2,postfix ))
+
+
+
+
+
+def get_cpu_from_node_mapping(nodeMapping=None):
+    return session.query(ServiceNode.cpu).filter(
+        and_(  ServiceNode.service_id==nodeMapping.service.id,
+               ServiceNode.sla_id== nodeMapping.sla.id,
+               ServiceNode.node_id==nodeMapping.service_node.node_id,
+
+            )).one()[0]

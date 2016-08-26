@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-import os
-
 import networkx
 import numpy.random
 from haversine import haversine
@@ -10,8 +8,8 @@ from sqlalchemy import Column, Integer, Float, ForeignKey, String
 from sqlalchemy.orm import relationship
 from sqlalchemy.schema import Table
 
-from ..time.persistence import EdgeMapping, Base
-from ..time.persistence import Node, Edge
+from ..core.service import get_cpu_from_node_mapping
+from ..time.persistence import *
 
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
 DATA_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../data')
@@ -205,20 +203,26 @@ class Substrate(Base):
 
         return cls(edges, nodesdict)
 
-    def consume_service(self, service, mapping):
-        try:
-            # print "consuming..."
-            for ns in mapping.node_mappings:
-                self.nodes[ns.topo_node_id] = self.nodes[ns.topo_node_id] - service.spec.nodes[
-                    ns.service_node_id].cpu
-                # print "\teater %lf flurom %s, remaining %s" % (service.nodes[ns[1]].cpu, ns[1], self)
-            for es in mapping.edge_mappings:
-                if not deduce_bw(es, self.edges, service):
-                    backward = EdgeMapping.backward(es)
-                    deduce_bw(backward, self.edges, service)
-        except ValueError as e:
-            print(e)
-        return
+    def consume_service(self, service):
+
+        # print "consuming..."
+        for ns in service.mapping.node_mappings:
+            # get topo node
+            node = [node for node in self.nodes if node.id == ns.node_id][0]
+            node.cpu_capacity = node.cpu_capacity - get_cpu_from_node_mapping(ns)
+
+            # print "\teater %lf flurom %s, remaining %s" % (service.nodes[ns[1]].cpu, ns[1], self)
+        for es in service.mapping.edge_mappings:
+            mapping_topoEdge = es.edge
+            mapping_serviceEdge = es.serviceEdge
+            edge = [edge for edge in self.edges if
+                     (edge.node_1 == mapping_topoEdge.node_1 and edge.node_2 == mapping_topoEdge.node_2)
+                     or
+                     (edge.node_1 == mapping_topoEdge.node_2 and edge.node_2 == mapping_topoEdge.node_1) ][0]
+
+            edge.bandwidth=edge.bandwidth-mapping_serviceEdge.bandwidth
+
+
 
 
 def deduce_bw(es, edges, service):

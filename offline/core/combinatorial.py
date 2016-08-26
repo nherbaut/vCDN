@@ -185,6 +185,7 @@ def get_vhg_cdn_mapping(vhgs, cdns):
     return res
 
 
+
 def get_node_clusters(nodes, class_count, substrate):
     '''
     split the provided nodes into class according to proximity on the graph
@@ -218,9 +219,10 @@ def get_node_clusters(nodes, class_count, substrate):
 
     i = 1
     res = {}
-    for x in candidate:
-        for y in x:
-            res[y] = i
-        i += 1
+    if candidate is not None:
+        for x in candidate:
+            for y in x:
+                res[y] = i
+            i += 1
 
     return res

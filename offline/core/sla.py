@@ -87,14 +87,14 @@ def generate_random_slas(rs, substrate, count=1000, start_count=None, end_count=
             start_count_drawn = rs.choice([1, 2, 3, 4])
         else:
             start_count_drawn = start_count
-        draws = rs.choice(substrate.nodesdict.keys(), size=start_count_drawn + end_count,
+        draws = rs.choice(substrate.nodes , size=start_count_drawn + end_count,
                           replace=False).tolist()
         start = []
         cdn = []
         for i in range(1, start_count_drawn + 1):
-            start.append(draws.pop())
+            start.append(draws.pop().id)
         for i in range(1, end_count + 1):
-            cdn.append(draws.pop())
+            cdn.append(draws.pop().id)
         res.append(
             Sla(bitrate, concurent_users, time_span, movie_duration, start, cdn, max_cdn_to_use=max_cdn_to_use))
 

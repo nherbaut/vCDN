@@ -73,7 +73,7 @@ class ServiceTopo:
             if len(winners) == 1:
                 service.add_edge(vhg, winners[0], bandwidth=0)
             else:
-                print("several winners... %s taking the first one" % str(winners))
+                #print("several winners... %s taking the first one" % str(winners))
                 service.add_edge(vhg, winners[0], bandwidth=0)
 
         service.node["S0"]["bandwidth"] = 1  # sla.bandwidth

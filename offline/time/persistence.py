@@ -1,5 +1,6 @@
 import os
 
+
 from sqlalchemy import Column, Integer, String, ForeignKey, Float
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
@@ -42,34 +43,40 @@ class Edge(Base):
     bandwidth = Column(Float, )
 
     def __str__(self):
-        return "%s\t%s\t%e\t%e" % (self.node_1, self.node_2, self.bandwidth,self.delay )
-
+        return "%s\t%s\t%e\t%e" % (self.node_1, self.node_2, self.bandwidth, self.delay)
 
 class ServiceNode(Base):
     __tablename__ = "ServiceNode"
-    id = Column(Integer, primary_key=True,autoincrement=True)
-    node_id=Column(String(16))
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    node_id = Column(String(16))
     service_id = Column(Integer, ForeignKey("Service.id"))
     sla_id = Column(Integer, ForeignKey("Sla.id"))
-    cpu= Column(Float, )
-
+    cpu = Column(Float, )
 
 class ServiceEdge(Base):
     __tablename__ = "ServiceEdge"
-    id = Column(Integer, primary_key=True,autoincrement=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     service_id = Column(Integer, ForeignKey("Service.id"))
     sla_id = Column(Integer, ForeignKey("Sla.id"))
     node_1 = Column(Integer, ForeignKey("ServiceNode.id"))
     node_2 = Column(Integer, ForeignKey("ServiceNode.id"))
     bandwidth = Column(Float)
 
-
 class NodeMapping(Base):
     __tablename__ = "NodeMapping"
     id = Column(Integer, primary_key=True, autoincrement=True)
-    mapping_id = Column(Integer, ForeignKey('Mapping.id'))
     node_id = Column(String(16), ForeignKey('Node.id'))
+    sla_id = Column(Integer, ForeignKey('Sla.id'))
     service_node_id = Column(Integer, ForeignKey('ServiceNode.id'))
+    service_id = Column(Integer, ForeignKey('Service.id'))
+    mapping_id = Column(Integer, ForeignKey('Mapping.id'))
+
+    mapping=relationship("Mapping")
+    service = relationship("Service")
+    sla = relationship("Sla")
+    service_node = relationship('ServiceNode')
+    node = relationship('Node')
+
 
 
 class EdgeMapping(Base):
@@ -91,7 +98,7 @@ class EdgeMapping(Base):
 
 
 # engine = create_engine('sqlite:///%s/example.db' % RESULTS_FOLDER, echo=True)
-engine = create_engine('mysql+mysqldb://root:root@127.0.0.1/paper4', echo=True)
+engine = create_engine('mysql+mysqldb://root:root@127.0.0.1/paper4', )
 
 session = sessionmaker(bind=engine)()
 
