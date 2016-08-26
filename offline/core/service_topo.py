@@ -107,8 +107,8 @@ class ServiceTopo:
 
         # add CDN edges if available
         if hint_mapping is not None:
-            vhg_mapping = [(nm.node_id, nm.service_node_id.split("_")[0]) for nm in hint_mapping.node_mappings if
-                           nm.service_node_id.split("_")[0] in self.__get_nodes_by_type("VHG", service)]
+            vhg_mapping = [(nm.node_id, nm.service_node_id) for nm in hint_mapping.node_mappings if
+                           nm.service_node_id in self.__get_nodes_by_type("VHG", service)]
             cdn_mapping = [(nm.toponode_id, "CDN%d" % index) for index, nm in enumerate(mapped_cdn_nodes, start=1)]
             for vhg, cdn in get_vhg_cdn_mapping(vhg_mapping, cdn_mapping).items():
                 service.add_edge(vhg, cdn, bandwidth=service.node[vhg]["bandwidth"])
@@ -116,6 +116,12 @@ class ServiceTopo:
         return service, delay_path, delay_route
 
     def __get_nodes_by_type(self, type, graph):
+        '''
+
+        :param type: "VHG"
+        :param graph:
+        :return: ["VHG1","VHG2"]
+        '''
         return [n[0] for n in graph.nodes(data=True) if n[1].get("type") == type]
 
     def dump_nodes(self):

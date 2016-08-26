@@ -80,5 +80,7 @@ slas_spec[slas[1].id]={"vhg":1,"vcdn":1}
 service=Service(slas,slas_spec=slas_spec)
 session.add(service)
 service.write()
+mapping=service.solve()
+print mapping.objective_function
 
 

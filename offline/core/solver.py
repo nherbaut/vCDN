@@ -52,8 +52,10 @@ def solve_inplace(allow_violations=False, preassign_vhg=False):
             if (len(matches) > 0):
                 node_id = matches[0][0]
                 snode_id, service_id, sla_id = matches[0][1].split("_")
-                service_node_id=session.query("ServiceNode.id").filter(and_(ServiceNode.sla_id==sla_id,ServiceNode.service_id==service_id,ServiceNode.node_id==snode_id)).one()[0]
-                nodeMapping = NodeMapping(node_id=node_id , service_node_id=service_node_id)
+                service_node_id = session.query("ServiceNode.id").filter(
+                    and_(ServiceNode.sla_id == sla_id, ServiceNode.service_id == service_id,
+                         ServiceNode.node_id == snode_id)).one()[0]
+                nodeMapping = NodeMapping(node_id=node_id, service_node_id=service_node_id)
                 nodesSols.append(nodeMapping)
                 continue
 
@@ -63,12 +65,20 @@ def solve_inplace(allow_violations=False, preassign_vhg=False):
                 node_1, node_2, snode_1, snode_2 = matches[0]
                 snode_1, service_id, sla_id = snode_1.split("_")
                 snode_2, service_id, sla_id = snode_2.split("_")
+                session.query()
                 edge_id = session.query(Edge.id).filter(or_(and_(Edge.node_1 == node_1, Edge.node_2 == node_2),
-                                                            and_(Edge.node_1 == node_2, Edge.node_2 == node_1))).one()
+                                                            and_(Edge.node_1 == node_2, Edge.node_2 == node_1))).one()[0]
+
+                snode_1_id = session.query(ServiceNode.id).filter(
+                    and_(ServiceNode.sla_id == sla_id, ServiceNode.service_id == service_id,
+                         ServiceNode.node_id == snode_1)).one()[0]
+                snode_2_id = session.query(ServiceNode.id).filter(
+                    and_(ServiceNode.sla_id == sla_id, ServiceNode.service_id == service_id,
+                         ServiceNode.node_id == snode_2)).one()[0]
                 sedge_id = session.query(ServiceEdge.id).filter(
-                    and_(ServiceEdge.node_1 == snode_1, ServiceEdge.node_2 == snode_2,
-                         ServiceEdge.service_id == service_id, ServiceEdge.sla_id == sla_id )).one()
-                edgeMapping = EdgeMapping(edge_id=sedge_id, service_edge_id=sedge_id)
+                    and_(ServiceEdge.node_1 == snode_1_id, ServiceEdge.node_2 == snode_2_id,
+                         ServiceEdge.service_id == service_id, ServiceEdge.sla_id == sla_id)).one()
+                edgeMapping = EdgeMapping(edge_id=edge_id, serviceEdge_id=sedge_id)
                 edgesSol.append(edgeMapping)
                 continue
             matches = re.findall("^objective value: *([0-9\.]*)$", line)
