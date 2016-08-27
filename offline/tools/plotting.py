@@ -237,7 +237,7 @@ def plotsol(**kwargs):
                     color = "azure1"
                     shape="circle"
 
-                elif "vCDN" in node[1]:
+                elif "vCDN".lower() in node[1].lower():
                     color = "azure3"
                     shape="circle"
                 elif "S" in node[1]:
@@ -252,7 +252,7 @@ def plotsol(**kwargs):
 
         f.write("\nsubgraph{\n edge[color=chartreuse,weight=0];\n")
         for edge in edgesSol:
-            if edge[2] != "S0":
+            if "S0" not in edge[2] :
                 f.write("%s--%s [ style=dashed,label=\"%s&#8594;%s\",fontcolor=blue3 ,fontsize=12,penwidth=%d];\n " % (edge+(kwargs["service_link_linewidth"],)))
 
         f.write("}\n\n")

@@ -21,24 +21,6 @@ class Mapping(Base):
     objective_function = Column(Float)
 
 
-
-    '''
-
-    bandwidth = Column(Float)
-    delay = Column(Float)
-    tenant_id = Column(Integer, ForeignKey('tenant.id'))
-    max_cdn_to_use = Column(Integer)
-    tenant = relationship("Tenant", back_populates="slas")
-    start_nodes = relationship(
-        "Node",
-        secondary=slas_to_start_nodes,
-        back_populates="slas")
-    end_nodes = relationship(
-        "Node",
-        secondary=slas_to_start_nodes,
-        back_populates="slas")
-    '''
-
     def __init__(self, node_mappings=node_mappings, edge_mappings=edge_mappings, objective_function=objective_function):
         self.node_mappings = node_mappings
         self.edge_mappings = edge_mappings

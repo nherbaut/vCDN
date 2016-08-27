@@ -8,7 +8,6 @@ from sqlalchemy import Column, Integer, Float, ForeignKey, String
 from sqlalchemy.orm import relationship
 from sqlalchemy.schema import Table
 
-from ..core.service import get_cpu_from_node_mapping
 from ..time.persistence import *
 
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
@@ -143,19 +142,27 @@ class Substrate(Base):
 
         for i in range(1, width + 1):
             for j in range(1, height + 1):
-                nodes.append(Node(id=str("%02d%02d" % (i, j)), cpu_capacity=cpu))
+                node = Node(id=str("%02d%02d" % (i, j)), cpu_capacity=cpu)
+                nodes.append(node)
+                session.add(node)
 
+        session.commit()
         for i in range(1, width + 1):
             for j in range(1, height + 1):
                 if j + 1 <= height:
                     edge = Edge(node_1="%02d%02d" % (i, j), node_2="%02d%02d" % (i, j + 1), bandwidth=bw, delay=delay)
+                    edges.append(edge)
                 if i + 1 <= width:
                     edge = Edge(node_1="%02d%02d" % (i, j), node_2="%02d%02d" % (i + 1, j), bandwidth=bw, delay=delay)
+                    edges.append(edge)
                 if j + 1 <= height and i + 1 <= width:
                     edge = Edge(node_1="%02d%02d" % (i, j), node_2="%02d%02d" % (i + 1, j + 1), bandwidth=bw,
                                 delay=delay)
+                    edges.append(edge)
 
-                edges.append(edge)
+            for edge in edges:
+                session.add(edge)
+            session.commit()
 
         return cls(edges, nodes)
 
@@ -203,80 +210,72 @@ class Substrate(Base):
 
         return cls(edges, nodesdict)
 
+    def release_service(self, service):
+        self.__handle_service(service, +1)
+
     def consume_service(self, service):
+        self.__handle_service(service, -1)
+
+    def __handle_service(self, service, factor):
 
         # print "consuming..."
         for ns in service.mapping.node_mappings:
             # get topo node
-            node = [node for node in self.nodes if node.id == ns.node_id][0]
-            node.cpu_capacity = node.cpu_capacity - get_cpu_from_node_mapping(ns)
+            ns.node.cpu_capacity = ns.node.cpu_capacity + factor * ns.service_node.cpu
 
             # print "\teater %lf flurom %s, remaining %s" % (service.nodes[ns[1]].cpu, ns[1], self)
         for es in service.mapping.edge_mappings:
-            mapping_topoEdge = es.edge
-            mapping_serviceEdge = es.serviceEdge
-            edge = [edge for edge in self.edges if
-                     (edge.node_1 == mapping_topoEdge.node_1 and edge.node_2 == mapping_topoEdge.node_2)
-                     or
-                     (edge.node_1 == mapping_topoEdge.node_2 and edge.node_2 == mapping_topoEdge.node_1) ][0]
+            es.edge.bandwidth = es.edge.bandwidth + factor * es.serviceEdge.bandwidth
 
-            edge.bandwidth=edge.bandwidth-mapping_serviceEdge.bandwidth
-
-
-
-
-def deduce_bw(es, edges, service):
-    candidate_edges = filter(lambda x: x[0] == es.start_topo_node_id and x[1] == es.end_topo_node_id, edges)
-    if len(candidate_edges) != 0:
-        sub_edge = candidate_edges[0]
-        service_edge = service.spec.edges["%s %s" % (es.start_service_node_id, es.end_service_node_id)]
-        edges.remove(sub_edge)
-        edges.append((sub_edge[0], sub_edge[1], sub_edge[2] - service_edge.bw, sub_edge[3]))
-        if sub_edge[2] - service_edge.bw < 0:
-            print
-            "hein?"
-        return True
-    return False
-
-
-def get_delay(node1, node2):
-    return haversine((float(node1.attributes()["d29"].value), float(node1.attributes()["d32"].value)),
-                     (float(node2.attributes()["d29"].value), float(node2.attributes()["d32"].value))) / (299.300 * 0.6)
-
-
-def isOK(node1, node2):
-    try:
-        get_delay(node1, node2)
-    except:
+    def deduce_bw(es, edges, service):
+        candidate_edges = filter(lambda x: x[0] == es.start_topo_node_id and x[1] == es.end_topo_node_id, edges)
+        if len(candidate_edges) != 0:
+            sub_edge = candidate_edges[0]
+            service_edge = service.spec.edges["%s %s" % (es.start_service_node_id, es.end_service_node_id)]
+            edges.remove(sub_edge)
+            edges.append((sub_edge[0], sub_edge[1], sub_edge[2] - service_edge.bw, sub_edge[3]))
+            if sub_edge[2] - service_edge.bw < 0:
+                print
+                "hein?"
+            return True
         return False
-    return True
 
+    def get_delay(node1, node2):
+        return haversine((float(node1.attributes()["d29"].value), float(node1.attributes()["d32"].value)),
+                         (float(node2.attributes()["d29"].value), float(node2.attributes()["d32"].value))) / (
+                   299.300 * 0.6)
 
-def get_substrate(rs, file=os.path.join(DATA_FOLDER, 'Geant2012.graphml')):
-    su = Substrate.fromGraph(rs, file)
-    su.write()
+    def isOK(node1, node2):
+        try:
+            get_delay(node1, node2)
+        except:
+            return False
+        return True
 
-    return su
+    def get_substrate(rs, file=os.path.join(DATA_FOLDER, 'Geant2012.graphml')):
+        su = Substrate.fromGraph(rs, file)
+        su.write()
 
+        return su
 
-class bcolors:
-    @staticmethod
-    def color_out(value):
-        HEADER = '\033[95m'
-        OKBLUE = '\033[94m'
-        OKGREEN = '\033[92m'
-        WARNING = '\033[93m'
-        FAIL = '\033[91m'
-        ENDC = '\033[0m'
-        BOLD = '\033[1m'
-        UNDERLINE = '\033[4m'
-        if value > 80:
-            return OKGREEN + str(value) + ENDC
-        elif value > 60:
-            return OKBLUE + str(value) + ENDC
-        elif value > 40:
-            return WARNING + str(value) + ENDC
-        elif value > 20:
-            return FAIL + str(value) + ENDC
-        else:
-            return FAIL + BOLD + str(value) + ENDC
+    class bcolors:
+        @staticmethod
+        def color_out(value):
+            HEADER = '\033[95m'
+            OKBLUE = '\033[94m'
+            OKGREEN = '\033[92m'
+            WARNING = '\033[93m'
+            FAIL = '\033[91m'
+            ENDC = '\033[0m'
+            BOLD = '\033[1m'
+            UNDERLINE = '\033[4m'
+            if value > 80:
+                return OKGREEN + str(value) + ENDC
+            elif value > 60:
+                return OKBLUE + str(value) + ENDC
+            elif value > 40:
+                return WARNING + str(value) + ENDC
+            elif value > 20:
+                return FAIL + str(value) + ENDC
+            else:
+                return FAIL + BOLD + str(value) + ENDC

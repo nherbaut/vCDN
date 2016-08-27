@@ -18,9 +18,9 @@ class SlaNodeSpec(Base):
     __tablename__ = 'SlaNodeSpec'
     id = Column(Integer, primary_key=True, autoincrement=True)
     sla_id = Column(Integer, ForeignKey("Sla.id"), nullable=False)
-    sla = relationship("Sla", cascade="save-update")
+    sla = relationship("Sla", cascade="all")
     toponode_id = Column(String(16), ForeignKey("Node.id"), nullable=False)
-    topoNode = relationship("Node", cascade="save-update",order_by="Node.id")
+    topoNode = relationship("Node", order_by="Node.id",cascade="all")
     type = Column(String(16))
 
 
@@ -31,11 +31,17 @@ class Sla(Base):
     end_date = Column(DateTime)
     bandwidth = Column(Float)
     delay = Column(Float)
-    tenant_id = Column(Integer, ForeignKey('tenant.id'), nullable=False)
     max_cdn_to_use = Column(Integer)
-    tenant = relationship("Tenant", back_populates="slas", cascade="save-update")
+
+
+    tenant_id = Column(Integer, ForeignKey('tenant.id'), nullable=False)
+    tenant = relationship("Tenant", cascade="save-update")
+
+
     sla_node_specs = relationship("SlaNodeSpec", cascade="save-update")
+
     services = relationship("Service", secondary=service_to_sla, back_populates="slas")
+
     substrate_id = Column(Integer, ForeignKey("Substrate.id"), nullable=False)
     substrate = relationship("Substrate")
 
@@ -74,7 +80,7 @@ def write_sla(sla, seed=None):
         f.write("%s \n" % sla.start)
 
 
-def generate_random_slas(rs, substrate, count=1000, start_count=None, end_count=2, max_cdn_to_use=2):
+def generate_random_slas(rs, substrate, count=1000, start_count=0, end_count=0, tenant=None):
     res = []
     for i in range(0, count):
         bitrate = getRandomBitrate(rs)
@@ -83,20 +89,33 @@ def generate_random_slas(rs, substrate, count=1000, start_count=None, end_count=
         # concurent_users = max(rs.normal(20000, 5000), 5000)
         time_span = max(rs.normal(24 * 60 * 60, 60 * 60), 0)
         movie_duration = max(rs.normal(60 * 60, 10 * 60), 0)
-        if start_count is None:
-            start_count_drawn = rs.choice([1, 2, 3, 4])
-        else:
-            start_count_drawn = start_count
-        draws = rs.choice(substrate.nodes , size=start_count_drawn + end_count,
-                          replace=False).tolist()
-        start = []
-        cdn = []
-        for i in range(1, start_count_drawn + 1):
-            start.append(draws.pop().id)
-        for i in range(1, end_count + 1):
-            cdn.append(draws.pop().id)
+
+        delay = tcp_win / bitrate * 1000.0
+        bandwidth = count * bitrate * movie_duration / time_span
+
+
+        if not (start_count>0 and end_count>0):
+            start_count=rs.randint(low=1, high=5)
+            end_count= rs.randint(low=1, high=start_count)
+
+        random_nodes= rs.choice(substrate.nodes, size=start_count+end_count, replace=False)
+
+
+        start_nodes = random_nodes[:start_count]
+
+        cdn_nodes = random_nodes[start_count:]
+
+
+
         res.append(
-            Sla(bitrate, concurent_users, time_span, movie_duration, start, cdn, max_cdn_to_use=max_cdn_to_use))
+            Sla(start_date=None, end_date=None,
+                bandwidth=bandwidth ,
+                tenant_id=tenant.id,
+                start_nodes=start_nodes ,
+                cdn_nodes=cdn_nodes,
+                substrate=substrate,
+                delay=delay
+                ))
 
     return res
 

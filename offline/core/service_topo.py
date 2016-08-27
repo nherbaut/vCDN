@@ -57,8 +57,7 @@ class ServiceTopo:
             vcdn = "VCDN%d" % vCDN_id
             # get the vhg from the S
             vhg = service[s].items()[0][0]
-            print
-            vhg
+
             # apply the votes
             if "votes" not in service.node[vhg]:
                 service.node[vhg]["votes"] = collections.defaultdict(lambda: {})
@@ -107,8 +106,7 @@ class ServiceTopo:
 
         # add CDN edges if available
         if hint_mapping is not None:
-            vhg_mapping = [(nm.node_id, nm.service_node_id) for nm in hint_mapping.node_mappings if
-                           nm.service_node_id in self.__get_nodes_by_type("VHG", service)]
+            vhg_mapping = [(nmapping.node.id, nmapping.service_node.node_id) for nmapping  in hint_mapping.node_mappings if "VHG" in nmapping.service_node.node_id]
             cdn_mapping = [(nm.toponode_id, "CDN%d" % index) for index, nm in enumerate(mapped_cdn_nodes, start=1)]
             for vhg, cdn in get_vhg_cdn_mapping(vhg_mapping, cdn_mapping).items():
                 service.add_edge(vhg, cdn, bandwidth=service.node[vhg]["bandwidth"])

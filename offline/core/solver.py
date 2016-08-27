@@ -76,7 +76,7 @@ def solve_inplace(allow_violations=False, preassign_vhg=False):
                     and_(ServiceNode.sla_id == sla_id, ServiceNode.service_id == service_id,
                          ServiceNode.node_id == snode_2)).one()[0]
                 sedge_id = session.query(ServiceEdge.id).filter(
-                    and_(ServiceEdge.node_1 == snode_1_id, ServiceEdge.node_2 == snode_2_id,
+                    and_(ServiceEdge.node_1_id == snode_1_id, ServiceEdge.node_2_id == snode_2_id,
                          ServiceEdge.service_id == service_id, ServiceEdge.sla_id == sla_id)).one()[0]
 
                 edgeMapping = EdgeMapping(edge_id=edge_id, serviceEdge_id=sedge_id)

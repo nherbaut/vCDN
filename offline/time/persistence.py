@@ -1,6 +1,5 @@
 import os
 
-
 from sqlalchemy import Column, Integer, String, ForeignKey, Float
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
@@ -22,7 +21,7 @@ class Tenant(Base):
     __tablename__ = 'tenant'
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(16))
-    slas = relationship("Sla", back_populates="tenant")
+    slas = relationship("Sla")
 
 
 class Node(Base):
@@ -45,22 +44,34 @@ class Edge(Base):
     def __str__(self):
         return "%s\t%s\t%e\t%e" % (self.node_1, self.node_2, self.bandwidth, self.delay)
 
+
 class ServiceNode(Base):
     __tablename__ = "ServiceNode"
     id = Column(Integer, primary_key=True, autoincrement=True)
     node_id = Column(String(16))
     service_id = Column(Integer, ForeignKey("Service.id"))
+
     sla_id = Column(Integer, ForeignKey("Sla.id"))
+
+
+
     cpu = Column(Float, )
+
 
 class ServiceEdge(Base):
     __tablename__ = "ServiceEdge"
     id = Column(Integer, primary_key=True, autoincrement=True)
     service_id = Column(Integer, ForeignKey("Service.id"))
     sla_id = Column(Integer, ForeignKey("Sla.id"))
-    node_1 = Column(Integer, ForeignKey("ServiceNode.id"))
-    node_2 = Column(Integer, ForeignKey("ServiceNode.id"))
+
+    node_1_id = Column(Integer, ForeignKey("ServiceNode.id"))
+    node_2_id = Column(Integer, ForeignKey("ServiceNode.id"))
+
+    node_1 = relationship("ServiceNode", foreign_keys=[node_1_id], cascade="all")
+    node_2 = relationship("ServiceNode", foreign_keys=[node_2_id], cascade="all")
+
     bandwidth = Column(Float)
+
 
 class NodeMapping(Base):
     __tablename__ = "NodeMapping"
@@ -71,12 +82,11 @@ class NodeMapping(Base):
     service_id = Column(Integer, ForeignKey('Service.id'))
     mapping_id = Column(Integer, ForeignKey('Mapping.id'))
 
-    mapping=relationship("Mapping")
+    mapping = relationship("Mapping")
     service = relationship("Service")
     sla = relationship("Sla")
     service_node = relationship('ServiceNode')
     node = relationship('Node')
-
 
 
 class EdgeMapping(Base):

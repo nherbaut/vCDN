@@ -1,9 +1,9 @@
 from sqlalchemy import Column, Integer
 from sqlalchemy import and_
 from sqlalchemy.orm import relationship
-from sqlalchemy import or_, and_
 
 from ..core.service_topo import ServiceTopo
+from ..core.sla import Sla
 from ..core.solver import solve
 from ..time.persistence import *
 
@@ -53,8 +53,8 @@ class Service(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     serviceNodes = relationship("ServiceNode", cascade="all")
     serviceEdges = relationship("ServiceEdge", cascade="all")
-    slas = relationship("Sla", secondary=service_to_sla, back_populates="services")
-    mapping = relationship("Mapping",uselist=False, cascade="all",back_populates="service")
+    slas = relationship("Sla", secondary=service_to_sla, back_populates="services",cascade="save-update")
+    mapping = relationship("Mapping", uselist=False, cascade="all", back_populates="service")
 
     @classmethod
     def cleanup(cls):
@@ -84,8 +84,8 @@ class Service(Base):
         self.slas = slas
         self.serviceSpecFactory = serviceSpecFactory
 
-        self.topo = {sla: ServiceTopo(sla=sla, vhg_count=slas_spec.get(sla.id, {}).get("vhg", 1),
-                                      vcdn_count=slas_spec.get(sla.id, {}).get("vcdn", 1), hint_mapping=None) for sla in
+        self.topo = {sla: ServiceTopo(sla=sla, vhg_count=slas_spec.get(sla.id, {}).get("VHG", 1),
+                                      vcdn_count=slas_spec.get(sla.id, {}).get("VCDN", 1), hint_mapping=None) for sla in
                      self.slas}
 
         for sla in slas:
@@ -93,24 +93,26 @@ class Service(Base):
                 self.serviceNodes.append(ServiceNode(node_id=node, cpu=cpu, sla_id=sla.id))
                 session.commit()
             for node_1, node_2, bandwidth in self.topo[sla].getServiceEdges():
-                snode_1_id = session.query(ServiceNode.id).filter(
+                snode_1 = session.query(ServiceNode).filter(
                     and_(ServiceNode.sla_id == sla.id, ServiceNode.service_id == self.id,
-                         ServiceNode.node_id == node_1)).one()[0]
+                         ServiceNode.node_id == node_1)).one()
 
-                snode_2_id = session.query(ServiceNode.id).filter(
+                snode_2 = session.query(ServiceNode).filter(
                     and_(ServiceNode.sla_id == sla.id, ServiceNode.service_id == self.id,
-                         ServiceNode.node_id == node_2)).one()[0]
+                         ServiceNode.node_id == node_2)).one()
 
                 self.serviceEdges.append(
-                    ServiceEdge(node_1=snode_1_id, node_2=snode_2_id, bandwidth=bandwidth, sla_id=sla.id))
+                    ServiceEdge(node_1=snode_1 , node_2=snode_2, bandwidth=bandwidth, sla_id=sla.id))
                 session.commit()
 
         # create temp mapping for vhg<->vcdn hints
         self.solve()
 
         if self.mapping is not None:
-            self.topo = {sla: ServiceTopo(sla=sla, vhg_count=slas_spec.get(sla.id, {}).get("vhg", 1),vcdn_count=slas_spec.get(sla.id, {}).get("vcdn", 1), hint_mapping=self.mapping)for sla in self.slas}
-            #remove temp mapping for vhg<->vcdn hints
+            self.topo = {sla: ServiceTopo(sla=sla, vhg_count=slas_spec.get(sla.id, {}).get("vhg", 1),
+                                          vcdn_count=slas_spec.get(sla.id, {}).get("vcdn", 1),
+                                          hint_mapping=self.mapping) for sla in self.slas}
+            # remove temp mapping for vhg<->vcdn hints
             session.delete(self.mapping)
 
     def solve(self):
@@ -119,8 +121,8 @@ class Service(Base):
             session.add(self.mapping)
             session.commit()
         else:
-            print "mapping failed"
-
+            print
+            "mapping failed"
 
     def __compute_vhg_vcdn_assignment__(self):
 
@@ -163,7 +165,7 @@ class Service(Base):
         with open(os.path.join(RESULTS_FOLDER, "CDN.nodes.data"), mode) as f:
             for sla in self.slas:
                 for index, value in enumerate(sla.get_cdn_nodes(), start=1):
-                    f.write("CDN%d_%d_%d %s\n" % (index, self.id,sla.id, value.toponode_id))
+                    f.write("CDN%d_%d_%d %s\n" % (index, self.id, sla.id, value.toponode_id))
 
         # write constraints on starter placement
         with open(os.path.join(RESULTS_FOLDER, "starters.nodes.data"), mode) as f:
@@ -175,7 +177,7 @@ class Service(Base):
         with open(os.path.join(RESULTS_FOLDER, "VHG.nodes.data"), mode) as f:
             for sla in self.slas:
                 for index in range(1, len(sla.get_start_nodes()) + 1):
-                    f.write("VHG%d_%d_%ds\n" % (index, self.id,sla.id))
+                    f.write("VHG%d_%d_%ds\n" % (index, self.id, sla.id))
 
         # write the names of the VCDN nodes (is it still used?)
         with open(os.path.join(RESULTS_FOLDER, "VCDN.nodes.data"), mode) as f:
@@ -190,7 +192,7 @@ class Service(Base):
                 postfix = "%d_%d" % (self.id, sla.id)
                 topo = self.topo[sla]
                 for path, delay in topo.dump_delay_paths():
-                    f.write("%s_%s %lf\n" % (path, postfix,delay ))
+                    f.write("%s_%s %lf\n" % (path, postfix, delay))
 
         # write e2e delay constraint
         with open(os.path.join(RESULTS_FOLDER, "service.path.data"), "w") as f:
@@ -198,16 +200,10 @@ class Service(Base):
                 postfix = "%d_%d" % (self.id, sla.id)
                 topo = self.topo[sla]
                 for path, s1, s2 in topo.dump_delay_routes():
-                    f.write("%s_%s %s_%s %s_%s\n"%(path, postfix , s1,postfix , s2,postfix ))
+                    f.write("%s_%s %s_%s %s_%s\n" % (path, postfix, s1, postfix, s2, postfix))
+
+    @classmethod
+    def getFromSla(cls, sla):
+        return session.query(Service).filter(Sla.id == sla.id).join(Service.slas).filter(Sla.id == sla.id).one()
 
 
-
-
-
-def get_cpu_from_node_mapping(nodeMapping=None):
-    return session.query(ServiceNode.cpu).filter(
-        and_(  ServiceNode.service_id==nodeMapping.service.id,
-               ServiceNode.sla_id== nodeMapping.sla.id,
-               ServiceNode.node_id==nodeMapping.service_node.node_id,
-
-            )).one()[0]
