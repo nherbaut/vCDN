@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer
 from sqlalchemy import and_
 from sqlalchemy.orm import relationship
-
+import sys
 from ..core.service_topo import ServiceTopo
 from ..core.sla import Sla
 from ..core.solver import solve
@@ -116,13 +116,14 @@ class Service(Base):
             session.delete(self.mapping)
 
     def solve(self):
-        solve(self, self.slas[0].substrate)
-        if self.mapping is not None:
-            session.add(self.mapping)
-            session.commit()
-        else:
-            print
-            "mapping failed"
+        if len(self.slas)>0:
+            solve(self, self.slas[0].substrate)
+            if self.mapping is not None:
+                session.add(self.mapping)
+                session.commit()
+            else:
+                print
+                "mapping failed"
 
     def __compute_vhg_vcdn_assignment__(self):
 
@@ -152,11 +153,15 @@ class Service(Base):
                 topo = self.topo[sla]
                 for start, end, bw in topo.dump_edges():
                     f.write("%s_%s %s_%s %lf\n" % (start, postfix, end, postfix, bw))
+
+
         with open(os.path.join(RESULTS_FOLDER, "service.nodes.data"), mode) as f:
             for sla in self.slas:
                 postfix = "%d_%d" % (self.id, sla.id)
+                topo = self.topo[sla]
                 for snode_id, cpu in topo.dump_nodes():
                     f.write("%s_%s %lf\n" % (snode_id, postfix, cpu))
+                    sys.stdout.write("%s_%s %lf\n" % (snode_id, postfix, cpu))
 
 
 
@@ -164,26 +169,30 @@ class Service(Base):
                     # write constraints on CDN placement
         with open(os.path.join(RESULTS_FOLDER, "CDN.nodes.data"), mode) as f:
             for sla in self.slas:
+                postfix = "%d_%d" % (self.id, sla.id)
                 for index, value in enumerate(sla.get_cdn_nodes(), start=1):
-                    f.write("CDN%d_%d_%d %s\n" % (index, self.id, sla.id, value.toponode_id))
+                    f.write("CDN%d_%s %s\n" % (index, postfix, value.toponode_id))
 
         # write constraints on starter placement
         with open(os.path.join(RESULTS_FOLDER, "starters.nodes.data"), mode) as f:
             for sla in self.slas:
-                for index, value in enumerate(sla.get_start_nodes(), start=1):
-                    f.write("S%d_%d_%d %s\n" % (index, self.id, sla.id, value.toponode_id))
+                postfix = "%d_%d" % (self.id, sla.id)
+                for s, topo in self.topo[sla].get_Starters():
+                    f.write("%s_%s %s\n" % (s, postfix,topo))
 
         # write the names of the VHG Nodes
         with open(os.path.join(RESULTS_FOLDER, "VHG.nodes.data"), mode) as f:
             for sla in self.slas:
-                for index in range(1, len(sla.get_start_nodes()) + 1):
-                    f.write("VHG%d_%d_%ds\n" % (index, self.id, sla.id))
+                postfix = "%d_%d" % (self.id, sla.id)
+                for vhg in self.topo[sla].get_vhg():
+                    f.write("%s_%s\n" % (vhg,postfix ))
 
         # write the names of the VCDN nodes (is it still used?)
         with open(os.path.join(RESULTS_FOLDER, "VCDN.nodes.data"), mode) as f:
             for sla in self.slas:
-                for index in range(1, len(sla.get_cdn_nodes()) + 1):
-                    f.write("vCDN%d_%s\n" % (index, sla.id))
+                postfix = "%d_%d" % (self.id, sla.id)
+                for vcdn in self.topo[sla].get_vcdn():
+                    f.write("%s_%s\n" % (vcdn, postfix))
 
                     # write path to associate e2e delay
 

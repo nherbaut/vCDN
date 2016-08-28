@@ -42,7 +42,7 @@ class Substrate(Base):
     def get_nodes_sum(self):
         return sum([x[1] for x in self.nodes.items()])
 
-    def __init__(self, edges, nodesdict, cpuCost=2000, netCost=20000.0 / 10 ** 9):
+    def __init__(self, edges, nodesdict, cpuCost=2000, netCost=20000.0):
         '''
 
         :param edges: a list of edge spec

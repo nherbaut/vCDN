@@ -113,6 +113,19 @@ class ServiceTopo:
 
         return service, delay_path, delay_route
 
+    def get_vhg(self):
+        return self.__get_nodes_by_type("VHG",self.servicetopo)
+
+    def get_vcdn(self):
+        return self.__get_nodes_by_type("VCDN", self.servicetopo)
+
+    def get_cdn(self):
+        return self.__get_nodes_by_type("CDN", self.servicetopo)
+
+    def get_Starters(self):
+        return [(s,self.servicetopo.node[s]["mapping"]) for s in self.__get_nodes_by_type("S", self.servicetopo)]
+
+
     def __get_nodes_by_type(self, type, graph):
         '''
 
@@ -127,7 +140,7 @@ class ServiceTopo:
         :return: [("S2",15.12)]
         '''
         res = []
-        for node in node_connected_component(self.servicetopo.to_undirected(), "S0"):
+        for node in self.servicetopo.nodes():
             res.append((node, self.servicetopo.node[node].get("cpu", 0)))
         return res
 

@@ -33,6 +33,8 @@ class Node(Base):
         return "%s\t%e" % (self.id, self.cpu_capacity)
 
 
+
+
 class Edge(Base):
     __tablename__ = "Edge"
     id = Column(Integer, primary_key=True)
@@ -50,13 +52,14 @@ class ServiceNode(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     node_id = Column(String(16))
     service_id = Column(Integer, ForeignKey("Service.id"))
-
     sla_id = Column(Integer, ForeignKey("Sla.id"))
-
-
-
     cpu = Column(Float, )
+    def is_vhg(self):
+        return "VHG" in self.node_id
 
+
+    def is_vcdn(self):
+        return "VCDN" in self.node_id
 
 class ServiceEdge(Base):
     __tablename__ = "ServiceEdge"

@@ -100,5 +100,10 @@ def solve(service, substrate):
     substrate.write()
     mapping=solve_inplace()
     service.mapping=mapping
+    session.add(mapping)
+    session.commit()
+    res ="%s vs %s"% (mapping.objective_function,mapping.get_objective_function(substrate.cpuCost, substrate.netCost))
+    print res
+
 
 
