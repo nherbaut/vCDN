@@ -5,7 +5,6 @@ import sys
 import numpy as np
 import pandas as pd
 
-from ..core.sla import Sla
 from ..core.service import Service
 from ..core.sla import findSLAByDate
 from ..core.substrate import Substrate
@@ -67,7 +66,7 @@ tenant = Tenant(name=get_random_name())
 session.add(tenant)
 session.flush()
 
-for i in range(0, 1):
+for i in range(0, 3):
     tenant_start_count = rs.randint(low=2, high=5)
     tenant_cdn_count = rs.randint(low=1, high=3)
     draw = rs.choice(su.nodes, size=tenant_start_count + tenant_cdn_count, replace=False)
@@ -110,22 +109,16 @@ for adate in pd.date_range(date_start_forecast, date_end_forecast, freq="H"):
                 removed_slas = [str(s.id) for s in current_service.slas if s not in actives_sla]
                 logging.info("UPDATED %s REMOVED [%s]" % (current_service, removed_slas))
 
-                logging.info("service has %d mapped nodes and %d mapped edges" % (
-                    len(current_service.serviceNodes), len(current_service.serviceEdges)))
                 su.release_service(current_service)
                 current_service.slas = [s for s in current_service.slas if s in actives_sla]
                 current_service.update_mapping()
-                session.flush()
                 su.consume_service(current_service)
-                session.flush()
                 legacy_slas += current_service.slas
-                logging.info("service has %d mapped nodes and %d mapped edges" % (
-                    len(current_service.serviceNodes), len(current_service.serviceEdges)))
 
             else:  # none remaining, we have to delete the service
                 logging.info("DELETED %d" % current_service.id)
+                su.release_service(current_service)
                 session.delete(current_service)
-                su.release_service(service)
                 session.flush()
 
     new_slas = [s for s in actives_sla if s not in legacy_slas]
