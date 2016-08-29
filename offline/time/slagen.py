@@ -60,7 +60,7 @@ def fill_db_with_sla(tenant, file=None, windows=5, centroids=5, **kwargs):
         session.add(sla_instance)
 
 
-    session.commit()
+
     return (ts, ts.index[0], get_forecast_from_date(df), ts.index[-1])
 
 

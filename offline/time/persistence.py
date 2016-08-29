@@ -33,8 +33,6 @@ class Node(Base):
         return "%s\t%e" % (self.id, self.cpu_capacity)
 
 
-
-
 class Edge(Base):
     __tablename__ = "Edge"
     id = Column(Integer, primary_key=True)
@@ -54,12 +52,13 @@ class ServiceNode(Base):
     service_id = Column(Integer, ForeignKey("Service.id"))
     sla_id = Column(Integer, ForeignKey("Sla.id"))
     cpu = Column(Float, )
+
     def is_vhg(self):
         return "VHG" in self.node_id
 
-
     def is_vcdn(self):
         return "VCDN" in self.node_id
+
 
 class ServiceEdge(Base):
     __tablename__ = "ServiceEdge"
@@ -69,9 +68,12 @@ class ServiceEdge(Base):
 
     node_1_id = Column(Integer, ForeignKey("ServiceNode.id"))
     node_2_id = Column(Integer, ForeignKey("ServiceNode.id"))
+    mapping_id = Column(Integer, ForeignKey("Mapping.id"))
 
     node_1 = relationship("ServiceNode", foreign_keys=[node_1_id], cascade="all")
     node_2 = relationship("ServiceNode", foreign_keys=[node_2_id], cascade="all")
+    mapping = relationship("Mapping", cascade="all")
+
 
     bandwidth = Column(Float)
 
@@ -85,11 +87,11 @@ class NodeMapping(Base):
     service_id = Column(Integer, ForeignKey('Service.id'))
     mapping_id = Column(Integer, ForeignKey('Mapping.id'))
 
-    mapping = relationship("Mapping")
-    service = relationship("Service")
-    sla = relationship("Sla")
-    service_node = relationship('ServiceNode')
-    node = relationship('Node')
+    mapping = relationship("Mapping", cascade="save-update")
+    service = relationship("Service", cascade="save-update")
+    sla = relationship("Sla", cascade="save-update")
+    service_node = relationship('ServiceNode', cascade="save-update")
+    node = relationship('Node', cascade="save-update")
 
 
 class EdgeMapping(Base):
@@ -113,9 +115,10 @@ class EdgeMapping(Base):
 # engine = create_engine('sqlite:///%s/example.db' % RESULTS_FOLDER, echo=True)
 engine = create_engine('mysql+mysqldb://root:root@127.0.0.1/paper4', )
 
-session = sessionmaker(bind=engine)()
+session = sessionmaker(bind=engine, autocommit=True)()
 
 
 def drop_all():
     Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(engine)
+

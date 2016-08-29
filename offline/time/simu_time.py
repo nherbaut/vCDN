@@ -3,6 +3,8 @@ import sys
 
 import numpy as np
 import pandas as pd
+import logging
+
 
 from ..core.service import Service
 from ..core.sla import findSLAByDate
@@ -11,8 +13,10 @@ from ..time.namesgenerator import get_random_name
 from ..time.persistence import *
 from ..time.slagen import fill_db_with_sla
 
+
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
 
+logging.basicConfig(level=logging.DEBUG)
 
 def solve_optim(sla, substrate):
     '''
@@ -43,64 +47,86 @@ rs = np.random.RandomState(1)
 # clear the db
 drop_all()
 
+cpuCost = 2000
+netCost = 20000.0 / 10 ** 9
 # create the topo and load it
-su = Substrate.fromGrid(delay=10, cpu=50)
+su = Substrate.fromGrid(delay=10, cpu=50, cpuCost=cpuCost, netCost=netCost)
 
 for node in su.nodes:
     session.add(node)
-session.commit()
+    session.flush()
+
 for edge in su.edges:
     session.add(edge)
-session.commit()
+    session.flush()
+
 session.add(su)
-session.commit()
+session.flush()
 
 tenant = Tenant(name=get_random_name())
 session.add(tenant)
-session.commit()
+session.flush()
 
-tenant_start_count = rs.randint(low=2, high=5)
-tenant_cdn_count = rs.randint(low=1, high=3)
-draw = rs.choice(su.nodes, size=tenant_start_count + tenant_cdn_count, replace=False)
-tenant_start_nodes = draw[:tenant_start_count]
-tenant_cdn_nodes = draw[tenant_start_count:]
 
-# fill the db with some data
-# fill_db_with_sla()
-# fill_db_with_sla(tenant, substrate=su)
-ts, date_start, date_start_forecast, date_end_forecast = fill_db_with_sla(tenant, start_nodes=tenant_start_nodes,
-                                                                          cdn_nodes=tenant_cdn_nodes, substrate=su,
-                                                                          delay=200)
 
-tenant_start_count = rs.randint(low=2, high=5)
-tenant_cdn_count = rs.randint(low=1, high=3)
-draw = rs.choice(su.nodes, size=tenant_start_count + tenant_cdn_count, replace=False)
-tenant_start_nodes = draw[:tenant_start_count]
-tenant_cdn_nodes = draw[tenant_start_count:]
+for i in range(0,3):
+    tenant_start_count = rs.randint(low=2, high=5)
+    tenant_cdn_count = rs.randint(low=1, high=3)
+    draw = rs.choice(su.nodes, size=tenant_start_count + tenant_cdn_count, replace=False)
+    tenant_start_nodes = draw[:tenant_start_count]
+    tenant_cdn_nodes = draw[tenant_start_count:]
 
-ts, date_start, date_start_forecast, date_end_forecast = fill_db_with_sla(tenant, start_nodes=tenant_start_nodes,
-                                                                          cdn_nodes=tenant_cdn_nodes, substrate=su,
-                                                                          delay=200)
+    # fill the db with some data
+    # fill_db_with_sla()
+    # fill_db_with_sla(tenant, substrate=su)
+    ts, date_start, date_start_forecast, date_end_forecast = fill_db_with_sla(tenant, start_nodes=tenant_start_nodes,
+                                                                              cdn_nodes=tenant_cdn_nodes, substrate=su,
+                                                                              delay=200)
+
+
+session.flush()
 
 current_services = []
 # for each our
 for adate in pd.date_range(date_start_forecast, date_end_forecast, freq="H"):
     active_service = []
     actives_sla = findSLAByDate(adate)
-    service=Service(actives_sla)
-    service.solve()
-
+    legacy_slas = []
+    logging.info("SLAS:%s"% (" ".join([str(s.id) for s in actives_sla])))
+    print("SERVICES:%s" % ("\t ".join([str(s) for s in list(session.query(Service).all())])))
     # for each service
-    for current_service in current_services:
+
+    for current_service in session.query(Service).all():
 
         # check if all slas are still active
         if all([s in actives_sla for s in current_service.slas]):
+            logging.info(
+            "KEEP %s" % current_service)
             active_service.append(current_service)
+            legacy_slas+=current_service.slas
+
         else:  # at least one SLA is removed
             # as least one remaining?
             if any([s in actives_sla for s in current_service.slas]):
-                #keep only the current service
-                current_service.slas=[s for s in current_service.slas if s in actives_sla ]
+                pruned_slas = [s for s in current_service.slas if s in actives_sla]
+                logging.info("UPDATED %s REMOVED [%s]"%(current_service," ".join([str(s.id) for s in current_service.slas if s not in actives_sla])))
+                current_service.slas = pruned_slas
 
+                session.flush()
+
+
+                legacy_slas += current_service.slas
             else:  # none remaining, we have to delete the service
+                logging.info(
+                "DELETED %d" % current_service.id)
                 session.delete(current_service)
+                session.flush()
+    new_slas = [s for s in actives_sla if s not in legacy_slas]
+    if len(new_slas) > 0:
+        service = Service([s for s in actives_sla if s not in legacy_slas])
+        session.add(service)
+        logging.info(
+        "CREATE %s" % service)
+        session.flush()
+        service.solve()
+        session.flush()

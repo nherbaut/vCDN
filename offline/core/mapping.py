@@ -14,7 +14,7 @@ class Mapping(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
 
     service_id = Column(Integer, ForeignKey('Service.id'), nullable=False)
-    service = relationship("Service", cascade="delete", back_populates="mapping")
+    service = relationship("Service", cascade="save-update", back_populates="mapping")
 
     node_mappings = relationship("NodeMapping", cascade="all")
     edge_mappings = relationship("EdgeMapping", cascade="all")

@@ -10,7 +10,7 @@ from ..core.combinatorial import get_node_clusters, get_vhg_cdn_mapping
 
 
 class ServiceTopo:
-    def __init__(self, sla, vhg_count, vcdn_count, hint_mapping=None):
+    def __init__(self, sla, vhg_count, vcdn_count, hint_node_mappings=None):
 
         mapped_start_nodes = sla.get_start_nodes()
         mapped_cdn_nodes = sla.get_cdn_nodes()
@@ -20,10 +20,10 @@ class ServiceTopo:
         self.servicetopo, self.delay_paths, self.delay_routes = self.__compute_service_topo(
             mapped_start_nodes=mapped_start_nodes, mapped_cdn_nodes=mapped_cdn_nodes, vhg_count=vhg_count,
             vcdn_count=vcdn_count,
-            hint_mapping=hint_mapping, substrate=sla.substrate)
+            hint_node_mappings=hint_node_mappings, substrate=sla.substrate)
 
     def __compute_service_topo(self, substrate, mapped_start_nodes, mapped_cdn_nodes, vhg_count, vcdn_count,
-                               hint_mapping=None):
+                               hint_node_mappings=None):
         service = nx.DiGraph()
         service.add_node("S0", cpu=0)
 
@@ -105,8 +105,8 @@ class ServiceTopo:
                     continue
 
         # add CDN edges if available
-        if hint_mapping is not None:
-            vhg_mapping = [(nmapping.node.id, nmapping.service_node.node_id) for nmapping  in hint_mapping.node_mappings if "VHG" in nmapping.service_node.node_id]
+        if hint_node_mappings is not None:
+            vhg_mapping = [(nmapping.node.id, nmapping.service_node.node_id) for nmapping  in hint_node_mappings if "VHG" in nmapping.service_node.node_id]
             cdn_mapping = [(nm.toponode_id, "CDN%d" % index) for index, nm in enumerate(mapped_cdn_nodes, start=1)]
             for vhg, cdn in get_vhg_cdn_mapping(vhg_mapping, cdn_mapping).items():
                 service.add_edge(vhg, cdn, bandwidth=service.node[vhg]["bandwidth"])

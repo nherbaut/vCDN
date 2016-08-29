@@ -18,9 +18,9 @@ class SlaNodeSpec(Base):
     __tablename__ = 'SlaNodeSpec'
     id = Column(Integer, primary_key=True, autoincrement=True)
     sla_id = Column(Integer, ForeignKey("Sla.id"), nullable=False)
-    sla = relationship("Sla", cascade="all")
+    sla = relationship("Sla", cascade="save-update")
     toponode_id = Column(String(16), ForeignKey("Node.id"), nullable=False)
-    topoNode = relationship("Node", order_by="Node.id",cascade="all")
+    topoNode = relationship("Node", order_by="Node.id",cascade="save-update")
     type = Column(String(16))
 
 
@@ -34,16 +34,15 @@ class Sla(Base):
     max_cdn_to_use = Column(Integer)
 
 
-    tenant_id = Column(Integer, ForeignKey('tenant.id'), nullable=False)
-    tenant = relationship("Tenant", cascade="save-update")
+    tenant_id = Column(Integer, ForeignKey('tenant.id'))
+    tenant = relationship("Tenant", cascade="all")
 
 
-    sla_node_specs = relationship("SlaNodeSpec", cascade="save-update")
-
-    services = relationship("Service", secondary=service_to_sla, back_populates="slas")
+    sla_node_specs = relationship("SlaNodeSpec",cascade="all, delete-orphan")
+    services = relationship("Service", secondary=service_to_sla, back_populates="slas",cascade="all")
 
     substrate_id = Column(Integer, ForeignKey("Substrate.id"), nullable=False)
-    substrate = relationship("Substrate")
+    substrate = relationship("Substrate",cascade="all")
 
     def __str__(self):
         return "%d %d %lf %lf" % (self.start, self.cdn, self.delay, self.bandwidth)

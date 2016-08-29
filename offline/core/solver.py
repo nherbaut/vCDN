@@ -6,7 +6,7 @@ from sqlalchemy import or_, and_
 
 from ..core.mapping import Mapping
 from ..time.persistence import  session, Edge, ServiceEdge, ServiceNode, NodeMapping, EdgeMapping
-
+from sqlalchemy.orm.exc import NoResultFound
 OPTIM_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../optim')
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
 
@@ -50,14 +50,18 @@ def solve_inplace(allow_violations=False, preassign_vhg=False):
             # search node
             matches = re.findall("^x\$(.*)\$([^ \t]+)", line)
             if (len(matches) > 0):
-                node_id = matches[0][0]
-                snode_id, service_id, sla_id = matches[0][1].split("_")
-                service_node_id = session.query("ServiceNode.id").filter(
-                    and_(ServiceNode.sla_id == sla_id, ServiceNode.service_id == service_id,
-                         ServiceNode.node_id == snode_id)).one()[0]
-                nodeMapping = NodeMapping(node_id=node_id, service_node_id=service_node_id,service_id=service_id,sla_id=sla_id)
-                nodesSols.append(nodeMapping)
-                continue
+                try:
+                    node_id = matches[0][0]
+                    snode_id, service_id, sla_id = matches[0][1].split("_")
+                    service_node_id = session.query("ServiceNode.id").filter(
+                        and_(ServiceNode.sla_id == sla_id, ServiceNode.service_id == service_id,
+                             ServiceNode.node_id == snode_id)).one()[0]
+                    nodeMapping = NodeMapping(node_id=node_id, service_node_id=service_node_id,service_id=service_id,sla_id=sla_id)
+                    nodesSols.append(nodeMapping)
+
+                    continue
+                except NoResultFound as e:
+                    print e
 
             # search edge
             matches = re.findall("^y\$(.*)\$(.*)\$(.*)\$([^ \t]+)", line)
@@ -98,12 +102,12 @@ def solve_inplace(allow_violations=False, preassign_vhg=False):
 def solve(service, substrate):
     service.write()
     substrate.write()
+    session.flush()
     mapping=solve_inplace()
     service.mapping=mapping
     session.add(mapping)
-    session.commit()
-    res ="%s vs %s"% (mapping.objective_function,mapping.get_objective_function(substrate.cpuCost, substrate.netCost))
-    print res
+    session.flush()
+
 
 
 

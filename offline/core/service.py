@@ -54,7 +54,11 @@ class Service(Base):
     serviceNodes = relationship("ServiceNode", cascade="all")
     serviceEdges = relationship("ServiceEdge", cascade="all")
     slas = relationship("Sla", secondary=service_to_sla, back_populates="services",cascade="save-update")
-    mapping = relationship("Mapping", uselist=False, cascade="all", back_populates="service")
+    mapping = relationship("Mapping", uselist=False,cascade="all", back_populates="service")
+
+
+    def __str__(self):
+        return str(self.id)+" - " + " ".join([str(sla.id) for sla in self.slas])
 
     @classmethod
     def cleanup(cls):
@@ -85,13 +89,15 @@ class Service(Base):
         self.serviceSpecFactory = serviceSpecFactory
 
         self.topo = {sla: ServiceTopo(sla=sla, vhg_count=slas_spec.get(sla.id, {}).get("VHG", 1),
-                                      vcdn_count=slas_spec.get(sla.id, {}).get("VCDN", 1), hint_mapping=None) for sla in
+                                      vcdn_count=slas_spec.get(sla.id, {}).get("VCDN", 1), hint_node_mappings=None) for sla in
                      self.slas}
 
         for sla in slas:
             for node, cpu in self.topo[sla].getServiceNodes():
-                self.serviceNodes.append(ServiceNode(node_id=node, cpu=cpu, sla_id=sla.id))
-                session.commit()
+                node=ServiceNode(node_id=node, cpu=cpu, sla_id=sla.id)
+                session.add(node)
+                self.serviceNodes.append(node)
+
             for node_1, node_2, bandwidth in self.topo[sla].getServiceEdges():
                 snode_1 = session.query(ServiceNode).filter(
                     and_(ServiceNode.sla_id == sla.id, ServiceNode.service_id == self.id,
@@ -101,26 +107,37 @@ class Service(Base):
                     and_(ServiceNode.sla_id == sla.id, ServiceNode.service_id == self.id,
                          ServiceNode.node_id == node_2)).one()
 
-                self.serviceEdges.append(
-                    ServiceEdge(node_1=snode_1 , node_2=snode_2, bandwidth=bandwidth, sla_id=sla.id))
-                session.commit()
+                sedge=ServiceEdge(node_1=snode_1, node_2=snode_2, bandwidth=bandwidth, sla_id=sla.id)
+                session.add(sedge)
+                self.serviceEdges.append(sedge)
+            session.flush()
+
 
         # create temp mapping for vhg<->vcdn hints
         self.solve()
+        session.flush()
 
         if self.mapping is not None:
+
             self.topo = {sla: ServiceTopo(sla=sla, vhg_count=slas_spec.get(sla.id, {}).get("vhg", 1),
                                           vcdn_count=slas_spec.get(sla.id, {}).get("vcdn", 1),
-                                          hint_mapping=self.mapping) for sla in self.slas}
+                                          hint_node_mappings=self.mapping.node_mappings) for sla in self.slas}
             # remove temp mapping for vhg<->vcdn hints
+            #for em in self.mapping.edge_mappings:
+            #    session.delete(em)
+            #    session.flush()
+            #for nm in self.mapping.node_mappings:
+            #    session.delete(nm)
+            #   session.flush()
             session.delete(self.mapping)
+            session.flush()
 
     def solve(self):
         if len(self.slas)>0:
             solve(self, self.slas[0].substrate)
             if self.mapping is not None:
                 session.add(self.mapping)
-                session.commit()
+
             else:
                 print
                 "mapping failed"
@@ -161,7 +178,7 @@ class Service(Base):
                 topo = self.topo[sla]
                 for snode_id, cpu in topo.dump_nodes():
                     f.write("%s_%s %lf\n" % (snode_id, postfix, cpu))
-                    sys.stdout.write("%s_%s %lf\n" % (snode_id, postfix, cpu))
+                    #sys.stdout.write("%s_%s %lf\n" % (snode_id, postfix, cpu))
 
 
 

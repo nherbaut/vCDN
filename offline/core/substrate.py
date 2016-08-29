@@ -27,8 +27,8 @@ substrate_to_edge = Table('substrate_to_edges', Base.metadata,
 class Substrate(Base):
     __tablename__ = "Substrate"
     id = Column(Integer, primary_key=True, autoincrement=True)
-    nodes = relationship("Node", secondary=substrate_to_node)
-    edges = relationship("Edge", secondary=substrate_to_edge)
+    nodes = relationship("Node", secondary=substrate_to_node,cascade="all")
+    edges = relationship("Edge", secondary=substrate_to_edge,cascade="all")
     cpuCost = Column(Float)
     netCost = Column(Float)
 
@@ -42,7 +42,7 @@ class Substrate(Base):
     def get_nodes_sum(self):
         return sum([x[1] for x in self.nodes.items()])
 
-    def __init__(self, edges, nodesdict, cpuCost=2000, netCost=20000.0):
+    def __init__(self, edges, nodesdict, cpuCost=2000, netCost=20000.0 / 10 ** 9):
         '''
 
         :param edges: a list of edge spec
@@ -136,7 +136,7 @@ class Substrate(Base):
         return cls(edges, nodesdict)
 
     @classmethod
-    def fromGrid(cls, width=5, height=5, bw=10 ** 10, delay=10, cpu=10):
+    def fromGrid(cls, width=5, height=5, bw=10 ** 10, delay=10, cpu=10,cpuCost=None, netCost=None):
         edges = []
         nodes = []
 
@@ -145,8 +145,9 @@ class Substrate(Base):
                 node = Node(id=str("%02d%02d" % (i, j)), cpu_capacity=cpu)
                 nodes.append(node)
                 session.add(node)
+                session.flush()
 
-        session.commit()
+
         for i in range(1, width + 1):
             for j in range(1, height + 1):
                 if j + 1 <= height:
@@ -162,9 +163,10 @@ class Substrate(Base):
 
             for edge in edges:
                 session.add(edge)
-            session.commit()
+                session.flush()
 
-        return cls(edges, nodes)
+
+        return cls(edges, nodes,cpuCost, netCost)
 
     @classmethod
     def fromFile(cls, edges_file=os.path.join(RESULTS_FOLDER, "substrate.edges.data"),
