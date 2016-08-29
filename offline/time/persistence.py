@@ -51,6 +51,7 @@ class ServiceNode(Base):
     node_id = Column(String(16))
     service_id = Column(Integer, ForeignKey("Service.id"))
     sla_id = Column(Integer, ForeignKey("Sla.id"))
+    sla = relationship("Sla")
     cpu = Column(Float, )
 
     def is_vhg(self):
@@ -70,9 +71,10 @@ class ServiceEdge(Base):
     node_2_id = Column(Integer, ForeignKey("ServiceNode.id"))
     mapping_id = Column(Integer, ForeignKey("Mapping.id"))
 
-    node_1 = relationship("ServiceNode", foreign_keys=[node_1_id], cascade="all")
-    node_2 = relationship("ServiceNode", foreign_keys=[node_2_id], cascade="all")
-    mapping = relationship("Mapping", cascade="all")
+    node_1 = relationship("ServiceNode", foreign_keys=[node_1_id], cascade="save-update")
+    node_2 = relationship("ServiceNode", foreign_keys=[node_2_id], cascade="save-update")
+    mapping = relationship("Mapping", cascade="save-update")
+    sla = relationship("Sla", cascade="save-update")
 
 
     bandwidth = Column(Float)

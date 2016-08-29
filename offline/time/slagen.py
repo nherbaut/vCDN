@@ -11,7 +11,7 @@ import pandas as pd
 from ..core.sla import Sla
 from ..time.SLA3D import get_tse, chunk_serie_as_sla
 from ..time.persistence import session
-
+import numpy as np
 TIME_PATH = os.path.dirname(os.path.realpath(__file__))
 
 
@@ -41,7 +41,7 @@ def fill_db_with_sla(tenant, file=None, windows=5, centroids=5, **kwargs):
 
     df = pd.read_csv(os.path.join(TIME_PATH, "output.csv"))
 
-    ts = pd.Series(data=df["fcmean"].values,
+    ts = pd.Series(data=df["fcmean"].values/np.max(df["fcmean"].values)*10**9,
                    index=df.apply(lambda row: datetime.datetime.strptime(row['Index'], '%Y-%m-%d %H:%M:%S'),
                                   axis=1).values)
     ts_forecasts = ts[get_forecast_from_date(df):]

@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer
 from sqlalchemy import and_
 from sqlalchemy.orm import relationship
-import sys
+
 from ..core.service_topo import ServiceTopo
 from ..core.sla import Sla
 from ..core.solver import solve
@@ -56,9 +56,34 @@ class Service(Base):
     slas = relationship("Sla", secondary=service_to_sla, back_populates="services",cascade="save-update")
     mapping = relationship("Mapping", uselist=False,cascade="all", back_populates="service")
 
+    def update_mapping(self):
+
+        for em in self.mapping.edge_mappings:
+            if em.serviceEdge.sla not in self.slas:
+                session.delete(em)
+                session.flush()
+
+
+        for nm in self.mapping.node_mappings:
+            if nm.sla not in self.slas:
+                session.delete(nm)
+                session.flush()
+
+        for se in self.serviceEdges:
+            if se.sla not in self.slas:
+
+                session.delete(se)
+                session.flush()
+
+        for sn in self.serviceNodes:
+            if sn.sla not in self.slas:
+                session.delete(sn)
+                session.flush()
+
+        self.mapping.objective_function = self.mapping.get_objective_function(cpu_cost=self.slas[0].substrate.cpuCost,net_cost=self.slas[0].substrate.netCost)
 
     def __str__(self):
-        return str(self.id)+" - " + " ".join([str(sla.id) for sla in self.slas])
+        return str(self.id) + " - " + " ".join([str(sla.id) for sla in self.slas])
 
     @classmethod
     def cleanup(cls):
@@ -89,12 +114,13 @@ class Service(Base):
         self.serviceSpecFactory = serviceSpecFactory
 
         self.topo = {sla: ServiceTopo(sla=sla, vhg_count=slas_spec.get(sla.id, {}).get("VHG", 1),
-                                      vcdn_count=slas_spec.get(sla.id, {}).get("VCDN", 1), hint_node_mappings=None) for sla in
+                                      vcdn_count=slas_spec.get(sla.id, {}).get("VCDN", 1), hint_node_mappings=None) for
+                     sla in
                      self.slas}
 
         for sla in slas:
             for node, cpu in self.topo[sla].getServiceNodes():
-                node=ServiceNode(node_id=node, cpu=cpu, sla_id=sla.id)
+                node = ServiceNode(node_id=node, cpu=cpu, sla_id=sla.id)
                 session.add(node)
                 self.serviceNodes.append(node)
 
@@ -107,33 +133,31 @@ class Service(Base):
                     and_(ServiceNode.sla_id == sla.id, ServiceNode.service_id == self.id,
                          ServiceNode.node_id == node_2)).one()
 
-                sedge=ServiceEdge(node_1=snode_1, node_2=snode_2, bandwidth=bandwidth, sla_id=sla.id)
+                sedge = ServiceEdge(node_1=snode_1, node_2=snode_2, bandwidth=bandwidth, sla_id=sla.id)
                 session.add(sedge)
                 self.serviceEdges.append(sedge)
             session.flush()
-
 
         # create temp mapping for vhg<->vcdn hints
         self.solve()
         session.flush()
 
         if self.mapping is not None:
-
             self.topo = {sla: ServiceTopo(sla=sla, vhg_count=slas_spec.get(sla.id, {}).get("vhg", 1),
                                           vcdn_count=slas_spec.get(sla.id, {}).get("vcdn", 1),
                                           hint_node_mappings=self.mapping.node_mappings) for sla in self.slas}
             # remove temp mapping for vhg<->vcdn hints
-            #for em in self.mapping.edge_mappings:
+            # for em in self.mapping.edge_mappings:
             #    session.delete(em)
             #    session.flush()
-            #for nm in self.mapping.node_mappings:
+            # for nm in self.mapping.node_mappings:
             #    session.delete(nm)
             #   session.flush()
             session.delete(self.mapping)
             session.flush()
 
     def solve(self):
-        if len(self.slas)>0:
+        if len(self.slas) > 0:
             solve(self, self.slas[0].substrate)
             if self.mapping is not None:
                 session.add(self.mapping)
@@ -171,14 +195,13 @@ class Service(Base):
                 for start, end, bw in topo.dump_edges():
                     f.write("%s_%s %s_%s %lf\n" % (start, postfix, end, postfix, bw))
 
-
         with open(os.path.join(RESULTS_FOLDER, "service.nodes.data"), mode) as f:
             for sla in self.slas:
                 postfix = "%d_%d" % (self.id, sla.id)
                 topo = self.topo[sla]
                 for snode_id, cpu in topo.dump_nodes():
                     f.write("%s_%s %lf\n" % (snode_id, postfix, cpu))
-                    #sys.stdout.write("%s_%s %lf\n" % (snode_id, postfix, cpu))
+                    # sys.stdout.write("%s_%s %lf\n" % (snode_id, postfix, cpu))
 
 
 
@@ -195,14 +218,14 @@ class Service(Base):
             for sla in self.slas:
                 postfix = "%d_%d" % (self.id, sla.id)
                 for s, topo in self.topo[sla].get_Starters():
-                    f.write("%s_%s %s\n" % (s, postfix,topo))
+                    f.write("%s_%s %s\n" % (s, postfix, topo))
 
         # write the names of the VHG Nodes
         with open(os.path.join(RESULTS_FOLDER, "VHG.nodes.data"), mode) as f:
             for sla in self.slas:
                 postfix = "%d_%d" % (self.id, sla.id)
                 for vhg in self.topo[sla].get_vhg():
-                    f.write("%s_%s\n" % (vhg,postfix ))
+                    f.write("%s_%s\n" % (vhg, postfix))
 
         # write the names of the VCDN nodes (is it still used?)
         with open(os.path.join(RESULTS_FOLDER, "VCDN.nodes.data"), mode) as f:
@@ -231,5 +254,3 @@ class Service(Base):
     @classmethod
     def getFromSla(cls, sla):
         return session.query(Service).filter(Sla.id == sla.id).join(Service.slas).filter(Sla.id == sla.id).one()
-
-

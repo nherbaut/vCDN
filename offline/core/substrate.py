@@ -37,10 +37,10 @@ class Substrate(Base):
         return "%e\t%e" % (self.get_edges_sum(), self.get_edges_sum())
 
     def get_edges_sum(self):
-        return sum([x[2] for x in self.edges])
+        return sum([x.bandwidth for x in self.edges])
 
     def get_nodes_sum(self):
-        return sum([x[1] for x in self.nodes.items()])
+        return sum([x.cpu for x in self.nodes.items()])
 
     def __init__(self, edges, nodesdict, cpuCost=2000, netCost=20000.0 / 10 ** 9):
         '''
