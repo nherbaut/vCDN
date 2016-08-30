@@ -21,7 +21,7 @@ def chunk_serie_as_sla(serie):
     # as long as we have observations >0
     while not serie.empty:
         min = np.min(serie)
-        for i in np.split(serie.index, np.where(np.diff(serie.index) / pd.Timedelta('1 H') != 1)[0] + 1):
+        for i in np.split(serie.index, np.where(np.diff(serie.index) / pd.Timedelta('1H') != 1)[0] + 1):
             res.append(pd.Series(min, index=i))
         serie = serie - min
         serie = serie[serie > 0]

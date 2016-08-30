@@ -10,10 +10,10 @@ library("rPython")
 
 
 option_list = list(
-    make_option(c("-r", "--random"), action="store_true", default=TRUE),
+
     make_option(c("-p", "--plot"), action="store_true", default=FALSE),
     make_option(c("-o", "--out"), type="character", default="./forecast.csv", help="output file name [default= %default]", metavar="character"),
-    make_option(c("-i", "--in_file"), type="character", default="../data/marseille.csv", help="intput file name [default= %default]", metavar="character"),
+    make_option(c("-i", "--in_file"), type="character", help="intput file name [default= %default]", metavar="character"),
 	make_option(c("-l", "--lengthforecast"), type="numeric", default=30, help="Number of forcast to generate", metavar="numeric"),
 	make_option(c("-t", "--limit"), type="numeric", default=30, help="limit reading the file up to ith element", metavar="numeric")
 	
@@ -22,15 +22,18 @@ option_list = list(
 opt_parser = OptionParser(option_list=option_list);
 opt = parse_args(opt_parser);
 
-if(opt$random==TRUE){
+
+if(is.null(opt$in_file)){
 	print("Generating random data")
 	python.load("random_traffic.py")
 	python.call("generate_random_traffic",output_path=opt$out,size=100)
 	v<-read.csv(file=opt$out,header=FALSE)
 }else {
-	print("using specified file")
+  print("using specified file")
 	#read simulation file
 	v<-read.csv(file=opt$in_file,header=FALSE)
+
+
 }
 
 
