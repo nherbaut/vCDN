@@ -1,6 +1,6 @@
 import scipy
 import scipy.integrate as integrate
-from sqlalchemy import Column, Integer, DateTime, Float, ForeignKey, String,  PickleType
+from sqlalchemy import Column, Integer, DateTime, Float, ForeignKey, String, PickleType
 from sqlalchemy.orm import relationship
 
 from ..time.persistence import session, Base, service_to_sla
@@ -20,7 +20,7 @@ class SlaNodeSpec(Base):
     sla_id = Column(Integer, ForeignKey("Sla.id"), nullable=False)
     sla = relationship("Sla", cascade="save-update")
     toponode_id = Column(String(16), ForeignKey("Node.id"), nullable=False)
-    topoNode = relationship("Node", order_by="Node.id",cascade="save-update")
+    topoNode = relationship("Node", order_by="Node.id", cascade="save-update")
     attributes = Column(PickleType)
     type = Column(String(16))
 
@@ -34,32 +34,32 @@ class Sla(Base):
     delay = Column(Float)
     max_cdn_to_use = Column(Integer)
 
-
     tenant_id = Column(Integer, ForeignKey('tenant.id'))
     tenant = relationship("Tenant", cascade="all")
 
-
-    sla_node_specs = relationship("SlaNodeSpec",cascade="all, delete-orphan")
-    services = relationship("Service", secondary=service_to_sla, back_populates="slas",cascade="all")
+    sla_node_specs = relationship("SlaNodeSpec", cascade="all, delete-orphan")
+    services = relationship("Service", secondary=service_to_sla, back_populates="slas", cascade="all")
 
     substrate_id = Column(Integer, ForeignKey("Substrate.id"), nullable=False)
-    substrate = relationship("Substrate",cascade="all")
+    substrate = relationship("Substrate", cascade="all")
 
     def __str__(self):
         return "%d %d %lf %lf" % (self.start, self.cdn, self.delay, self.bandwidth)
 
     def __init__(self, *args, **kwargs):
+        '''
+        :param start_nodes: a list of nodes with their metadata includeing bandwidth {"S1":{"bandwidth":12},"S2":{"bandwidth":13}}
+        :param args:
+        :param kwargs:
+        '''
         self.start_date = kwargs.get("start_date", None)
         self.end_date = kwargs.get("end_date", None)
         self.bandwidth = kwargs.get("bandwidth", None)
         self.tenant_id = kwargs.get("tenant_id", None)
         self.max_cdn_to_use = kwargs.get("max_cdn_to_use", None)
         self.delay = kwargs.get("delay", None)
-        for start_node in kwargs.get("start_nodes", []):
-            self.sla_node_specs.append(SlaNodeSpec(toponode_id=start_node.id, type="start"))
-        for cdn_node in kwargs.get("cdn_nodes", []):
-            self.sla_node_specs.append(SlaNodeSpec(toponode_id=cdn_node.id, type="cdn"))
         self.substrate = kwargs.get("substrate", None)
+        self.sla_node_specs = kwargs.get("sla_node_specs", [])
 
     def get_start_nodes(self):
         return filter(lambda x: x.type == "start", self.sla_node_specs)
@@ -93,25 +93,21 @@ def generate_random_slas(rs, substrate, count=1000, start_count=0, end_count=0, 
         delay = tcp_win / bitrate * 1000.0
         bandwidth = count * bitrate * movie_duration / time_span
 
+        if not (start_count > 0 and end_count > 0):
+            start_count = rs.randint(low=1, high=5)
+            end_count = rs.randint(low=1, high=start_count)
 
-        if not (start_count>0 and end_count>0):
-            start_count=rs.randint(low=1, high=5)
-            end_count= rs.randint(low=1, high=start_count)
-
-        random_nodes= rs.choice(substrate.nodes, size=start_count+end_count, replace=False)
-
+        random_nodes = rs.choice(substrate.nodes, size=start_count + end_count, replace=False)
 
         start_nodes = random_nodes[:start_count]
 
         cdn_nodes = random_nodes[start_count:]
 
-
-
         res.append(
             Sla(start_date=None, end_date=None,
-                bandwidth=bandwidth ,
+                bandwidth=bandwidth,
                 tenant_id=tenant.id,
-                start_nodes=start_nodes ,
+                start_nodes=start_nodes,
                 cdn_nodes=cdn_nodes,
                 substrate=substrate,
                 delay=delay

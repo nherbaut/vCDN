@@ -225,14 +225,14 @@ class Service(Base):
             for sla in self.slas:
                 postfix = "%d_%d" % (self.id, sla.id)
                 for vhg in self.topo[sla].get_vhg():
-                    f.write("%s_%s\n" % (vhg, postfix,self.get_vhg_cost(vhg)))
+                    f.write("%s_%s %e\n" % (vhg, postfix,self.get_vhg_cost(vhg)))
 
         # write the names of the VCDN nodes (is it still used?)
         with open(os.path.join(RESULTS_FOLDER, "VCDN.nodes.data"), mode) as f:
             for sla in self.slas:
                 postfix = "%d_%d" % (self.id, sla.id)
                 for vcdn in self.topo[sla].get_vcdn():
-                    f.write("%s_%s\n" % (vcdn, postfix,self.get_vcdn_cost(vcdn)))
+                    f.write("%s_%s %e\n" % (vcdn, postfix,self.get_vcdn_cost(vcdn)))
 
                     # write path to associate e2e delay
 

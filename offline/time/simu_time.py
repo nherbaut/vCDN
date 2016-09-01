@@ -66,7 +66,7 @@ tenant = Tenant(name=get_random_name())
 session.add(tenant)
 session.flush()
 
-for i in range(0, 3):
+for i in range(0, 1):
     tenant_start_count = rs.randint(low=2, high=5)
     tenant_cdn_count = rs.randint(low=1, high=3)
     draw = rs.choice(su.nodes, size=tenant_start_count + tenant_cdn_count, replace=False)
@@ -76,7 +76,7 @@ for i in range(0, 3):
     # fill the db with some data
     # fill_db_with_sla()
     # fill_db_with_sla(tenant, substrate=su)
-    ts, date_start, date_start_forecast, date_end_forecast = fill_db_with_sla(tenant, start_nodes=tenant_start_nodes,
+    date_start_forecast, date_end_forecast = fill_db_with_sla(tenant, start_nodes=tenant_start_nodes,
                                                                               cdn_nodes=tenant_cdn_nodes, substrate=su,
                                                                               delay=200)
 

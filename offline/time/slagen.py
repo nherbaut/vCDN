@@ -9,8 +9,8 @@ import subprocess
 import numpy as np
 import pandas as pd
 
-from ..core.sla import Sla
-from ..time.SLA3D import get_tse, chunk_serie_as_sla
+from ..core.sla import Sla, SlaNodeSpec
+from ..time.SLA3D import get_tse, chunk_series_as_sla
 from ..time.persistence import session
 
 TIME_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -42,7 +42,9 @@ def get_forecast(file, windows, centroids):
     return tse
 
 
-def fill_db_with_sla(tenant, file=None, windows=5, centroids=5, **kwargs):
+def fill_db_with_sla(tenant, file=None, windows=5, centroids=5,
+                     data_files=sorted([file for file in os.listdir(DATA_FOLDER) if file.endswith("-daily_1H.csvx")]),
+                     **kwargs):
     '''
 
     :param file: the file to read the data from
@@ -57,30 +59,35 @@ def fill_db_with_sla(tenant, file=None, windows=5, centroids=5, **kwargs):
     '''
     locale.setlocale(locale.LC_ALL, 'en_US.utf8')
 
-    forecast_series_count = len(kwargs.get("start_nodes", []))
+    start_nodes = [node.id for node in kwargs.get("start_nodes", [])]
+    cdn_nodes = [node.id for node in kwargs.get("cdn_nodes", [])]
+    forecast_series_count = len(start_nodes)
 
-    data_files = []
-    for file in os.listdir(DATA_FOLDER):
-        if file.endswith("-daily_1H.csvx"):
-            data_files.append(file)
+    file_to_node = dict(zip(data_files, start_nodes))
 
-    tses = {file: get_forecast(os.path.join(DATA_FOLDER, file), windows, centroids) for file in data_files[0:forecast_series_count]}
+    tses = {file: get_forecast(os.path.join(DATA_FOLDER, file), windows, centroids) for file in
+            data_files[0:forecast_series_count]}
 
+    for sla in chunk_series_as_sla(tses):
 
+        nodespecs = []
+        for key, value in [(file_to_node[key], value) for key, value in sla.items()]:
+            ns = SlaNodeSpec(toponode_id=key, type="start", attributes={"bandwidth": np.mean(value)})
+            session.add(ns)
+            nodespecs.append(ns)
 
-    for sla in chunk_serie_as_sla(tses[0]):
-        sla_instance = Sla(start_date=pd.to_datetime(sla.index[0]), end_date=pd.to_datetime(sla.index[-1]),
-                           bandwidth=sla[0],
+        nodespecs += [SlaNodeSpec(toponode_id=cdn_node, type="cdn") for cdn_node in cdn_nodes]
+
+        sla_instance = Sla(start_date=pd.to_datetime(value.index[0]), end_date=pd.to_datetime(value.index[-1]),
                            tenant_id=tenant.id,
-                           start_nodes=kwargs.get("start_nodes", []),
-                           cdn_nodes=kwargs.get("cdn_nodes", []),
+                           sla_node_specs=nodespecs,
                            substrate=kwargs.get("substrate", None),
                            delay=kwargs.get("delay", 50)
                            )
-
         session.add(sla_instance)
+        session.flush()
 
-    return (ts, ts.index[0], get_forecast_from_date(df), ts.index[-1])
+    return tses.values()[0].index[0], tses.values()[0].index[-1]
 
 
 if __name__ == "__main__":
