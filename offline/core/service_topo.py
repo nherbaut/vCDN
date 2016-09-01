@@ -3,7 +3,6 @@ import operator
 import sys
 
 import networkx as nx
-from networkx.algorithms.components.connected import node_connected_component
 from networkx.algorithms.shortest_paths.generic import shortest_path
 
 from ..core.combinatorial import get_node_clusters, get_vhg_cdn_mapping
@@ -31,10 +30,10 @@ class ServiceTopo:
             service.add_node("VHG%d" % i, type="VHG", cpu=1)
 
         for i in range(1, vcdn_count + 1):
-            service.add_node("VCDN%d" % i, type="VCDN", cpu=5, delay=self.delay)
+            service.add_node("VCDN%d" % i, type="VCDN", cpu=5, delay=self.delay, ratio=0.35)
 
         for index, cdn in enumerate(mapped_cdn_nodes, start=1):
-            service.add_node("CDN%d" % index, type="CDN", cpu=0)
+            service.add_node("CDN%d" % index, type="CDN", cpu=0, ratio=0.65)
 
         for key, topoNode in enumerate(mapped_start_nodes, start=1):
             service.add_node("S%d" % key, cpu=0, type="S", mapping=topoNode.toponode_id)
@@ -72,20 +71,22 @@ class ServiceTopo:
             if len(winners) == 1:
                 service.add_edge(vhg, winners[0], bandwidth=0)
             else:
-                #print("several winners... %s taking the first one" % str(winners))
+                # print("several winners... %s taking the first one" % str(winners))
                 service.add_edge(vhg, winners[0], bandwidth=0)
 
-        service.node["S0"]["bandwidth"] = 1  # sla.bandwidth
-
         # assign bandwidth
-        workin_nodes = ["S0"]
+        workin_nodes = []
+        for index, sla_node_spec in enumerate(mapped_start_nodes, start=1):
+            service.node["S%d" % index]["bandwidth"] = sla_node_spec.attributes["bandwidth"]
+            workin_nodes.append("S%d" % index)
+
         while len(workin_nodes) > 0:
             node = workin_nodes.pop()
             bandwidth = service.node[node].get("bandwidth", 0.0)
             children = service[node].items()
             for subnode, data in children:
                 workin_nodes.append(subnode)
-                edge_bw = bandwidth / float(len(children))
+                edge_bw = bandwidth / float(len(children)) * service.node[subnode].get("ratio",1.0)
                 service[node][subnode]["bandwidth"] = edge_bw
                 service.node[subnode]["bandwidth"] = service.node[subnode].get("bandwidth", 0.0) + edge_bw
 
@@ -106,7 +107,8 @@ class ServiceTopo:
 
         # add CDN edges if available
         if hint_node_mappings is not None:
-            vhg_mapping = [(nmapping.node.id, nmapping.service_node.node_id) for nmapping  in hint_node_mappings if "VHG" in nmapping.service_node.node_id]
+            vhg_mapping = [(nmapping.node.id, nmapping.service_node.node_id) for nmapping in hint_node_mappings if
+                           "VHG" in nmapping.service_node.node_id]
             cdn_mapping = [(nm.toponode_id, "CDN%d" % index) for index, nm in enumerate(mapped_cdn_nodes, start=1)]
             for vhg, cdn in get_vhg_cdn_mapping(vhg_mapping, cdn_mapping).items():
                 service.add_edge(vhg, cdn, bandwidth=service.node[vhg]["bandwidth"])
@@ -114,7 +116,7 @@ class ServiceTopo:
         return service, delay_path, delay_route
 
     def get_vhg(self):
-        return self.__get_nodes_by_type("VHG",self.servicetopo)
+        return self.__get_nodes_by_type("VHG", self.servicetopo)
 
     def get_vcdn(self):
         return self.__get_nodes_by_type("VCDN", self.servicetopo)
@@ -123,8 +125,7 @@ class ServiceTopo:
         return self.__get_nodes_by_type("CDN", self.servicetopo)
 
     def get_Starters(self):
-        return [(s,self.servicetopo.node[s]["mapping"]) for s in self.__get_nodes_by_type("S", self.servicetopo)]
-
+        return [(s, self.servicetopo.node[s]["mapping"]) for s in self.__get_nodes_by_type("S", self.servicetopo)]
 
     def __get_nodes_by_type(self, type, graph):
         '''
@@ -146,7 +147,7 @@ class ServiceTopo:
 
     def getServiceNodes(self):
         for node in self.servicetopo.nodes(data=True):
-            yield node[0], node[1].get("bandwidth", 0)
+            yield node[0], node[1].get("cpu", 0)
 
     def dump_edges(self):
         '''
@@ -156,7 +157,7 @@ class ServiceTopo:
         for start, ends in self.servicetopo.edge.items():
             for end in ends:
                 edge = self.servicetopo[start][end]
-                res.append((start , end , edge["bandwidth"]))
+                res.append((start, end, edge["bandwidth"]))
         return res
 
     def getServiceEdges(self):
@@ -189,6 +190,6 @@ class ServiceTopo:
         res = []
         for path, segments in self.delay_routes.items():
             for segment in segments:
-                res.append((path,  segment[0], segment[1]))
+                res.append((path, segment[0], segment[1]))
 
         return res

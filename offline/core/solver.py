@@ -105,7 +105,8 @@ def solve(service, substrate):
     session.flush()
     mapping=solve_inplace()
     service.mapping=mapping
-    session.add(mapping)
+    if mapping is not None:
+        session.add(mapping)
     session.flush()
 
 

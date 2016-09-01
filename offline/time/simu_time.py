@@ -49,7 +49,7 @@ drop_all()
 cpuCost = 2000
 netCost = 20000.0 / 10 ** 9
 # create the topo and load it
-su = Substrate.fromGrid(delay=10, cpu=50, cpuCost=cpuCost, netCost=netCost)
+su = Substrate.fromGrid(delay=10, cpu=1000, cpuCost=cpuCost, netCost=netCost)
 
 for node in su.nodes:
     session.add(node)
@@ -128,10 +128,12 @@ for adate in pd.date_range(date_start_forecast, date_end_forecast, freq="H"):
         logging.info("CREATE %s" % service)
         session.flush()
         service.solve()
-        su.consume_service(service)
         if service.mapping is not None:
+            su.consume_service(service)
+            su.write()
             logging.info("CREATION SUCCESSFUL")
         else:
-            exit(-1)
+            logging.info("CAN'T EMBED SERVICE")
+            session.delete(service)
 
         session.flush()
