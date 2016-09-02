@@ -1,9 +1,12 @@
-from sqlalchemy import Column, Integer
+import sys
+from collections import Counter
+
+from sqlalchemy import Column, Integer, ForeignKey
 from sqlalchemy import and_
 from sqlalchemy.orm import relationship
 
 from ..core.service_topo import ServiceTopo
-from ..core.sla import Sla
+from ..core.sla import Sla, SlaNodeSpec
 from ..core.solver import solve
 from ..time.persistence import *
 
@@ -51,10 +54,12 @@ def get_vcdn_count(self):
 class Service(Base):
     __tablename__ = "Service"
     id = Column(Integer, primary_key=True, autoincrement=True)
+    sla_id = Column(Integer, ForeignKey("Sla.id"))
     serviceNodes = relationship("ServiceNode", cascade="all")
     serviceEdges = relationship("ServiceEdge", cascade="all")
-    slas = relationship("Sla", secondary=service_to_sla, back_populates="services",cascade="save-update")
-    mapping = relationship("Mapping", uselist=False,cascade="all", back_populates="service")
+    slas = relationship("Sla", secondary=service_to_sla, back_populates="services", cascade="save-update")
+    merged_sla = relationship("Sla", foreign_keys=[sla_id], cascade="save-update")
+    mapping = relationship("Mapping", uselist=False, cascade="all", back_populates="service")
 
     def update_mapping(self):
 
@@ -63,7 +68,6 @@ class Service(Base):
                 session.delete(em)
                 session.flush()
 
-
         for nm in self.mapping.node_mappings:
             if nm.sla not in self.slas:
                 session.delete(nm)
@@ -71,7 +75,6 @@ class Service(Base):
 
         for se in self.serviceEdges:
             if se.sla not in self.slas:
-
                 session.delete(se)
                 session.flush()
 
@@ -80,7 +83,8 @@ class Service(Base):
                 session.delete(sn)
                 session.flush()
 
-        self.mapping.objective_function = self.mapping.get_objective_function(cpu_cost=self.slas[0].substrate.cpuCost,net_cost=self.slas[0].substrate.netCost)
+        self.mapping.objective_function = self.mapping.get_objective_function(cpu_cost=self.slas[0].substrate.cpuCost,
+                                                                              net_cost=self.slas[0].substrate.netCost)
 
     def __str__(self):
         return str(self.id) + " - " + " ".join([str(sla.id) for sla in self.slas])
@@ -109,16 +113,39 @@ class Service(Base):
 
         return serviceSpecs
 
+    def __get_merged_sla(self, slas):
+        # create a dict that can accumulate
+        merge_sla = Counter()
+        # for every SLA
+        min_delay = sys.float_info.max
+        for sla in self.slas:
+            # accumulate in the dict
+            merge_sla += Counter({node.toponode_id: node.attributes["bandwidth"] for node in sla.get_start_nodes()})
+            min_delay = min(sla.delay, min_delay)
+        # create the node specs
+        merge_sla_nodes_specs = []
+
+        for key, value in merge_sla.items():
+            merge_sla_nodes_specs.append(SlaNodeSpec(toponode_id=key, attributes={"bandwidth": value}, type="start"))
+
+        merge_sla_nodes_specs += slas[0].get_cdn_nodes()
+
+        # create the sla
+        return Sla(sla_node_specs=merge_sla_nodes_specs, substrate=slas[0].substrate, delay=min_delay)
+
     def __init__(self, slas, serviceSpecFactory=ServiceSpecFactory, slas_spec={}):
         self.slas = slas
+        self.merged_sla = self.__get_merged_sla(slas)
+        print("you i like you" + str(self.merged_sla))
         self.serviceSpecFactory = serviceSpecFactory
 
         self.topo = {sla: ServiceTopo(sla=sla, vhg_count=slas_spec.get(sla.id, {}).get("VHG", 1),
                                       vcdn_count=slas_spec.get(sla.id, {}).get("VCDN", 1), hint_node_mappings=None) for
                      sla in
-                     self.slas}
+                     [self.merged_sla]}
+        # self.slas}
 
-        for sla in slas:
+        for sla in [self.merged_sla]:
             for node, cpu in self.topo[sla].getServiceNodes():
                 node = ServiceNode(node_id=node, cpu=cpu, sla_id=sla.id)
                 session.add(node)
@@ -145,7 +172,7 @@ class Service(Base):
         if self.mapping is not None:
             self.topo = {sla: ServiceTopo(sla=sla, vhg_count=slas_spec.get(sla.id, {}).get("vhg", 1),
                                           vcdn_count=slas_spec.get(sla.id, {}).get("vcdn", 1),
-                                          hint_node_mappings=self.mapping.node_mappings) for sla in self.slas}
+                                          hint_node_mappings=self.mapping.node_mappings) for sla in [self.merged_sla]}
             # remove temp mapping for vhg<->vcdn hints
             # for em in self.mapping.edge_mappings:
             #    session.delete(em)
@@ -186,17 +213,19 @@ class Service(Base):
     def write(self):
 
         mode = "w"
+        # slas = self.slas
+        slas = [self.merged_sla]
 
         # write info on the edge
         with open(os.path.join(RESULTS_FOLDER, "service.edges.data"), mode) as f:
-            for sla in self.slas:
+            for sla in slas:
                 postfix = "%d_%d" % (self.id, sla.id)
                 topo = self.topo[sla]
                 for start, end, bw in topo.dump_edges():
                     f.write("%s_%s %s_%s %lf\n" % (start, postfix, end, postfix, bw))
 
         with open(os.path.join(RESULTS_FOLDER, "service.nodes.data"), mode) as f:
-            for sla in self.slas:
+            for sla in slas:
                 postfix = "%d_%d" % (self.id, sla.id)
                 topo = self.topo[sla]
                 for snode_id, cpu in topo.dump_nodes():
@@ -208,36 +237,36 @@ class Service(Base):
 
                     # write constraints on CDN placement
         with open(os.path.join(RESULTS_FOLDER, "CDN.nodes.data"), mode) as f:
-            for sla in self.slas:
+            for sla in slas:
                 postfix = "%d_%d" % (self.id, sla.id)
                 for index, value in enumerate(sla.get_cdn_nodes(), start=1):
                     f.write("CDN%d_%s %s\n" % (index, postfix, value.toponode_id))
 
         # write constraints on starter placement
         with open(os.path.join(RESULTS_FOLDER, "starters.nodes.data"), mode) as f:
-            for sla in self.slas:
+            for sla in slas:
                 postfix = "%d_%d" % (self.id, sla.id)
                 for s, topo in self.topo[sla].get_Starters():
                     f.write("%s_%s %s\n" % (s, postfix, topo))
 
         # write the names of the VHG Nodes
         with open(os.path.join(RESULTS_FOLDER, "VHG.nodes.data"), mode) as f:
-            for sla in self.slas:
+            for sla in slas:
                 postfix = "%d_%d" % (self.id, sla.id)
                 for vhg in self.topo[sla].get_vhg():
-                    f.write("%s_%s %e\n" % (vhg, postfix,self.get_vhg_cost(vhg)))
+                    f.write("%s_%s %e\n" % (vhg, postfix, self.get_vhg_cost(vhg)))
 
         # write the names of the VCDN nodes (is it still used?)
         with open(os.path.join(RESULTS_FOLDER, "VCDN.nodes.data"), mode) as f:
-            for sla in self.slas:
+            for sla in slas:
                 postfix = "%d_%d" % (self.id, sla.id)
                 for vcdn in self.topo[sla].get_vcdn():
-                    f.write("%s_%s %e\n" % (vcdn, postfix,self.get_vcdn_cost(vcdn)))
+                    f.write("%s_%s %e\n" % (vcdn, postfix, self.get_vcdn_cost(vcdn)))
 
                     # write path to associate e2e delay
 
         with open(os.path.join(RESULTS_FOLDER, "service.path.delay.data"), "w") as f:
-            for sla in self.slas:
+            for sla in slas:
                 postfix = "%d_%d" % (self.id, sla.id)
                 topo = self.topo[sla]
                 for path, delay in topo.dump_delay_paths():
@@ -245,7 +274,7 @@ class Service(Base):
 
         # write e2e delay constraint
         with open(os.path.join(RESULTS_FOLDER, "service.path.data"), "w") as f:
-            for sla in self.slas:
+            for sla in slas:
                 postfix = "%d_%d" % (self.id, sla.id)
                 topo = self.topo[sla]
                 for path, s1, s2 in topo.dump_delay_routes():
@@ -255,10 +284,8 @@ class Service(Base):
     def getFromSla(cls, sla):
         return session.query(Service).filter(Sla.id == sla.id).join(Service.slas).filter(Sla.id == sla.id).one()
 
-
-
-    def get_vhg_cost(self,vhg):
+    def get_vhg_cost(self, vhg):
         return 1
 
-    def get_vcdn_cost(self,vcdn):
+    def get_vcdn_cost(self, vcdn):
         return 1

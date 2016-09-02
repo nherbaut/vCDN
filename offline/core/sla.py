@@ -17,7 +17,7 @@ def concurrentUsers(t, m, sigma, duration):
 class SlaNodeSpec(Base):
     __tablename__ = 'SlaNodeSpec'
     id = Column(Integer, primary_key=True, autoincrement=True)
-    sla_id = Column(Integer, ForeignKey("Sla.id"), nullable=False)
+    sla_id = Column(Integer, ForeignKey("Sla.id"))
     sla = relationship("Sla", cascade="save-update")
     toponode_id = Column(String(16), ForeignKey("Node.id"), nullable=False)
     topoNode = relationship("Node", order_by="Node.id", cascade="save-update")
@@ -30,7 +30,6 @@ class Sla(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     start_date = Column(DateTime)
     end_date = Column(DateTime)
-    bandwidth = Column(Float)
     delay = Column(Float)
     max_cdn_to_use = Column(Integer)
 
@@ -40,11 +39,10 @@ class Sla(Base):
     sla_node_specs = relationship("SlaNodeSpec", cascade="all, delete-orphan")
     services = relationship("Service", secondary=service_to_sla, back_populates="slas", cascade="all")
 
-    substrate_id = Column(Integer, ForeignKey("Substrate.id"), nullable=False)
+    substrate_id = Column(Integer, ForeignKey("Substrate.id"))
     substrate = relationship("Substrate", cascade="all")
 
-    def __str__(self):
-        return "%d %d %lf %lf" % (self.start, self.cdn, self.delay, self.bandwidth)
+
 
     def __init__(self, *args, **kwargs):
         '''
@@ -54,7 +52,6 @@ class Sla(Base):
         '''
         self.start_date = kwargs.get("start_date", None)
         self.end_date = kwargs.get("end_date", None)
-        self.bandwidth = kwargs.get("bandwidth", None)
         self.tenant_id = kwargs.get("tenant_id", None)
         self.max_cdn_to_use = kwargs.get("max_cdn_to_use", None)
         self.delay = kwargs.get("delay", None)
