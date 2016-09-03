@@ -13,7 +13,7 @@ RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../r
 
 def solve_inplace(allow_violations=False, preassign_vhg=False):
     '''
-    solve without rewriting intermedia files
+    __solve without rewriting intermedia files
     :return: a mapping
     '''
 

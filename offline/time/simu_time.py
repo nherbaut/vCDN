@@ -19,7 +19,7 @@ logging.basicConfig(level=logging.INFO)
 
 def solve_optim(sla, substrate):
     '''
-    solve optimally the provided sla given the substrate
+    __solve optimally the provided sla given the substrate
     :param sla:
     :param substrate:
     :return:
@@ -30,7 +30,7 @@ def solve_optim(sla, substrate):
     for vmg in range(1, len(sla.get_start_nodes()) + 1):
         for vcdn in range(1, vmg + 1):
             service = Service([sla], vmg, vcdn)
-            m = service.solve()
+            m = service.__solve()
             if (m is not None and m.objective_function < best_price):
                 best_price = m.objective_function
                 best_service = service
@@ -124,11 +124,12 @@ for adate in pd.date_range(date_start_forecast, date_end_forecast, freq="H"):
     new_slas = [s for s in actives_sla if s not in legacy_slas]
     if len(new_slas) > 0:
         service = Service([s for s in actives_sla if s not in legacy_slas])
-        session.add(service)
-        logging.info("CREATE %s" % service)
         session.flush()
-        service.solve()
+        logging.info("CREATE %s" % service)
+
         if service.mapping is not None:
+            session.add(service)
+            session.flush()
             su.consume_service(service)
             su.write()
             logging.info("CREATION SUCCESSFUL")

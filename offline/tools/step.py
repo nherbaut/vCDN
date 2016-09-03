@@ -45,7 +45,7 @@ parser.add_argument('--spvhg-disable', help="Disable grouping vhg by shortest pa
 
 parser.add_argument('--vhgpa-disable', help="Disable grouping vhg by shortest path", dest='vhgpa',
                     action='store_true')
-parser.add_argument("--solve-disable", help="no try to find solution", dest='solve_disable', action='store_true')
+parser.add_argument("--__solve-disable", help="no try to find solution", dest='solve_disable', action='store_true')
 
 args = parser.parse_args()
 dry = args.dry
@@ -60,7 +60,7 @@ session.add(su)
 session.commit()
 
 if args.solve_disable:
-    print("Not tried to find a solution (--solve-disable)")
+    print("Not tried to find a solution (--__solve-disable)")
     print("finish")
     exit(0)
 
@@ -71,10 +71,10 @@ session.add(sla)
 session.commit()
 
 slas_spec={sla.id:{"VHG":3,"VCDN":3}}
-service = Service([sla],slas_spec=slas_spec)
+service = Service([sla], service_spec=slas_spec)
 session.add(service)
 session.commit()
-service.solve()
+service.__solve()
 
 
 if service.mapping is not None:
@@ -86,7 +86,7 @@ if service.mapping is not None:
     exit(0)
 else:
     sys.stdout.write("failure\n")
-    # mapping = solve(service, su,allow_violations=True)
+    # mapping = __solve(service, su,allow_violations=True)
     # if mapping:
     #    for index, violation in enumerate(mapping.violations,start=1):
     #        print("violation %d : %s" % (index,violation))

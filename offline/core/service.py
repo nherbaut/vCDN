@@ -55,6 +55,8 @@ class Service(Base):
     __tablename__ = "Service"
     id = Column(Integer, primary_key=True, autoincrement=True)
     sla_id = Column(Integer, ForeignKey("Sla.id"))
+    vhg_count = Column(Integer, nullable=False)
+    vcdn_count = Column(Integer, nullable=False)
     serviceNodes = relationship("ServiceNode", cascade="all")
     serviceEdges = relationship("ServiceEdge", cascade="all")
     slas = relationship("Sla", secondary=service_to_sla, back_populates="services", cascade="save-update")
@@ -62,6 +64,13 @@ class Service(Base):
     mapping = relationship("Mapping", uselist=False, cascade="all", back_populates="service")
 
     def update_mapping(self):
+
+        merged_new = self.__get_merged_sla(self.slas)
+
+        self.topo = {sla: ServiceTopo(sla=sla, vhg_count=self.vhg_count,
+                                      vcdn_count=self.vcdn_count, hint_node_mappings=None) for
+                     sla in
+                     [merged_new]}
 
         for em in self.mapping.edge_mappings:
             if em.serviceEdge.sla not in self.slas:
@@ -133,14 +142,15 @@ class Service(Base):
         # create the sla
         return Sla(sla_node_specs=merge_sla_nodes_specs, substrate=slas[0].substrate, delay=min_delay)
 
-    def __init__(self, slas, serviceSpecFactory=ServiceSpecFactory, slas_spec={}):
+    def __init__(self, slas, serviceSpecFactory=ServiceSpecFactory, vhg_count=1, vcdn_count=1):
         self.slas = slas
+        self.vhg_count = vhg_count
+        self.vcdn_count = vcdn_count
         self.merged_sla = self.__get_merged_sla(slas)
         print("you i like you" + str(self.merged_sla))
         self.serviceSpecFactory = serviceSpecFactory
 
-        self.topo = {sla: ServiceTopo(sla=sla, vhg_count=slas_spec.get(sla.id, {}).get("VHG", 1),
-                                      vcdn_count=slas_spec.get(sla.id, {}).get("VCDN", 1), hint_node_mappings=None) for
+        self.topo = {sla: ServiceTopo(sla=sla, vhg_count=vhg_count, vcdn_count=vcdn_count, hint_node_mappings=None) for
                      sla in
                      [self.merged_sla]}
         # self.slas}
@@ -166,12 +176,11 @@ class Service(Base):
             session.flush()
 
         # create temp mapping for vhg<->vcdn hints
-        self.solve()
+        self.__solve()
         session.flush()
 
         if self.mapping is not None:
-            self.topo = {sla: ServiceTopo(sla=sla, vhg_count=slas_spec.get(sla.id, {}).get("vhg", 1),
-                                          vcdn_count=slas_spec.get(sla.id, {}).get("vcdn", 1),
+            self.topo = {sla: ServiceTopo(sla=sla, vhg_count=vhg_count, vcdn_count=vcdn_count,
                                           hint_node_mappings=self.mapping.node_mappings) for sla in [self.merged_sla]}
             # remove temp mapping for vhg<->vcdn hints
             # for em in self.mapping.edge_mappings:
@@ -182,8 +191,14 @@ class Service(Base):
             #   session.flush()
             session.delete(self.mapping)
             session.flush()
+            self.__solve()
+            session.flush()
 
-    def solve(self):
+    def __solve(self):
+        '''
+        Solve the service according to specs
+        :return: nothing, service.mapping may be initialized with an actual possible mapping
+        '''
         if len(self.slas) > 0:
             solve(self, self.slas[0].substrate)
             if self.mapping is not None:
