@@ -58,6 +58,8 @@ class Sla(Base):
         self.substrate = kwargs.get("substrate", None)
         self.sla_node_specs = kwargs.get("sla_node_specs", [])
 
+
+
     def get_start_nodes(self):
         return filter(lambda x: x.type == "start", self.sla_node_specs)
 

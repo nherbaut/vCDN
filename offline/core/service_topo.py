@@ -86,7 +86,7 @@ class ServiceTopo:
             children = service[node].items()
             for subnode, data in children:
                 workin_nodes.append(subnode)
-                edge_bw = bandwidth / float(len(children)) * service.node[subnode].get("ratio",1.0)
+                edge_bw = bandwidth / float(len(children)) * service.node[subnode].get("ratio", 1.0)
                 service[node][subnode]["bandwidth"] = edge_bw
                 service.node[subnode]["bandwidth"] = service.node[subnode].get("bandwidth", 0.0) + edge_bw
 
@@ -151,7 +151,7 @@ class ServiceTopo:
 
     def dump_edges(self):
         '''
-        :return: start , end , edge["bandwidth"]
+        :return: [(start , end , bandwidth)]
         '''
         res = []
         for start, ends in self.servicetopo.edge.items():

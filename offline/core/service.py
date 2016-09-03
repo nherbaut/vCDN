@@ -64,36 +64,54 @@ class Service(Base):
     mapping = relationship("Mapping", uselist=False, cascade="all", back_populates="service")
 
     def update_mapping(self):
+        '''
+        :return: updates the internal mapping of the service according to the updated list of SLAS
+        '''
 
+        if self.mapping is None:
+            raise AttributeError("no mapping found")
+
+        # get the new merged sla
         merged_new = self.__get_merged_sla(self.slas)
 
-        self.topo = {sla: ServiceTopo(sla=sla, vhg_count=self.vhg_count,
-                                      vcdn_count=self.vcdn_count, hint_node_mappings=None) for
-                     sla in
-                     [merged_new]}
+        # create the service topology from the new merged sla
+        self.topo = ServiceTopo(sla=merged_new, vhg_count=self.vhg_count,
+                                vcdn_count=self.vcdn_count, hint_node_mappings=self.mapping.node_mappings)
 
+        # retreive info on the new service.
+        edges_from_new_topo = {(node_1, node_2): bw for node_1, node_2, bw in self.topo.dump_edges()}
+        nodes_from_new_topo = {node: cpu for node, cpu in self.topo.dump_nodes()}
+
+        # update edge mapping topology, delete them if they are not present anymore
         for em in self.mapping.edge_mappings:
-            if em.serviceEdge.sla not in self.slas:
+            edge = em.serviceEdge
+            service_edge = (edge.node_1.node_id, edge.node_2.node_id)
+            if service_edge in edges_from_new_topo:
+                edge.bandwidth = edges_from_new_topo[service_edge]
+            else:
                 session.delete(em)
-                session.flush()
+            session.flush()
 
+        # **don't** update CPU, just remove VHG or VCDN if they are not present anymore.
         for nm in self.mapping.node_mappings:
-            if nm.sla not in self.slas:
+
+            if nm.service_node.node_id not in nodes_from_new_topo:
                 session.delete(nm)
                 session.flush()
-
+        # prune service edges
         for se in self.serviceEdges:
-            if se.sla not in self.slas:
+            if (se.node_1.node_id, se.node_2.node_id) not in edges_from_new_topo:
                 session.delete(se)
                 session.flush()
 
+        # prune service nodes
         for sn in self.serviceNodes:
-            if sn.sla not in self.slas:
+            if sn.node_id not in nodes_from_new_topo:
                 session.delete(sn)
                 session.flush()
 
-        self.mapping.objective_function = self.mapping.get_objective_function(cpu_cost=self.slas[0].substrate.cpuCost,
-                                                                              net_cost=self.slas[0].substrate.netCost)
+        self.mapping.objective_function = self.mapping.get_objective_function(cpu_cost=merged_new.substrate.cpuCost,
+                                                                              net_cost=merged_new.substrate.netCost)
 
     def __str__(self):
         return str(self.id) + " - " + " ".join([str(sla.id) for sla in self.slas])
@@ -137,10 +155,17 @@ class Service(Base):
         for key, value in merge_sla.items():
             merge_sla_nodes_specs.append(SlaNodeSpec(toponode_id=key, attributes={"bandwidth": value}, type="start"))
 
-        merge_sla_nodes_specs += slas[0].get_cdn_nodes()
+        for cdnNodeSpec in slas[0].get_cdn_nodes():
+            merge_sla_nodes_specs.append(SlaNodeSpec(toponode_id=cdnNodeSpec.toponode_id,  type="cdn"))
+
 
         # create the sla
-        return Sla(sla_node_specs=merge_sla_nodes_specs, substrate=slas[0].substrate, delay=min_delay)
+        sla = Sla(sla_node_specs=merge_sla_nodes_specs, substrate=slas[0].substrate, delay=min_delay,
+                   max_cdn_to_use=slas[0].max_cdn_to_use)
+
+        session.add(sla)
+        session.flush()
+        return sla
 
     def __init__(self, slas, serviceSpecFactory=ServiceSpecFactory, vhg_count=1, vcdn_count=1):
         self.slas = slas
