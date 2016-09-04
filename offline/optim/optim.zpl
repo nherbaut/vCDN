@@ -7,7 +7,7 @@ set ES := { read "../results/service.edges.data" as "<1s,2s>"};
 set CDN := {read "../results/CDN.nodes.data" as "<1s,2s>"};
 set CDN_LABEL := {read "../results/CDN.nodes.data" as "<1s>"};
 set CDN_LINKS := {<i,j> in ES inter (NS cross CDN_LABEL) with i!=j};
-
+set CDN_MAPPING := {read "../results/CDN.nodes.data" as "<1s,2s>"};
 
 set VHG_LABEL := {read "../results/VHG.nodes.data" as "<1s>"};
 set VHG_COSTS := {read "../results/VHG.nodes.data" as "<1s,2n>"};
@@ -59,7 +59,8 @@ var w binary;
 minimize cost:
     sum <u,v> in E union Et:(
 		sum <i,j> in ES:(y[u,v,i,j] * bwS[i,j] * netCost)) +
-            sum<i,j> in VHG_COSTS:(j*cpuCost) + sum<i,j> in VCDN_COSTS:(j*cpuCost);
+        sum<i,j> in VHG_COSTS:(j*cpuCost) +
+        sum<i,j> in VCDN_COSTS:(j*cpuCost);
 
 
 #maximize cost:
@@ -70,7 +71,7 @@ minimize cost:
 
 
 subto everyNodeIsMapped:
-	forall <j> in NS\CDN_LABEL:
+	forall <j> in NS:
 		sum<i> in N: x[i,j]==1;
 
 
@@ -119,6 +120,9 @@ subto sources:
     forall <name,id> in STARTERS_MAPPING:
         x[id,name]==1;
 
+subto cdn:
+    forall <name,id> in CDN_MAPPING:
+        x[id,name]==1;
 
 
 

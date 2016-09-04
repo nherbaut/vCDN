@@ -6,6 +6,7 @@ import networkx as nx
 from networkx.algorithms.shortest_paths.generic import shortest_path
 
 from ..core.combinatorial import get_node_clusters, get_vhg_cdn_mapping
+from ..pricing.generator import *
 
 
 class ServiceTopo:
@@ -23,11 +24,12 @@ class ServiceTopo:
 
     def __compute_service_topo(self, substrate, mapped_start_nodes, mapped_cdn_nodes, vhg_count, vcdn_count,
                                hint_node_mappings=None):
+        vmg_calc = get_vmg_calculator()
         service = nx.DiGraph()
         service.add_node("S0", cpu=0)
 
         for i in range(1, vhg_count + 1):
-            service.add_node("VHG%d" % i, type="VHG", cpu=1)
+            service.add_node("VHG%d" % i, type="VHG")
 
         for i in range(1, vcdn_count + 1):
             service.add_node("VCDN%d" % i, type="VCDN", cpu=5, delay=self.delay, ratio=0.35)
@@ -89,6 +91,10 @@ class ServiceTopo:
                 edge_bw = bandwidth / float(len(children)) * service.node[subnode].get("ratio", 1.0)
                 service[node][subnode]["bandwidth"] = edge_bw
                 service.node[subnode]["bandwidth"] = service.node[subnode].get("bandwidth", 0.0) + edge_bw
+
+        # assign CPU according to Bandwidth
+        for vhg in self.__get_nodes_by_type("VHG", service):
+            service.node[vhg]["cpu"] = vmg_calc(service.node[vhg]["bandwidth"])
 
         # create delay path
         delay_path = {}

@@ -1,12 +1,15 @@
 import csv
+import os
 from functools import partial
 
+PRICING_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../pricing')
 
-def get_vmg_calculator(sys_spec_file_path="vmg/vio_vmg_pricing_aws.properties",
-                       net_spec_file_path="vmg/bandwidth_per_user.properties"):
+
+def get_vmg_calculator(sys_spec_file_path=os.path.join(PRICING_FOLDER, "vmg/vio_vmg_pricing_aws.properties"),
+                       net_spec_file_path=os.path.join(PRICING_FOLDER, "vmg/bandwidth_per_user.properties")):
     '''
     :param sys_spec_file_path: specs for vmg pricing
-    :return: a function used to compute vmh price accordint to prop file
+    :return: a function used to compute vmh price according to prop file
     '''
 
     sys_specs = None
@@ -33,8 +36,8 @@ def get_vcdn_calculator(file_path="cdn/azure_cdn_pricing_zone1.properties"):
     return partial(vcdn_calculator, threshold_prices=threshold_prices)
 
 
-def vmg_calculator(bandwidth_gbps, sys_spec, net_spec):
-    return bandwidth_gbps * 10 ** 9 / net_spec / sys_spec[0] * sys_spec[1]
+def vmg_calculator(bandwidth_bps, sys_spec, net_spec):
+    return bandwidth_bps / net_spec
 
 
 def vcdn_calculator(quantity_gb, threshold_prices):
