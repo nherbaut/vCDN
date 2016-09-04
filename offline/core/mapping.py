@@ -48,11 +48,12 @@ class Mapping(Base):
         with open(os.path.join(PRICING_FOLDER, "vmg", "pricing_for_one_instance.properties")) as f:
             vhg_cpu_price = float(f.read())
 
-        with open(os.path.join(PRICING_FOLDER,  "net.cost.data")) as f:
+        with open(os.path.join(PRICING_FOLDER, "net.cost.data")) as f:
             net_cost = float(f.read())
 
         sum_cpu = sum(
-            [node_mapping.service_node.cpu * vhg_cpu_price if node_mapping.service_node.is_vhg() else vcdn_cpu_price for node_mapping
+            [node_mapping.service_node.cpu * vhg_cpu_price if node_mapping.service_node.is_vhg() else vcdn_cpu_price for
+             node_mapping
              in self.node_mappings])
 
         sum_bw = sum([edge_mapping.serviceEdge.bandwidth for edge_mapping in self.edge_mappings]) * net_cost
@@ -64,3 +65,11 @@ class Mapping(Base):
         with open(os.path.join(RESULTS_FOLDER, file), "r") as f:
             obj = pickle.load(self, file)
             return cls(obj.service_node_id, obj.edgesSol)
+
+    def __sub__(self, b):
+        '''
+        TODO: implement
+        :param b:
+        :return:
+        '''
+        return 1

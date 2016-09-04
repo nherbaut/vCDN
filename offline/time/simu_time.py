@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import logging
-import sys
 
 import numpy as np
 import pandas as pd
@@ -15,8 +14,6 @@ from ..time.slagen import fill_db_with_sla
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
 
 logging.basicConfig(level=logging.INFO)
-
-
 
 Base.metadata.create_all(engine)
 rs = np.random.RandomState(1)
@@ -52,8 +49,8 @@ for i in range(0, 1):
     # fill_db_with_sla()
     # fill_db_with_sla(tenant, substrate=su)
     date_start_forecast, date_end_forecast = fill_db_with_sla(tenant, start_nodes=tenant_start_nodes,
-                                                                              cdn_nodes=tenant_cdn_nodes, substrate=su,
-                                                                              delay=200)
+                                                              cdn_nodes=tenant_cdn_nodes, substrate=su,
+                                                              delay=200)
 
 session.flush()
 
@@ -99,18 +96,42 @@ for adate in pd.date_range(date_start_forecast, date_end_forecast, freq="H"):
 
     new_slas = [s for s in actives_sla if s not in legacy_slas]
     if len(new_slas) > 0:
-        service=Service.get_optimal([s for s in actives_sla if s not in legacy_slas])
-        session.flush()
-        logging.info("CREATE %s" % service)
 
-        if service.mapping is not None:
-            session.add(service)
+        # in case, we don't have legacy.
+        if not new_slas == actives_sla:
+
+            all_together_service = Service.get_optimal([s for s in actives_sla])
+        else:
+            all_together_service = None
+
+        new_slas_service = Service.get_optimal([s for s in actives_sla if s not in legacy_slas])
+
+        services = session.query(Service).all()
+        if all_together_service is not None and all_together_service.mapping is not None:
+            if all_together_service.mapping.objective_function:
+                + sum([all_together_service.mapping - service.mapping for service in services if
+                       service != all_together_service]) < new_slas_service.mapping.objective_function + sum(
+                    [service.mapping.objective_function for service in session.query(Service).all() if
+                     service != all_together_service])
+                logging.info("WE ARE BETTER OFF MERGING!")
+                # delete other services
+                for service in [service for service in session.query(Service).all() if service != all_together_service]:
+                    logging.info("DELETE service %s" % service)
+                    session.delete(service)
+                session.add(all_together_service)
+
+                session.flush()
+                logging.info("CREATED %s" % all_together_service)
+                continue
+
+        if new_slas_service.mapping is not None:
+            logging.info("WE SHOULD NOT MERGE!")
+            session.add(new_slas_service)
             session.flush()
-            su.consume_service(service)
+            su.consume_service(new_slas_service)
             su.write()
             logging.info("CREATION SUCCESSFUL")
         else:
             logging.info("CAN'T EMBED SERVICE")
-            session.delete(service)
-
-        session.flush()
+            session.delete(new_slas_service)
+            session.flush()
