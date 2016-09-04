@@ -155,6 +155,12 @@ class ServiceTopo:
         for node in self.servicetopo.nodes(data=True):
             yield node[0], node[1].get("cpu", 0)
 
+    def getServiceCDNNodes(self):
+        cdns = self.get_cdn()
+        for node in self.servicetopo.nodes(data=True):
+            if node[0] in cdns:
+                yield node[0], node[1].get("cpu", 0)
+
     def dump_edges(self):
         '''
         :return: [(start , end , bandwidth)]
@@ -165,6 +171,17 @@ class ServiceTopo:
                 edge = self.servicetopo[start][end]
                 res.append((start, end, edge["bandwidth"]))
         return res
+
+    def getServiceCDNEdges(self):
+        '''
+
+        :return: start, end, edge["bandwidth"]
+        '''
+        for start, ends in self.servicetopo.edge.items():
+            cdns = self.get_cdn()
+            for end in [end for end in ends if end in cdns]:
+                edge = self.servicetopo[start][end]
+                yield start, end, edge["bandwidth"]
 
     def getServiceEdges(self):
         '''

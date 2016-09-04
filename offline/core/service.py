@@ -237,13 +237,25 @@ class Service(Base):
         if self.mapping is not None:
             self.topo = {sla: ServiceTopo(sla=sla, vhg_count=vhg_count, vcdn_count=vcdn_count,
                                           hint_node_mappings=self.mapping.node_mappings) for sla in [self.merged_sla]}
-            # remove temp mapping for vhg<->vcdn hints
-            # for em in self.mapping.edge_mappings:
-            #    session.delete(em)
-            #    session.flush()
-            # for nm in self.mapping.node_mappings:
-            #    session.delete(nm)
-            #   session.flush()
+
+
+            #add the CDN Edges to the feast
+            for sla in [self.merged_sla]:
+
+                for node_1, node_2, bandwidth in self.topo[sla].getServiceCDNEdges():
+                    snode_1 = session.query(ServiceNode).filter(
+                        and_(ServiceNode.sla_id == sla.id, ServiceNode.service_id == self.id,
+                             ServiceNode.node_id == node_1)).one()
+
+                    snode_2 = session.query(ServiceNode).filter(
+                        and_(ServiceNode.sla_id == sla.id, ServiceNode.service_id == self.id,
+                             ServiceNode.node_id == node_2)).one()
+
+                    sedge = ServiceEdge(node_1=snode_1, node_2=snode_2, bandwidth=bandwidth, sla_id=sla.id)
+                    session.add(sedge)
+                    self.serviceEdges.append(sedge)
+                session.flush()
+
             session.delete(self.mapping)
             session.flush()
             self.__solve()
