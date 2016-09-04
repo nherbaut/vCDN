@@ -17,29 +17,6 @@ RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../r
 logging.basicConfig(level=logging.INFO)
 
 
-def solve_optim(sla, substrate):
-    '''
-    __solve optimally the provided sla given the substrate
-    :param sla:
-    :param substrate:
-    :return:
-    '''
-    best_service = None
-    best_mapping = None
-    best_price = sys.maxint
-    for vmg in range(1, len(sla.get_start_nodes()) + 1):
-        for vcdn in range(1, vmg + 1):
-            service = Service([sla], vmg, vcdn)
-            m = service.__solve()
-            if (m is not None and m.objective_function < best_price):
-                best_price = m.objective_function
-                best_service = service
-                best_mapping = m
-    if best_service is None:
-        raise ValueError
-    else:
-        return best_service, best_mapping
-
 
 Base.metadata.create_all(engine)
 rs = np.random.RandomState(1)
@@ -111,6 +88,7 @@ for adate in pd.date_range(date_start_forecast, date_end_forecast, freq="H"):
 
                 su.release_service(current_service)
                 current_service.slas = [s for s in current_service.slas if s in actives_sla]
+                session.flush()
                 current_service.update_mapping()
                 su.consume_service(current_service)
                 legacy_slas += current_service.slas
@@ -123,7 +101,7 @@ for adate in pd.date_range(date_start_forecast, date_end_forecast, freq="H"):
 
     new_slas = [s for s in actives_sla if s not in legacy_slas]
     if len(new_slas) > 0:
-        service = Service([s for s in actives_sla if s not in legacy_slas])
+        service=Service.get_optimal([s for s in actives_sla if s not in legacy_slas])
         session.flush()
         logging.info("CREATE %s" % service)
 

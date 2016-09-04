@@ -156,23 +156,53 @@ class Service(Base):
             merge_sla_nodes_specs.append(SlaNodeSpec(toponode_id=key, attributes={"bandwidth": value}, type="start"))
 
         for cdnNodeSpec in slas[0].get_cdn_nodes():
-            merge_sla_nodes_specs.append(SlaNodeSpec(toponode_id=cdnNodeSpec.toponode_id,  type="cdn"))
-
+            merge_sla_nodes_specs.append(SlaNodeSpec(toponode_id=cdnNodeSpec.toponode_id, type="cdn"))
 
         # create the sla
         sla = Sla(sla_node_specs=merge_sla_nodes_specs, substrate=slas[0].substrate, delay=min_delay,
-                   max_cdn_to_use=slas[0].max_cdn_to_use)
+                  max_cdn_to_use=slas[0].max_cdn_to_use)
 
         session.add(sla)
         session.flush()
         return sla
+
+    @classmethod
+    def get_optimal(cls, slas, serviceSpecFactory=ServiceSpecFactory, max_vhg_count=None, max_vcdn_count=None):
+
+        if max_vhg_count is None:
+            # compute max_vhg_count  from slas
+            max_vhg_count = max([len(sla.get_start_nodes()) for sla in slas])
+
+        if max_vcdn_count is None:
+            max_vcdn_count = min(max_vhg_count, max([len(sla.get_cdn_nodes()) for sla in slas]))
+
+        best_cost = sys.float_info.max
+        best_service = None
+
+        for vhg_count in range(1, max_vhg_count + 1):
+            for vcdn_count in range(1, min(vhg_count, max_vcdn_count)+1):
+                service = cls(slas, serviceSpecFactory=ServiceSpecFactory, vhg_count=vhg_count,
+                                  vcdn_count=vcdn_count)
+                if service.mapping is not None:
+                    # candidate!
+                    if service.mapping.objective_function < best_cost:
+                        if best_service is not None:
+                            session.delete(best_service)
+                        best_service = service
+                        continue
+
+                session.delete(service)
+
+        if best_service is None:
+            raise ValueError("Cannot compute any successful service")
+
+        return service
 
     def __init__(self, slas, serviceSpecFactory=ServiceSpecFactory, vhg_count=1, vcdn_count=1):
         self.slas = slas
         self.vhg_count = vhg_count
         self.vcdn_count = vcdn_count
         self.merged_sla = self.__get_merged_sla(slas)
-        print("you i like you" + str(self.merged_sla))
         self.serviceSpecFactory = serviceSpecFactory
 
         self.topo = {sla: ServiceTopo(sla=sla, vhg_count=vhg_count, vcdn_count=vcdn_count, hint_node_mappings=None) for
