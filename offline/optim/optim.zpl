@@ -10,13 +10,11 @@ set CDN_LINKS := {<i,j> in ES inter (NS cross CDN_LABEL) with i!=j};
 set CDN_MAPPING := {read "../results/CDN.nodes.data" as "<1s,2s>"};
 
 set VHG_LABEL := {read "../results/VHG.nodes.data" as "<1s>"};
-set VHG_COSTS := {read "../results/VHG.nodes.data" as "<1s,2n>"};
 set VHG_INCOMING_LINKS := {<i,j> in ES inter (NS cross VHG_LABEL) with i!=j};
 set VHG_OUTGOING_LINKS := {<i,j> in ES inter (VHG_LABEL cross NS) with i!=j};
 
 
 set VCDN_LABEL := {read "../results/VCDN.nodes.data" as "<1s>"};
-set VCDN_COSTS := {read "../results/VCDN.nodes.data" as "<1s,2n>"};
 set VCDN_INCOMING_LINKS := {<i,j> in ES inter (NS cross VCDN_LABEL)};
 
 
@@ -45,7 +43,9 @@ param source := read "../results/starters.nodes.data" as "2s" use 1;
 
 
 
-param cpuCost := read "../results/cpu.cost.data" as "1n" use 1;
+param cpuCost_vHG := read "../pricing/vmg/pricing_for_one_instance.properties" as "1n" use 1;
+param cpuCost_vCDN := read "../pricing/cdn/pricing_for_one_instance.properties" as "1n" use 1;
+
 param netCost := read "../results/net.cost.data" as "1n" use 1;
 
 var x[N cross NS ] binary;
@@ -59,8 +59,9 @@ var w binary;
 minimize cost:
     sum <u,v> in E union Et:(
 		sum <i,j> in ES:(y[u,v,i,j] * bwS[i,j] * netCost)) +
-        sum<i,j> in VHG_COSTS:(j*cpuCost) +
-        sum<i,j> in VCDN_COSTS:(j*cpuCost);
+		sum<vhg> in VHG_LABEL:(cpuCost_vHG*cpuS[vhg])+
+		sum<vcdn> in VCDN_LABEL:(cpuCost_vCDN*cpuS[vcdn]);
+
 
 
 #maximize cost:

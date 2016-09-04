@@ -180,9 +180,9 @@ class Service(Base):
         best_service = None
 
         for vhg_count in range(1, max_vhg_count + 1):
-            for vcdn_count in range(1, min(vhg_count, max_vcdn_count)+1):
+            for vcdn_count in range(1, min(vhg_count, max_vcdn_count) + 1):
                 service = cls(slas, serviceSpecFactory=ServiceSpecFactory, vhg_count=vhg_count,
-                                  vcdn_count=vcdn_count)
+                              vcdn_count=vcdn_count)
                 if service.mapping is not None:
                     # candidate!
                     if service.mapping.objective_function < best_cost:
@@ -238,8 +238,7 @@ class Service(Base):
             self.topo = {sla: ServiceTopo(sla=sla, vhg_count=vhg_count, vcdn_count=vcdn_count,
                                           hint_node_mappings=self.mapping.node_mappings) for sla in [self.merged_sla]}
 
-
-            #add the CDN Edges to the feast
+            # add the CDN Edges to the feast
             for sla in [self.merged_sla]:
 
                 for node_1, node_2, bandwidth in self.topo[sla].getServiceCDNEdges():
@@ -336,14 +335,14 @@ class Service(Base):
             for sla in slas:
                 postfix = "%d_%d" % (self.id, sla.id)
                 for vhg in self.topo[sla].get_vhg():
-                    f.write("%s_%s %e\n" % (vhg, postfix, self.get_vhg_cost(vhg)))
+                    f.write("%s_%s\n" % (vhg, postfix))
 
-        # write the names of the VCDN nodes (is it still used?)
+        # write the names of the VCDN nodes
         with open(os.path.join(RESULTS_FOLDER, "VCDN.nodes.data"), mode) as f:
             for sla in slas:
                 postfix = "%d_%d" % (self.id, sla.id)
                 for vcdn in self.topo[sla].get_vcdn():
-                    f.write("%s_%s %e\n" % (vcdn, postfix, self.get_vcdn_cost(vcdn)))
+                    f.write("%s_%s\n" % (vcdn, postfix))
 
                     # write path to associate e2e delay
 
@@ -365,9 +364,4 @@ class Service(Base):
     @classmethod
     def getFromSla(cls, sla):
         return session.query(Service).filter(Sla.id == sla.id).join(Service.slas).filter(Sla.id == sla.id).one()
-
-    def get_vhg_cost(self, vhg):
-        return 1
-
-    def get_vcdn_cost(self, vcdn):
-        return 1
+    

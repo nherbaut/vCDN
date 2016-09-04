@@ -32,7 +32,7 @@ class ServiceTopo:
             service.add_node("VHG%d" % i, type="VHG")
 
         for i in range(1, vcdn_count + 1):
-            service.add_node("VCDN%d" % i, type="VCDN", cpu=5, delay=self.delay, ratio=0.35)
+            service.add_node("VCDN%d" % i, type="VCDN", cpu=105, delay=self.delay, ratio=0.35)
 
         for index, cdn in enumerate(mapped_cdn_nodes, start=1):
             service.add_node("CDN%d" % index, type="CDN", cpu=0, ratio=0.65)
