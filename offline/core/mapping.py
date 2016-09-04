@@ -7,6 +7,7 @@ from sqlalchemy.orm import relationship
 from ..time.persistence import Base
 
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
+PRICING_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../pricing')
 
 
 class Mapping(Base):
@@ -35,15 +36,26 @@ class Mapping(Base):
     def get_vhg_mapping(self):
         return filter(lambda x: "VHG" in x.service_node_id, self.node_mappings)
 
-    def get_objective_function(self, cpu_cost, net_cost):
+    def get_objective_function(self):
         '''
 
         :return: the obejctive function as computed by the nodes and edges mapping
         '''
-        sum_cpu = sum([1 if node_mapping.service_node.is_vhg() else 0 for node_mapping in self.node_mappings] + [
-            2 if node_mapping.service_node.is_vcdn() else 0 for node_mapping in self.node_mappings]) * cpu_cost
-        #sum_bw = sum([edge_mapping.serviceEdge.bandwidth for edge_mapping in self.edge_mappings if                    edge_mapping.serviceEdge.node_1.node_id != "S0"]) * net_cost
-        sum_bw = sum([edge_mapping.serviceEdge.bandwidth for edge_mapping in self.edge_mappings ]) * net_cost
+
+        with open(os.path.join(PRICING_FOLDER, "cdn", "pricing_for_one_instance.properties")) as f:
+            vcdn_cpu_price = float(f.read())
+
+        with open(os.path.join(PRICING_FOLDER, "vmg", "pricing_for_one_instance.properties")) as f:
+            vhg_cpu_price = float(f.read())
+
+        with open(os.path.join(PRICING_FOLDER,  "net.cost.data")) as f:
+            net_cost = float(f.read())
+
+        sum_cpu = sum(
+            [node_mapping.service_node.cpu * vhg_cpu_price if node_mapping.service_node.is_vhg() else vcdn_cpu_price for node_mapping
+             in self.node_mappings])
+
+        sum_bw = sum([edge_mapping.serviceEdge.bandwidth for edge_mapping in self.edge_mappings]) * net_cost
 
         return sum_cpu + sum_bw
 

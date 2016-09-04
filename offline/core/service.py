@@ -110,8 +110,7 @@ class Service(Base):
                 session.delete(sn)
                 session.flush()
 
-        self.mapping.objective_function = self.mapping.get_objective_function(cpu_cost=merged_new.substrate.cpuCost,
-                                                                              net_cost=merged_new.substrate.netCost)
+        self.mapping.objective_function = self.mapping.get_objective_function()
 
     def __str__(self):
         return str(self.id) + " - " + " ".join([str(sla.id) for sla in self.slas])
@@ -364,4 +363,3 @@ class Service(Base):
     @classmethod
     def getFromSla(cls, sla):
         return session.query(Service).filter(Sla.id == sla.id).join(Service.slas).filter(Sla.id == sla.id).one()
-    

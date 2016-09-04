@@ -23,10 +23,8 @@ rs = np.random.RandomState(1)
 # clear the db
 drop_all()
 
-cpuCost = 2000
-netCost = 20000.0 / 10 ** 9
 # create the topo and load it
-su = Substrate.fromGrid(delay=10, cpu=1000000000, cpuCost=cpuCost, netCost=netCost)
+su = Substrate.fromGrid(delay=10, cpu=1000000000, )
 
 for node in su.nodes:
     session.add(node)

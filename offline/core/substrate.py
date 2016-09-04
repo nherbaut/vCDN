@@ -29,8 +29,6 @@ class Substrate(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     nodes = relationship("Node", secondary=substrate_to_node,cascade="all")
     edges = relationship("Edge", secondary=substrate_to_edge,cascade="all")
-    cpuCost = Column(Float)
-    netCost = Column(Float)
 
     def __str__(self):
         # print [x[1] for x in self.nodes.items()]
@@ -42,7 +40,7 @@ class Substrate(Base):
     def get_nodes_sum(self):
         return sum([x.cpu for x in self.nodes.items()])
 
-    def __init__(self, edges, nodesdict, cpuCost=2000, netCost=20000.0 / 10 ** 9):
+    def __init__(self, edges, nodesdict):
         '''
 
         :param edges: a list of edge spec
@@ -53,8 +51,7 @@ class Substrate(Base):
         self.edges = edges
         self.nodes = nodesdict
         self.edges_init = sorted(edges, key=lambda x: "%s%s" % (str(x.node_1), str(x.node_2)))
-        self.cpuCost = cpuCost
-        self.netCost = netCost
+
 
     def write(self, edges_file=os.path.join(RESULTS_FOLDER, "substrate.edges.data"),
               nodes_file=os.path.join(RESULTS_FOLDER, "substrate.nodes.data")):
@@ -67,12 +64,6 @@ class Substrate(Base):
         with open(nodes_file, 'w') as f:
             for node in self.nodes:
                 f.write("%s\n" % node)
-
-        with open(os.path.join(RESULTS_FOLDER, "cpu.cost.data"), "w") as f:
-            f.write("%lf\n" % self.cpuCost)
-
-        with open(os.path.join(RESULTS_FOLDER, "net.cost.data"), "w") as f:
-            f.write("%lf\n" % self.netCost)
 
     @classmethod
     def __fromSpec(cls, args):
@@ -136,7 +127,7 @@ class Substrate(Base):
         return cls(edges, nodesdict)
 
     @classmethod
-    def fromGrid(cls, width=5, height=5, bw=10 ** 10, delay=10, cpu=10,cpuCost=None, netCost=None):
+    def fromGrid(cls, width=5, height=5, bw=10 ** 10, delay=10, cpu=10):
         edges = []
         nodes = []
 
@@ -166,7 +157,7 @@ class Substrate(Base):
                 session.flush()
 
 
-        return cls(edges, nodes,cpuCost, netCost)
+        return cls(edges, nodes,)
 
     @classmethod
     def fromFile(cls, edges_file=os.path.join(RESULTS_FOLDER, "substrate.edges.data"),
