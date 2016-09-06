@@ -1,9 +1,8 @@
+import logging
 import sys
 from collections import Counter
 
-from sqlalchemy import Column, Integer, ForeignKey
 from sqlalchemy import and_
-from sqlalchemy.orm import relationship
 
 from ..core.service_topo import ServiceTopo
 from ..core.sla import Sla, SlaNodeSpec
@@ -173,29 +172,44 @@ class Service(Base):
             max_vhg_count = max([len(sla.get_start_nodes()) for sla in slas])
 
         if max_vcdn_count is None:
-            max_vcdn_count = min(max_vhg_count, max([len(sla.get_cdn_nodes()) for sla in slas]))
+            max_vcdn_count = min(max_vhg_count, max([len(sla.get_start_nodes()) for sla in slas]))
+
+        logging.debug("----------Looking for optima solution to embed %s with max_vhg=%d and max_vcdn=%d" % (
+            " ".join([str(sla) for sla in slas]), max_vhg_count, max_vcdn_count))
 
         best_cost = sys.float_info.max
         best_service = None
 
         for vhg_count in range(1, max_vhg_count + 1):
-            for vcdn_count in range(1, min(vhg_count, max_vcdn_count) + 1):
+            for vcdn_count in range(1, min(vhg_count+1, max_vcdn_count) + 1):
+
                 service = cls(slas, serviceSpecFactory=ServiceSpecFactory, vhg_count=vhg_count,
                               vcdn_count=vcdn_count)
+                session.add(service)
+
                 if service.mapping is not None:
                     # candidate!
+                    logging.debug(
+                        "----------We have a candidate service with (%d,%d), with cost %lf" % (
+                            vhg_count, vcdn_count, service.mapping.objective_function))
                     if service.mapping.objective_function < best_cost:
+                        best_cost = service.mapping.objective_function
                         if best_service is not None:
                             session.delete(best_service)
                         best_service = service
+                        logging.debug(
+                            "its the best so far")
+                        session.flush()
                         continue
 
                 session.delete(service)
+                session.flush()
+
 
         if best_service is None:
             raise ValueError("Cannot compute any successful service")
 
-        return service
+        return best_service
 
     def __init__(self, slas, serviceSpecFactory=ServiceSpecFactory, vhg_count=1, vcdn_count=1):
         self.slas = slas

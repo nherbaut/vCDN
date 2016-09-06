@@ -4,11 +4,18 @@ from functools import partial
 
 PRICING_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../pricing')
 
+def migration_calculator(x):
+    return sum([10+abs(y[0] - y[1]) for y in x])
 
 
+def get_migration_calculator(spec_file=os.path.join(PRICING_FOLDER, "vmg/vio_vmg_pricing_aws.properties")):
+    #with open(spec_file, "r") as f:
+    #    for key in csv.reader(filter(lambda row: row[0] != '#', f)):
+    #        return eval(key[0])
+    return migration_calculator
 
-def get_vmg_calculator(sys_spec_file_path=os.path.join(PRICING_FOLDER, "vmg/vio_vmg_pricing_aws.properties"),
-                       net_spec_file_path=os.path.join(PRICING_FOLDER, "vmg/bandwidth_per_user.properties")):
+
+def get_vmg_calculator(sys_spec_file_path=os.path.join(PRICING_FOLDER, "vmg/vio_vmg_pricing_aws.properties")):
     '''
     :param sys_spec_file_path: specs for vmg pricing
     :return: a function used to compute vmh price according to prop file
@@ -16,12 +23,8 @@ def get_vmg_calculator(sys_spec_file_path=os.path.join(PRICING_FOLDER, "vmg/vio_
 
     sys_specs = None
     with open(sys_spec_file_path, "r") as f:
-        for key, value in csv.reader(filter(lambda row: row[0] != '#', f), delimiter=","):
-            sys_specs = (float(key), float(value))
-    with open(net_spec_file_path, "r") as f:
-        net_specs = float(list(csv.reader(filter(lambda row: row[0] != '#', f)))[0][0])
-
-    return partial(vmg_calculator, sys_spec=sys_specs, net_spec=net_specs)
+        for key in csv.reader(filter(lambda row: row[0] != '#', f)):
+            return eval(key[0])
 
 
 def get_vcdn_calculator(file_path="cdn/azure_cdn_pricing_zone1.properties"):

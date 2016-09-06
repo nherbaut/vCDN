@@ -212,7 +212,7 @@ def plotsol_from_db(**kwargs):
             if "S0" not in node[1]:
                 f.write("%s--%s[color=blue,len=1.5,label=\" \"];\n" % node)
                 name = node[1]
-                
+
                 if "VHG" in node[1]:
                     color = "azure1"
                     shape = "circle"

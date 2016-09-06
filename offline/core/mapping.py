@@ -4,10 +4,13 @@ import pickle
 from sqlalchemy import Column, Integer, Float, ForeignKey
 from sqlalchemy.orm import relationship
 
+from ..pricing.generator import get_migration_calculator
 from ..time.persistence import Base
 
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
 PRICING_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../pricing')
+
+migration_price_calculator = get_migration_calculator()
 
 
 class Mapping(Base):
@@ -38,7 +41,7 @@ class Mapping(Base):
                 nm.service_node.node_id.lower().startswith("s")]
 
     def dump_node_mapping(self):
-        return [(nm.node.id,nm.service_node.node_id) for nm in self.node_mappings]
+        return [(nm.node.id, nm.service_node.node_id) for nm in self.node_mappings]
 
     def dump_edge_mapping(self):
         '''
@@ -91,9 +94,12 @@ class Mapping(Base):
             return cls(obj.service_node_id, obj.edgesSol)
 
     def __sub__(self, b):
-        '''
-        TODO: implement
-        :param b:
-        :return:
-        '''
-        return 0
+        res = {}
+        res = {nm.service_node.id: (nm.service_node.cpu, 0) for nm in self.node_mappings}
+        for nm in b.node_mappings:
+            if nm.service_node.service_id in res:
+                res[nm.service_node.id] = (res[nm.service_node.service_id][0], nm.service_node.cpu)
+            else:
+                res[nm.service_node.id] = (0, nm.service_node.cpu)
+
+        return migration_price_calculator(filter(lambda x: x[0]+x[1]!=0,res.values()))

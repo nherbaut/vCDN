@@ -166,7 +166,6 @@ for adate in pd.date_range(date_start_forecast, date_end_forecast, freq="H"):
     if len(new_slas) > 0:
 
         new_slas_service = Service.get_optimal([s for s in actives_sla if s not in legacy_slas])
-
         # for each already embeded service, try to merge recursively
         merged_service = new_slas_service
         for service in sorted([service for service in session.query(Service).all()],
@@ -194,7 +193,7 @@ for adate in pd.date_range(date_start_forecast, date_end_forecast, freq="H"):
             session.delete(merged_service)
             session.flush()
         else:
-            session.add(merged_service)
+            #session.add(merged_service)
             session.flush()
             su.consume_service(merged_service)
             su.write()
