@@ -5,6 +5,8 @@ from functools import partial
 PRICING_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../pricing')
 
 
+
+
 def get_vmg_calculator(sys_spec_file_path=os.path.join(PRICING_FOLDER, "vmg/vio_vmg_pricing_aws.properties"),
                        net_spec_file_path=os.path.join(PRICING_FOLDER, "vmg/bandwidth_per_user.properties")):
     '''

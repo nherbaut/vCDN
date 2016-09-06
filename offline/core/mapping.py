@@ -21,13 +21,37 @@ class Mapping(Base):
     edge_mappings = relationship("EdgeMapping", cascade="all")
     objective_function = Column(Float)
 
+    def dump_cdn_node_mapping(self):
+        '''
+
+        :return: [("CDN1","1021"),("CDN2","1125")]
+        '''
+        return [(nm.service_node.node_id, nm.node.id) for nm in self.node_mappings if
+                nm.service_node.node_id.lower().startswith("cdn")]
+
+    def dump_starter_node_mapping(self):
+        '''
+
+        :return: [("S2","1021"),("S3","1125")]
+        '''
+        return [(nm.service_node.node_id, nm.node.id) for nm in self.node_mappings if
+                nm.service_node.node_id.lower().startswith("s")]
+
+    def dump_node_mapping(self):
+        return [(nm.node.id,nm.service_node.node_id) for nm in self.node_mappings]
+
+    def dump_edge_mapping(self):
+        '''
+
+        :return: [("1241","1242","VHG1","VCDN1"),("5123","5123","VHG3","VCDN3")]
+        '''
+        return [(em.edge.node_1, em.edge.node_2, em.serviceEdge.node_1.node_id, em.serviceEdge.node_2.node_id) for
+                em in self.edge_mappings]
+
     def __init__(self, node_mappings=node_mappings, edge_mappings=edge_mappings, objective_function=objective_function):
         self.node_mappings = node_mappings
         self.edge_mappings = edge_mappings
         self.objective_function = objective_function
-
-    def write(self):
-        self.save()
 
     def save(self, file="mapping", id="default"):
         with open(os.path.join(RESULTS_FOLDER, file + "_" + id), "w") as f:
@@ -72,4 +96,4 @@ class Mapping(Base):
         :param b:
         :return:
         '''
-        return 1
+        return 0

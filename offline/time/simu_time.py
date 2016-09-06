@@ -11,6 +11,63 @@ from ..time.namesgenerator import get_random_name
 from ..time.persistence import *
 from ..time.slagen import fill_db_with_sla
 
+
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
+
+def yellow(arg):
+    return col(arg, bcolors.WARNING)
+
+
+def red(arg):
+    return col(arg, bcolors.FAIL)
+
+
+def green(arg):
+    return col(arg, bcolors.OKGREEN)
+
+
+def col(arg, colr=bcolors.ENDC):
+    return colr + str(arg) + bcolors.ENDC
+
+
+def merge_services(s1, s2):
+    '''
+
+    :param s1: a service with a mapping
+    :param s2: a service with a mapping
+    :return: the merged Service if the cost is lower, None otherwize
+    '''
+    assert s1.mapping is not None
+    assert s2.mapping is not None
+    logging.info("TRY MERGING %s with %s" % (s1, s2))
+    s3 = Service.get_optimal(s1.slas + s2.slas)
+
+    if s3 is not None and s3.mapping is not None:
+        consolidated_cost = s3.mapping.objective_function + (s3.mapping - s1.mapping)
+        individual_costs = s2.mapping.objective_function + s1.mapping.objective_function
+        logging.debug("CONSOLIDATED COSTS for %s : %lf" % (s3, s3.mapping.objective_function))
+        logging.debug("INDIVIDUAL COSTS FOR %s : %lf" % ("\t".join([str(s1), str(s2)]), individual_costs))
+        if consolidated_cost < individual_costs:
+            logging.debug("CREATED %s AND OPTIMAL" % s3)
+            return s3
+        else:
+            logging.debug("CREATED %s BUT SUBOPTIMAL" % s3)
+            session.delete(s3)
+
+    return None
+
+
+print(("%s %s") % (red("rouge"), green("vert")))
+
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
 
 logging.basicConfig(level=logging.INFO)
@@ -50,28 +107,38 @@ for i in range(0, 1):
     # fill_db_with_sla(tenant, substrate=su)
     date_start_forecast, date_end_forecast = fill_db_with_sla(tenant, start_nodes=tenant_start_nodes,
                                                               cdn_nodes=tenant_cdn_nodes, substrate=su,
-                                                              delay=200)
+                                                              delay=200, centroids=2)
 
 session.flush()
 
 current_services = []
 # for each our
 
-
+data = []
 for adate in pd.date_range(date_start_forecast, date_end_forecast, freq="H"):
     active_service = []
     actives_sla = findSLAByDate(adate)
     legacy_slas = []
-    logging.info("SLAS:%s" % (" ".join([str(s.id) for s in actives_sla])))
-    logging.info(("SERVICES:%s" % ("\t ".join([str(s) for s in list(session.query(Service).all())]))))
-    logging.info("SUBSTRATE: %s" % su)
-    # for each service
 
+    active_sla_in_current_services = []
+    for service in session.query(Service).all():
+        active_sla_in_current_services += service.slas
+
+    active_sla_in_current_services = sorted(active_sla_in_current_services, key=lambda x: x.id)
+    new_slas = [sla for sla in actives_sla if sla not in active_sla_in_current_services]
+    slas_pending_removal = [sla for sla in active_sla_in_current_services if sla not in actives_sla]
+    stay_in_place_slas = [sla for sla in active_sla_in_current_services if sla in actives_sla]
+
+    logging.info("SLAS:%s %s %s" % (" ".join([str(s.id) for s in stay_in_place_slas]),
+                                    green(" ".join([str(s.id) for s in new_slas])),
+                                    red(" ".join([str(s.id) for s in slas_pending_removal]))))
+
+    # for each service
     for current_service in session.query(Service).all():
 
         # check if all slas are still active
         if all([s in actives_sla for s in current_service.slas]):
-            logging.info("KEEP %s" % current_service)
+            logging.info("SLA STILL PRESENT %s" % current_service)
             active_service.append(current_service)
             legacy_slas += current_service.slas
 
@@ -95,43 +162,52 @@ for adate in pd.date_range(date_start_forecast, date_end_forecast, freq="H"):
                 session.flush()
 
     new_slas = [s for s in actives_sla if s not in legacy_slas]
+    migration_costs = 0
     if len(new_slas) > 0:
-
-        # in case, we don't have legacy.
-        if not new_slas == actives_sla:
-
-            all_together_service = Service.get_optimal([s for s in actives_sla])
-        else:
-            all_together_service = None
 
         new_slas_service = Service.get_optimal([s for s in actives_sla if s not in legacy_slas])
 
-        services = session.query(Service).all()
-        if all_together_service is not None and all_together_service.mapping is not None:
-            if all_together_service.mapping.objective_function:
-                + sum([all_together_service.mapping - service.mapping for service in services if
-                       service != all_together_service]) < new_slas_service.mapping.objective_function + sum(
-                    [service.mapping.objective_function for service in session.query(Service).all() if
-                     service != all_together_service])
-                logging.info("WE ARE BETTER OFF MERGING!")
-                # delete other services
-                for service in [service for service in session.query(Service).all() if service != all_together_service]:
-                    logging.info("DELETE service %s" % service)
-                    session.delete(service)
-                session.add(all_together_service)
-
-                session.flush()
-                logging.info("CREATED %s" % all_together_service)
+        # for each already embeded service, try to merge recursively
+        merged_service = new_slas_service
+        for service in sorted([service for service in session.query(Service).all()],
+                              key=lambda service: len(service.slas)):
+            # if already merged, or common slas
+            if len(set(service.slas) & set(merged_service.slas)) > 0:
                 continue
+            merged_service_res = merge_services(service, merged_service)
 
-        if new_slas_service.mapping is not None:
-            logging.info("WE SHOULD NOT MERGE!")
-            session.add(new_slas_service)
+            if merged_service_res is not None:
+                logging.info("DELETE: %s" % red(str(service)))
+                session.delete(service)
+                logging.info("DELETE: %s" % red(str(merged_service)))
+                session.delete(merged_service)
+                logging.info("CREATED: %s" % green(str(merged_service_res)))
+                merged_service = merged_service_res
+                session.add(merged_service)
+                logging.debug("%s is merged with %s, result: %s" % (service, merged_service, merged_service_res))
+                session.flush()
+            else:
+                logging.debug("%s can't be merged with %s" % (service, merged_service))
+
+        if merged_service.mapping is None:
+            logging.info("CAN'T EMBED SERVICE")
+            session.delete(merged_service)
             session.flush()
-            su.consume_service(new_slas_service)
+        else:
+            session.add(merged_service)
+            session.flush()
+            su.consume_service(merged_service)
             su.write()
             logging.info("CREATION SUCCESSFUL")
-        else:
-            logging.info("CAN'T EMBED SERVICE")
-            session.delete(new_slas_service)
-            session.flush()
+
+    isp_cost = sum([service.mapping.objective_function for service in session.query(Service).all()])
+    total_bandwidth = sum(
+        [sum([sla.get_total_bandwidth() for sla in service.slas]) for service in session.query(Service).all()])
+    logging.warning("ISP cost: %lf (migration : %lf)" % (isp_cost + migration_costs, migration_costs))
+    logging.warning("CDN bandwidth: %lf" % total_bandwidth)
+    data.append((isp_cost + migration_costs, migration_costs, total_bandwidth))
+    logging.info(("SERVICES:\n%s" % yellow(("\n".join([str(s) for s in list(session.query(Service).all())])))))
+    logging.info("SUBSTRATE: %s" % su)
+
+for d in data:
+    print("%lf,%lf,%lf" % (d[0], d[1], d[2]))

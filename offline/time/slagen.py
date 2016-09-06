@@ -42,7 +42,7 @@ def get_forecast(file, windows, centroids):
     return tse
 
 
-def fill_db_with_sla(tenant, file=None, windows=5, centroids=5,
+def fill_db_with_sla(tenant, file=None, windows=1, centroids=3,
                      data_files=sorted([file for file in os.listdir(DATA_FOLDER) if file.endswith("-daily_1H.csvx")]),
                      **kwargs):
     '''
