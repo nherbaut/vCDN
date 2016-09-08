@@ -3,15 +3,19 @@
 import argparse
 import datetime
 import locale
+import logging
 import os
 import subprocess
+import sys
 
 import numpy as np
 import pandas as pd
 
 from ..core.sla import Sla, SlaNodeSpec
+from ..pricing.generator import price_slas
 from ..time.SLA3D import get_tse, chunk_series_as_sla
 from ..time.persistence import session
+from ..time.disc_plot import plot_forecast_and_disc_and_total
 
 TIME_PATH = os.path.dirname(os.path.realpath(__file__))
 
@@ -24,7 +28,12 @@ def get_forecast_from_date(df):
     return df["Index"].values[-df.index[len(df) - len(dff[dff == 0])]]
 
 
-def get_forecast(file, windows, centroids):
+def discretize(windows, centroids, ts, df):
+    ts_forecasts = ts[get_forecast_from_date(df):]
+    return get_tse(ts_forecasts, windows, centroids)
+
+
+def get_forecast(file):
     if file is None:
         subprocess.call(["%s/compute_forecast.R" % TIME_PATH, "-o", "output.csv", "-r"], cwd=TIME_PATH,
                         stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
@@ -37,12 +46,11 @@ def get_forecast(file, windows, centroids):
     ts = pd.Series(data=df["fcmean"].values / np.max(df["fcmean"].values) * 10 ** 9,
                    index=df.apply(lambda row: datetime.datetime.strptime(row['Index'], '%Y-%m-%d %H:%M:%S'),
                                   axis=1).values)
-    ts_forecasts = ts[get_forecast_from_date(df):]
-    tse = get_tse(ts_forecasts, windows, centroids)
-    return tse
+
+    return ts, df
 
 
-def fill_db_with_sla(tenant, file=None, windows=1, centroids=3,
+def fill_db_with_sla(tenant, file=None,
                      data_files=sorted([file for file in os.listdir(DATA_FOLDER) if file.endswith("-daily_1H.csvx")]),
                      **kwargs):
     '''
@@ -65,16 +73,44 @@ def fill_db_with_sla(tenant, file=None, windows=1, centroids=3,
 
     file_to_node = dict(zip(data_files, start_nodes))
 
-    tses = {file: get_forecast(os.path.join(DATA_FOLDER, file), windows, centroids) for file in
+    best_price = sys.float_info.max
+    best_slas = None
+    best_discretization_parameter = None
+    best_tse = None
+    tsdf = {file: get_forecast(os.path.join(DATA_FOLDER, file)) for file in
             data_files[0:forecast_series_count]}
 
-    for sla in chunk_series_as_sla(tses):
+    for windows in range(1, 5):
+        for centroids in range(1, 10):
 
+            tses = {key: discretize(windows, centroids, ts=value[0], df=value[1]) for key, value in tsdf.items()}
+            slas = chunk_series_as_sla(tses)
+            price = price_slas([item for sublist in slas for item in sublist.values()])
+
+            logging.debug("For (%d,%d) the price is %lf" % (windows, centroids, price))
+            if price < best_price:
+                best_tse = tses
+                best_price = price
+                best_slas = slas
+                best_discretization_parameter = (windows, centroids)
+                logging.debug("(%d,%d) is the best candidate to far" % (windows, centroids))
+
+    logging.info(
+        "best discretization parameters are %s with a price of %ld " % (str(best_discretization_parameter), best_price))
+
+
+
+
+    total_sla_plot=pd.Series()
+    for sla in best_slas:
         nodespecs = []
         for key, value in [(file_to_node[key], value) for key, value in sla.items()]:
             ns = SlaNodeSpec(toponode_id=key, type="start", attributes={"bandwidth": np.mean(value)})
             session.add(ns)
             nodespecs.append(ns)
+            total_sla_plot=pd.Series.add(total_sla_plot,value,fill_value=0)
+
+
 
         nodespecs += [SlaNodeSpec(toponode_id=cdn_node, type="cdn") for cdn_node in cdn_nodes]
 
@@ -86,6 +122,10 @@ def fill_db_with_sla(tenant, file=None, windows=1, centroids=3,
                            )
         session.add(sla_instance)
         session.flush()
+
+    plot_forecast_and_disc_and_total(tsdf, best_discretization_parameter[0], best_discretization_parameter[1],
+                                     out_file_name="dummy" + ".svg", plot_name=None,total_sla_plot=total_sla_plot)
+
 
     return tses.values()[0].index[0], tses.values()[0].index[-1]
 

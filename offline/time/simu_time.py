@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import logging
+import sys
 
 import numpy as np
 import pandas as pd
@@ -10,6 +11,7 @@ from ..core.substrate import Substrate
 from ..time.namesgenerator import get_random_name
 from ..time.persistence import *
 from ..time.slagen import fill_db_with_sla
+from ..tools.candelPlot import candelPlot
 
 
 class bcolors:
@@ -58,12 +60,12 @@ def merge_services(s1, s2):
         logging.debug("INDIVIDUAL COSTS FOR %s : %lf" % ("\t".join([str(s1), str(s2)]), individual_costs))
         if consolidated_cost < individual_costs:
             logging.debug("CREATED %s AND OPTIMAL" % s3)
-            return s3
+            return s3, (s3.mapping - s1.mapping)
         else:
             logging.debug("CREATED %s BUT SUBOPTIMAL" % s3)
             session.delete(s3)
 
-    return None
+    return None, None
 
 
 print(("%s %s") % (red("rouge"), green("vert")))
@@ -107,7 +109,7 @@ for i in range(0, 1):
     # fill_db_with_sla(tenant, substrate=su)
     date_start_forecast, date_end_forecast = fill_db_with_sla(tenant, start_nodes=tenant_start_nodes,
                                                               cdn_nodes=tenant_cdn_nodes, substrate=su,
-                                                              delay=200, centroids=2)
+                                                              delay=200)
 
 session.flush()
 
@@ -115,7 +117,9 @@ current_services = []
 # for each our
 
 data = []
+total_bandwidth = sys.float_info.max
 for adate in pd.date_range(date_start_forecast, date_end_forecast, freq="H"):
+
     active_service = []
     actives_sla = findSLAByDate(adate)
     legacy_slas = []
@@ -128,6 +132,9 @@ for adate in pd.date_range(date_start_forecast, date_end_forecast, freq="H"):
     new_slas = [sla for sla in actives_sla if sla not in active_sla_in_current_services]
     slas_pending_removal = [sla for sla in active_sla_in_current_services if sla not in actives_sla]
     stay_in_place_slas = [sla for sla in active_sla_in_current_services if sla in actives_sla]
+
+    bw_new_slas = sum([sla.get_total_bandwidth() for sla in new_slas])
+    bw_removed_slas = sum([sla.get_total_bandwidth() for sla in slas_pending_removal])
 
     logging.info("SLAS:%s %s %s" % (" ".join([str(s.id) for s in stay_in_place_slas]),
                                     green(" ".join([str(s.id) for s in new_slas])),
@@ -162,10 +169,14 @@ for adate in pd.date_range(date_start_forecast, date_end_forecast, freq="H"):
                 session.flush()
 
     new_slas = [s for s in actives_sla if s not in legacy_slas]
-    migration_costs = 0
+    total_migration_costs = 0
+
     if len(new_slas) > 0:
 
         new_slas_service = Service.get_optimal([s for s in actives_sla if s not in legacy_slas])
+
+        cost_non_migrated = sum([service.mapping.objective_function for service in session.query(Service).all()])
+
         # for each already embeded service, try to merge recursively
         merged_service = new_slas_service
         for service in sorted([service for service in session.query(Service).all()],
@@ -173,8 +184,10 @@ for adate in pd.date_range(date_start_forecast, date_end_forecast, freq="H"):
             # if already merged, or common slas
             if len(set(service.slas) & set(merged_service.slas)) > 0:
                 continue
-            merged_service_res = merge_services(service, merged_service)
-
+            merged_service_res, migration_costs = merge_services(service, merged_service)
+            # merged_service_res, migration_costs = None, None
+            if migration_costs is not None:
+                total_migration_costs += migration_costs
             if merged_service_res is not None:
                 logging.info("DELETE: %s" % red(str(service)))
                 session.delete(service)
@@ -193,20 +206,29 @@ for adate in pd.date_range(date_start_forecast, date_end_forecast, freq="H"):
             session.delete(merged_service)
             session.flush()
         else:
-            #session.add(merged_service)
+            # session.add(merged_service)
             session.flush()
             su.consume_service(merged_service)
             su.write()
             logging.info("CREATION SUCCESSFUL")
+    else:
+        # no new sla => no migration cost
+        cost_non_migrated = isp_cost
 
     isp_cost = sum([service.mapping.objective_function for service in session.query(Service).all()])
-    total_bandwidth = sum(
-        [sum([sla.get_total_bandwidth() for sla in service.slas]) for service in session.query(Service).all()])
-    logging.warning("ISP cost: %lf (migration : %lf)" % (isp_cost + migration_costs, migration_costs))
-    logging.warning("CDN bandwidth: %lf" % total_bandwidth)
-    data.append((isp_cost + migration_costs, migration_costs, total_bandwidth))
+
+    logging.warning("ISP cost: %lf (migration : %lf)" % (isp_cost + total_migration_costs, total_migration_costs))
+
+    data.append(
+        (isp_cost, cost_non_migrated, bw_new_slas / total_bandwidth, bw_removed_slas / total_bandwidth))
     logging.info(("SERVICES:\n%s" % yellow(("\n".join([str(s) for s in list(session.query(Service).all())])))))
     logging.info("SUBSTRATE: %s" % su)
+    total_bandwidth = max(1, sum(
+        [sum([sla.get_total_bandwidth() for sla in service.slas]) for service in session.query(Service).all()]))
 
-for d in data:
-    print("%lf,%lf,%lf" % (d[0], d[1], d[2]))
+y, y1, sla_hi, sla_low = zip(*data)
+print("[")
+for i in range(0, len(y)):
+    print("(%lf,%lf,%lf,%lf)," % (y[i], y1[i], sla_hi[i], sla_low[i]))
+print("]")
+candelPlot(np.arange(0, len(y)), y, y1, sla_hi, sla_low)

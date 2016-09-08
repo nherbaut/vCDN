@@ -46,10 +46,11 @@ def chunk_series_as_sla(series):
         ss = pd.Series(all_up, index0)
         # split the serie in different contiguous periods
         for i in np.split(ss.index, np.where(np.diff(ss.index) / pd.Timedelta('1H') != 1)[0] + 1):
-            sub_res = {}
-            for index, start_node in enumerate(sla.T, start=0):
-                sub_res[keys[index]] = pd.Series(np.mean(start_node), index=i)
-            res.append(sub_res)
+            if len(i) > 0:
+                sub_res = {}
+                for index, start_node in enumerate(sla.T, start=0):
+                    sub_res[keys[index]] = pd.Series(np.mean(start_node), index=i)
+                res.append(sub_res)
         # now we deal with the zones where not all the start nodes send data
         working_sla = sla[all_up == False]
         working_index = index0[all_up == False]
@@ -59,7 +60,7 @@ def chunk_series_as_sla(series):
             ss = pd.Series(working_sla[:, i][working_sla[:, i] > 0], index=working_index[working_sla[:, i] > 0])
             # split on a continuous date range
             for index in np.split(ss.index, np.where(np.diff(ss.index) / pd.Timedelta('1H') != 1)[0] + 1):
-                if len(index)>0:
+                if len(index) > 0:
                     # finally add the value
                     res.append({keys[i]: ss[index]})
     return res
@@ -136,27 +137,6 @@ def chunk_serie_as_sla(serie):
         # delete every null observation.
         serie = serie[serie > 0]
     return res
-
-
-def price_slas(slas, ratio=21):
-    prices = []
-    cumtime = pd.Timedelta(0)
-    for sla in slas:
-        prices.append(price_sla(sla[0], sla.index[0], sla.index[-1], ratio=ratio))
-        cumtime += (sla.index[-1] - sla.index[0])
-
-    return sum(prices)
-
-
-def price_sla(bw, date_start, date_end, ratio=21):
-    hours = (date_end - date_start).value / (10 ** 9 * 3600.0)
-    if hours == 0:
-        print("what?")
-        return 0
-    f = lambda x: ratio if x > 24  else  (24 - x) / (x + 24) * (100 - ratio) + ratio
-    price = bw * f(hours) * hours
-    # print("%ld$ for %lf from %d H" % (price, bw, hours))
-    return price
 
 
 def get_tse(tsr, win, ncentroids=3):
