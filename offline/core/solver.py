@@ -2,41 +2,52 @@ import os
 import re
 import subprocess
 
+from jinja2 import Environment, PackageLoader
 from sqlalchemy import or_, and_
+from sqlalchemy.orm.exc import NoResultFound
 
 from ..core.mapping import Mapping
-from ..time.persistence import  session, Edge, ServiceEdge, ServiceNode, NodeMapping, EdgeMapping
-from sqlalchemy.orm.exc import NoResultFound
+from ..time.persistence import session, Edge, ServiceEdge, ServiceNode, NodeMapping, EdgeMapping
+
 OPTIM_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../optim')
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
 
+env = Environment(loader=PackageLoader("offline", 'optim'))
+template = env.get_template('optim.zpl.tpl')
 
-def solve_inplace(allow_violations=False, preassign_vhg=False):
+
+def solve_inplace(allow_violations=False, preassign_vhg=False, path="."):
     '''
     __solve without rewriting intermedia files
     :return: a mapping
     '''
 
+    # copy template to target folder
+    with open(os.path.join(RESULTS_FOLDER, path, "optim.zpl"), "w") as f:
+        f.write(template.render(dir=os.path.join(RESULTS_FOLDER, path)))
+
     violations = []
     if not allow_violations:
         if not preassign_vhg:  # run the optim without CDNs
-            subprocess.call(["scip", "-c", "read %s" % os.path.join(OPTIM_FOLDER, "optim.zpl"), "-c", "optimize ", "-c",
-                             "write solution %s" % (os.path.join(RESULTS_FOLDER, "solutions.data")), "-c", "q"],
-                            stdout=open(os.devnull, 'wb'))
+            subprocess.call(
+                ["scip", "-c", "read %s" % os.path.join(RESULTS_FOLDER, path, "optim.zpl"), "-c", "optimize ", "-c",
+                 "write solution %s" % (os.path.join(RESULTS_FOLDER, "solutions.data")), "-c", "q"],
+                stdout=open(os.devnull, 'wb'))
         else:  # run the optim with CDN using reoptim
-            subprocess.call(["scip", "-c", "read %s" % os.path.join(OPTIM_FOLDER, "optim.zpl"), "-c",
+            subprocess.call(["scip", "-c", "read %s" % os.path.join(RESULTS_FOLDER, path, "optim.zpl"), "-c",
                              "read %s" % os.path.join(RESULTS_FOLDER, "initial.sol"), "-c",
                              "set reoptimization enable true", "-c", "optimize ", "-c",
-                             "write solution %s" % (os.path.join(RESULTS_FOLDER, "solutions.data")), "-c", "q"],
+                             "write solution %s" % (os.path.join(RESULTS_FOLDER, path, "solutions.data")), "-c", "q"],
                             stdout=open(os.devnull, 'wb'))
 
     else:
-        subprocess.call(["scip", "-c", "read %s" % os.path.join(OPTIM_FOLDER, "optim.zpl"), "-c", "optimize ", "-c",
-                         "write solution %s" % (os.path.join(RESULTS_FOLDER, "solutions.data")), "-c", "q"],
-                        stdout=open(os.devnull, 'wb'))
+        subprocess.call(
+            ["scip", "-c", "read %s" % os.path.join(RESULTS_FOLDER, path, "optim.zpl"), "-c", "optimize ", "-c",
+             "write solution %s" % (os.path.join(RESULTS_FOLDER, path, "solutions.data")), "-c", "q"],
+            stdout=open(os.devnull, 'wb'))
     # plotting.plotsol()
     # os.subprocess.call(["cat", "./substrate.dot", "|", "dot", "-Tpdf", "-osol.pdf"])
-    with open(os.path.join(RESULTS_FOLDER, "solutions.data"), "r") as sol:
+    with open(os.path.join(RESULTS_FOLDER, path, "solutions.data"), "r") as sol:
         data = sol.read()
         if "infeasible" in data or "no solution" in data:
             return None
@@ -56,12 +67,14 @@ def solve_inplace(allow_violations=False, preassign_vhg=False):
                     service_node_id = session.query("ServiceNode.id").filter(
                         and_(ServiceNode.sla_id == sla_id, ServiceNode.service_id == service_id,
                              ServiceNode.node_id == snode_id)).one()[0]
-                    nodeMapping = NodeMapping(node_id=node_id, service_node_id=service_node_id,service_id=service_id,sla_id=sla_id)
+                    nodeMapping = NodeMapping(node_id=node_id, service_node_id=service_node_id, service_id=service_id,
+                                              sla_id=sla_id)
                     nodesSols.append(nodeMapping)
 
                     continue
                 except NoResultFound as e:
-                    print e
+                    print
+                    e
 
             # search edge
             matches = re.findall("^y\$(.*)\$(.*)\$(.*)\$([^ \t]+)", line)
@@ -72,7 +85,8 @@ def solve_inplace(allow_violations=False, preassign_vhg=False):
                 session.query()
 
                 edge_id = session.query(Edge.id).filter(or_(and_(Edge.node_1 == node_1, Edge.node_2 == node_2),
-                                                            and_(Edge.node_1 == node_2, Edge.node_2 == node_1))).one()[0]
+                                                            and_(Edge.node_1 == node_2, Edge.node_2 == node_1))).one()[
+                    0]
                 snode_1_id = session.query(ServiceNode.id).filter(
                     and_(ServiceNode.sla_id == sla_id, ServiceNode.service_id == service_id,
                          ServiceNode.node_id == snode_1)).one()[0]
@@ -103,12 +117,8 @@ def solve(service, substrate):
     service.write()
     substrate.write()
     session.flush()
-    mapping=solve_inplace()
-    service.mapping=mapping
+    mapping = solve_inplace()
+    service.mapping = mapping
     if mapping is not None:
         session.add(mapping)
     session.flush()
-
-
-
-

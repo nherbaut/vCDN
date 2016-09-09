@@ -68,11 +68,12 @@ def merge_services(s1, s2):
     return None, None
 
 
-print(("%s %s") % (red("rouge"), green("vert")))
+#print(("%s %s") % (red("rouge"), green("vert")))
 
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
+DATA_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../data')
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 
 Base.metadata.create_all(engine)
 rs = np.random.RandomState(1)
@@ -80,7 +81,7 @@ rs = np.random.RandomState(1)
 drop_all()
 
 # create the topo and load it
-su = Substrate.fromGrid(delay=10, cpu=1000000000, )
+su = Substrate.fromGrid(delay=20, cpu=100000, )
 
 for node in su.nodes:
     session.add(node)
@@ -107,14 +108,15 @@ for i in range(0, 1):
     # fill the db with some data
     # fill_db_with_sla()
     # fill_db_with_sla(tenant, substrate=su)
+    rs.shuffle(([file for file in os.listdir(DATA_FOLDER) if file.endswith("-daily_1H.csvx")]))
     date_start_forecast, date_end_forecast = fill_db_with_sla(tenant, start_nodes=tenant_start_nodes,
                                                               cdn_nodes=tenant_cdn_nodes, substrate=su,
-                                                              delay=200)
+                                                              delay=100, rs=rs)
 
 session.flush()
 
 current_services = []
-isp_cost=0
+isp_cost = 0
 # for each our
 
 data = []

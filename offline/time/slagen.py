@@ -80,13 +80,12 @@ def fill_db_with_sla(tenant, file=None,
     tsdf = {file: get_forecast(os.path.join(DATA_FOLDER, file)) for file in
             data_files[0:forecast_series_count]}
 
-    for windows in range(1, 5):
-        for centroids in range(1, 10):
+    for windows in range(1, 2):
+        for centroids in range(1, 2):
 
             tses = {key: discretize(windows, centroids, ts=value[0], df=value[1]) for key, value in tsdf.items()}
             slas = chunk_series_as_sla(tses)
-            print("%d slas generated for (%d,%d)" % (
-            sum([1 for sublist in slas.values() for item in sublist]), windows, centroids))
+            logging.debug("%d slas generated for (%d,%d)" % (                sum([1 for sublist in slas.values() for item in sublist]), windows, centroids))
             price = price_slas([item for sublist in slas.values() for item in sublist])
 
             logging.debug("For (%d,%d) the price is %lf" % (windows, centroids, price))
@@ -104,8 +103,8 @@ def fill_db_with_sla(tenant, file=None,
                             [item for sublist in best_slas.values() for item in sublist],
                             pd.Series())
 
-    print("generating %d slas for best solution" % (
-        sum([1 for sublist in best_slas.values() for item in sublist]), ))
+    logging.info("generating %d slas for best solution" % (
+        sum([1 for sublist in best_slas.values() for item in sublist]),))
 
     for key, sla_list in best_slas.items():
 

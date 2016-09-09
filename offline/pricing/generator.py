@@ -9,7 +9,7 @@ PRICING_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../p
 
 
 def migration_calculator(x):
-    return sum([10 + abs(y[0] - y[1]) for y in x]) * 10
+    return sum([abs(y[0] - y[1]) for y in x]) * 10
 
 
 def get_migration_calculator(spec_file=os.path.join(PRICING_FOLDER, "vmg/vio_vmg_pricing_aws.properties")):
@@ -72,7 +72,7 @@ def p(t, r, m):
     return r if t > m else np.exp(t * np.log(r) / m)
 
 
-def price_slas(slas, f=partial(p, r=0.70, m=24)):
+def price_slas(slas, f=partial(p, r=1, m=24)):
     prices = []
     for sla in slas:
         prices.append(price_sla(sla[0], sla.index[0], sla.index[-1],  f=f))

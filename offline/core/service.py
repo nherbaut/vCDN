@@ -167,7 +167,8 @@ class Service(Base):
     @classmethod
     def get_optimal(cls, slas, serviceSpecFactory=ServiceSpecFactory, max_vhg_count=10, max_vcdn_count=10):
 
-        max_vhg_count = min(max_vhg_count, len(set([nodes.toponode_id for sla in slas for nodes in sla.get_start_nodes()])))
+        max_vhg_count = min(max_vhg_count,
+                            len(set([nodes.toponode_id for sla in slas for nodes in sla.get_start_nodes()])))
         max_vcdn_count = min(max_vhg_count, max_vcdn_count)
 
         logging.debug("----------Looking for optima solution to embed %s with max_vhg=%d and max_vcdn=%d" % (
@@ -279,8 +280,7 @@ class Service(Base):
                 session.add(self.mapping)
 
             else:
-                print
-                "mapping failed"
+                logging.warning("mapping failed for slas %s" % (" ".join(str(sla.id) for sla in self.slas)))
 
     def __compute_vhg_vcdn_assignment__(self):
 
@@ -299,21 +299,21 @@ class Service(Base):
         self.sla.sla_node_specs = sla_node_specs
         return vhg_hints
 
-    def write(self):
+    def write(self, path="."):
 
         mode = "w"
         # slas = self.slas
         slas = [self.merged_sla]
 
         # write info on the edge
-        with open(os.path.join(RESULTS_FOLDER, "service.edges.data"), mode) as f:
+        with open(os.path.join(RESULTS_FOLDER, path, "service.edges.data"), mode) as f:
             for sla in slas:
                 postfix = "%d_%d" % (self.id, sla.id)
                 topo = self.topo[sla]
                 for start, end, bw in topo.dump_edges():
                     f.write("%s_%s %s_%s %lf\n" % (start, postfix, end, postfix, bw))
 
-        with open(os.path.join(RESULTS_FOLDER, "service.nodes.data"), mode) as f:
+        with open(os.path.join(RESULTS_FOLDER, path, "service.nodes.data"), mode) as f:
             for sla in slas:
                 postfix = "%d_%d" % (self.id, sla.id)
                 topo = self.topo[sla]
@@ -325,28 +325,28 @@ class Service(Base):
 
 
                     # write constraints on CDN placement
-        with open(os.path.join(RESULTS_FOLDER, "CDN.nodes.data"), mode) as f:
+        with open(os.path.join(RESULTS_FOLDER, path, "CDN.nodes.data"), mode) as f:
             for sla in slas:
                 postfix = "%d_%d" % (self.id, sla.id)
                 for index, value in enumerate(sla.get_cdn_nodes(), start=1):
                     f.write("CDN%d_%s %s\n" % (index, postfix, value.toponode_id))
 
         # write constraints on starter placement
-        with open(os.path.join(RESULTS_FOLDER, "starters.nodes.data"), mode) as f:
+        with open(os.path.join(RESULTS_FOLDER, path, "starters.nodes.data"), mode) as f:
             for sla in slas:
                 postfix = "%d_%d" % (self.id, sla.id)
                 for s, topo in self.topo[sla].get_Starters():
                     f.write("%s_%s %s\n" % (s, postfix, topo))
 
         # write the names of the VHG Nodes
-        with open(os.path.join(RESULTS_FOLDER, "VHG.nodes.data"), mode) as f:
+        with open(os.path.join(RESULTS_FOLDER, path, "VHG.nodes.data"), mode) as f:
             for sla in slas:
                 postfix = "%d_%d" % (self.id, sla.id)
                 for vhg in self.topo[sla].get_vhg():
                     f.write("%s_%s\n" % (vhg, postfix))
 
         # write the names of the VCDN nodes
-        with open(os.path.join(RESULTS_FOLDER, "VCDN.nodes.data"), mode) as f:
+        with open(os.path.join(RESULTS_FOLDER, path, "VCDN.nodes.data"), mode) as f:
             for sla in slas:
                 postfix = "%d_%d" % (self.id, sla.id)
                 for vcdn in self.topo[sla].get_vcdn():
@@ -354,20 +354,20 @@ class Service(Base):
 
                     # write path to associate e2e delay
 
-        with open(os.path.join(RESULTS_FOLDER, "service.path.delay.data"), "w") as f:
+        with open(os.path.join(RESULTS_FOLDER, path, "service.path.delay.data"), "w") as f:
             for sla in slas:
                 postfix = "%d_%d" % (self.id, sla.id)
                 topo = self.topo[sla]
-                for path, delay in topo.dump_delay_paths():
-                    f.write("%s_%s %lf\n" % (path, postfix, delay))
+                for apath, delay in topo.dump_delay_paths():
+                    f.write("%s_%s %lf\n" % (apath, postfix, delay))
 
         # write e2e delay constraint
-        with open(os.path.join(RESULTS_FOLDER, "service.path.data"), "w") as f:
+        with open(os.path.join(RESULTS_FOLDER, path, "service.path.data"), "w") as f:
             for sla in slas:
                 postfix = "%d_%d" % (self.id, sla.id)
                 topo = self.topo[sla]
-                for path, s1, s2 in topo.dump_delay_routes():
-                    f.write("%s_%s %s_%s %s_%s\n" % (path, postfix, s1, postfix, s2, postfix))
+                for apath, s1, s2 in topo.dump_delay_routes():
+                    f.write("%s_%s %s_%s %s_%s\n" % (apath, postfix, s1, postfix, s2, postfix))
 
     @classmethod
     def getFromSla(cls, sla):
