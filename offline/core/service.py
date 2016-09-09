@@ -204,8 +204,8 @@ class Service(Base):
             for vcdn_count in range(1, min(vhg_count, max_vcdn_count) + 1):
                 thread_param.append(([sla.id for sla in slas], vhg_count, vcdn_count))
 
-        services = threadpool.map(f, thread_param)
-        #services = [f(x) for x in thread_param]
+        #services = threadpool.map(f, thread_param)
+        services = [f(x) for x in thread_param]
         services = session.query(Service).filter(Service.id.in_(services)).all()
 
         for service in services:

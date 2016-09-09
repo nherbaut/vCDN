@@ -34,24 +34,31 @@ def discretize(windows, centroids, ts, df, forecast_detector=get_forecast_from_d
 
 
 def get_forecast(file):
-    if file is None:
-        subprocess.call(["%s/compute_forecast.R" % TIME_PATH, "-o", "output.csv", "-r"], cwd=TIME_PATH,
-                        stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
-    else:
-        subprocess.call(["%s/compute_forecast.R" % TIME_PATH, "-i", "%s" % file, "-o", "output.csv"], cwd=TIME_PATH,
+    import tempfile
+
+    with tempfile.NamedTemporaryFile() as f:
+        output = tempfile.NamedTemporaryFile()
+        df = pd.read_csv(file, names=["time", "values"])
+        ts = pd.Series(df["values"].values, index=pd.to_datetime(df["time"]))
+
+        resampled = ts.resample("1H").mean().bfill()
+        resampled.to_csv(f)
+
+        subprocess.call(["%s/compute_forecast.R" % TIME_PATH, "-i", "%s" % f.name, "-o", output.name], cwd=TIME_PATH,
                         stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
 
-    df = pd.read_csv(os.path.join(TIME_PATH, "output.csv"))
-
-    ts = pd.Series(data=df["fcmean"].values / np.max(df["fcmean"].values) * 10 ** 9,
+    with open(output.name, "r") as f:
+        df = pd.read_csv(f)
+    ts = pd.Series(data=df["fcmean"].values,
                    index=df.apply(lambda row: datetime.datetime.strptime(row['Index'], '%Y-%m-%d %H:%M:%S'),
                                   axis=1).values)
+
 
     return ts, df
 
 
 def fill_db_with_sla(tenant, file=None,
-                     data_files=sorted([file for file in os.listdir(DATA_FOLDER) if file.endswith("-daily_1H.csvx")]),
+                     data_files=None,
                      **kwargs):
     '''
 
@@ -78,6 +85,8 @@ def fill_db_with_sla(tenant, file=None,
     best_slas = None
     best_discretization_parameter = None
     best_tse = None
+
+    do_price = kwargs.get("price_slas", price_slas)
     tsdf = {file: get_forecast(os.path.join(DATA_FOLDER, file)) for file in
             data_files[0:forecast_series_count]}
 
@@ -87,7 +96,7 @@ def fill_db_with_sla(tenant, file=None,
             slas = chunk_series_as_sla(tses)
             logging.debug("%d slas generated for (%d,%d)" % (
                 sum([1 for sublist in slas.values() for item in sublist]), windows, centroids))
-            price = price_slas([item for sublist in slas.values() for item in sublist])
+            price = do_price([item for sublist in slas.values() for item in sublist])
 
             logging.debug("For (%d,%d) the price is %lf" % (windows, centroids, price))
             if price < best_price:

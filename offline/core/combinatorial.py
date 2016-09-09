@@ -22,12 +22,15 @@ def shortest_path(node1, node2):
     if node1 == node2:
         return 0
 
+
+
+    mutex.acquire()
     with open(os.path.join(RESULTS_FOLDER, "node1.data"), "w") as f:
         f.write("%s\n" % node1)
     with open(os.path.join(RESULTS_FOLDER, "node2.data"), "w") as f:
         f.write("%s\n" % node2)
 
-    mutex.acquire()
+
     try:
         subprocess.call(["scip", "-c", "read %s" % os.path.join(OPTIM_FOLDER, "sp.zpl"), "-c",
                          "read %s" % os.path.join(OPTIM_FOLDER, "sp.zpl"), "-c", "optimize ", "-c",
