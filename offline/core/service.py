@@ -165,14 +165,10 @@ class Service(Base):
         return sla
 
     @classmethod
-    def get_optimal(cls, slas, serviceSpecFactory=ServiceSpecFactory, max_vhg_count=None, max_vcdn_count=None):
+    def get_optimal(cls, slas, serviceSpecFactory=ServiceSpecFactory, max_vhg_count=10, max_vcdn_count=10):
 
-        if max_vhg_count is None:
-            # compute max_vhg_count  from slas
-            max_vhg_count = max([len(sla.get_start_nodes()) for sla in slas])
-
-        if max_vcdn_count is None:
-            max_vcdn_count = min(max_vhg_count, max([len(sla.get_start_nodes()) for sla in slas]))
+        max_vhg_count = min(max_vhg_count, len(set([nodes.toponode_id for sla in slas for nodes in sla.get_start_nodes()])))
+        max_vcdn_count = min(max_vhg_count, max_vcdn_count)
 
         logging.debug("----------Looking for optima solution to embed %s with max_vhg=%d and max_vcdn=%d" % (
             " ".join([str(sla) for sla in slas]), max_vhg_count, max_vcdn_count))
@@ -181,7 +177,7 @@ class Service(Base):
         best_service = None
 
         for vhg_count in range(1, max_vhg_count + 1):
-            for vcdn_count in range(1, min(vhg_count+1, max_vcdn_count) + 1):
+            for vcdn_count in range(1, min(vhg_count, max_vcdn_count) + 1):
 
                 service = cls(slas, serviceSpecFactory=ServiceSpecFactory, vhg_count=vhg_count,
                               vcdn_count=vcdn_count)
@@ -204,7 +200,6 @@ class Service(Base):
 
                 session.delete(service)
                 session.flush()
-
 
         if best_service is None:
             raise ValueError("Cannot compute any successful service")

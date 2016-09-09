@@ -31,38 +31,18 @@ def generate_chunks(m):
 
 
 def chunk_series_as_sla(series):
-    # we have a serie of matrices with discretized values
-    m = np.array([series[key] for key in sorted(series.keys())])
-    slas = generate_chunks(m.T)
-
+    index0 = list(series.items())[0][1].index
     keys = sorted(series.keys())
-    # reference index for series
-    index0 = series.items()[0][1].index
-    res = []
-    # for each matrix
-    for sla in slas:
-        # create a time series where all the values are >0
-        all_up = np.apply_along_axis(lambda x: all(x), 1, sla > 0)
-        ss = pd.Series(all_up, index0)
-        # split the serie in different contiguous periods
-        for i in np.split(ss.index, np.where(np.diff(ss.index) / pd.Timedelta('1H') != 1)[0] + 1):
-            if len(i) > 0:
-                sub_res = {}
-                for index, start_node in enumerate(sla.T, start=0):
-                    sub_res[keys[index]] = pd.Series(np.mean(start_node), index=i)
-                res.append(sub_res)
-        # now we deal with the zones where not all the start nodes send data
-        working_sla = sla[all_up == False]
-        working_index = index0[all_up == False]
-        # for each column
-        for i in range(0, len(working_sla.T)):
-            # create a sparse serie with data
-            ss = pd.Series(working_sla[:, i][working_sla[:, i] > 0], index=working_index[working_sla[:, i] > 0])
-            # split on a continuous date range
-            for index in np.split(ss.index, np.where(np.diff(ss.index) / pd.Timedelta('1H') != 1)[0] + 1):
-                if len(index) > 0:
-                    # finally add the value
-                    res.append({keys[i]: ss[index]})
+    m = np.array([series [key] for key in keys ])
+    res = defaultdict(lambda: [])
+    for sla in generate_chunks(m.T):
+        for index, sla_slice in enumerate(sla.T[:], start=0):
+            ssts = pd.Series(sla_slice, index=index0)
+            ssts = ssts[ssts > 0]
+            if len(ssts)>0:
+                for range in np.split(ssts.index, np.where(np.diff(ssts.index) / pd.Timedelta('1H') != 1)[0] + 1):
+                    res[keys[index]].append(pd.Series(np.max(ssts), index=range))
+
     return res
 
 

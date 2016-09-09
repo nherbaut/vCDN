@@ -24,6 +24,9 @@ class ServiceTopo:
 
     def __compute_service_topo(self, substrate, mapped_start_nodes, mapped_cdn_nodes, vhg_count, vcdn_count,
                                hint_node_mappings=None):
+        vhg_count = min(len(mapped_start_nodes), vhg_count)
+        vcdn_count = min(len(mapped_cdn_nodes), vcdn_count,vhg_count)
+
         vmg_calc = get_vmg_calculator()
         service = nx.DiGraph()
         service.add_node("S0", cpu=0)

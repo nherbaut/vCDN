@@ -14,8 +14,8 @@ import pandas as pd
 from ..core.sla import Sla, SlaNodeSpec
 from ..pricing.generator import price_slas
 from ..time.SLA3D import get_tse, chunk_series_as_sla
-from ..time.persistence import session
 from ..time.disc_plot import plot_forecast_and_disc_and_total
+from ..time.persistence import session
 
 TIME_PATH = os.path.dirname(os.path.realpath(__file__))
 
@@ -28,8 +28,8 @@ def get_forecast_from_date(df):
     return df["Index"].values[-df.index[len(df) - len(dff[dff == 0])]]
 
 
-def discretize(windows, centroids, ts, df):
-    ts_forecasts = ts[get_forecast_from_date(df):]
+def discretize(windows, centroids, ts, df, forecast_detector=get_forecast_from_date):
+    ts_forecasts = ts[forecast_detector(df):]
     return get_tse(ts_forecasts, windows, centroids)
 
 
@@ -85,7 +85,9 @@ def fill_db_with_sla(tenant, file=None,
 
             tses = {key: discretize(windows, centroids, ts=value[0], df=value[1]) for key, value in tsdf.items()}
             slas = chunk_series_as_sla(tses)
-            price = price_slas([item for sublist in slas for item in sublist.values()])
+            print("%d slas generated for (%d,%d)" % (
+            sum([1 for sublist in slas.values() for item in sublist]), windows, centroids))
+            price = price_slas([item for sublist in slas.values() for item in sublist])
 
             logging.debug("For (%d,%d) the price is %lf" % (windows, centroids, price))
             if price < best_price:
@@ -98,36 +100,37 @@ def fill_db_with_sla(tenant, file=None,
     logging.info(
         "best discretization parameters are %s with a price of %ld " % (str(best_discretization_parameter), best_price))
 
+    total_sla_plot = reduce(lambda x, y: pd.Series.add(x, y, fill_value=0),
+                            [item for sublist in best_slas.values() for item in sublist],
+                            pd.Series())
 
+    print("generating %d slas for best solution" % (
+        sum([1 for sublist in best_slas.values() for item in sublist]), ))
 
+    for key, sla_list in best_slas.items():
 
-    total_sla_plot=pd.Series()
-    for sla in best_slas:
-        nodespecs = []
-        for key, value in [(file_to_node[key], value) for key, value in sla.items()]:
-            ns = SlaNodeSpec(toponode_id=key, type="start", attributes={"bandwidth": np.mean(value)})
+        for topokey, value in [(file_to_node[key], value) for value in sla_list]:
+            nodespecs = []
+            ns = SlaNodeSpec(toponode_id=topokey, type="start", attributes={"bandwidth": np.mean(value)})
             session.add(ns)
             nodespecs.append(ns)
-            total_sla_plot=pd.Series.add(total_sla_plot,value,fill_value=0)
+            total_sla_plot = pd.Series.add(total_sla_plot, value, fill_value=0)
 
+            nodespecs += [SlaNodeSpec(toponode_id=cdn_node, type="cdn") for cdn_node in cdn_nodes]
 
-
-        nodespecs += [SlaNodeSpec(toponode_id=cdn_node, type="cdn") for cdn_node in cdn_nodes]
-
-        sla_instance = Sla(start_date=pd.to_datetime(value.index[0]), end_date=pd.to_datetime(value.index[-1]),
-                           tenant_id=tenant.id,
-                           sla_node_specs=nodespecs,
-                           substrate=kwargs.get("substrate", None),
-                           delay=kwargs.get("delay", 50)
-                           )
-        session.add(sla_instance)
-        session.flush()
+            sla_instance = Sla(start_date=pd.to_datetime(value.index[0]), end_date=pd.to_datetime(value.index[-1]),
+                               tenant_id=tenant.id,
+                               sla_node_specs=nodespecs,
+                               substrate=kwargs.get("substrate", None),
+                               delay=kwargs.get("delay", 50)
+                               )
+            session.add(sla_instance)
+            session.flush()
 
     plot_forecast_and_disc_and_total(tsdf, best_discretization_parameter[0], best_discretization_parameter[1],
-                                     out_file_name="dummy" + ".svg", plot_name=None,total_sla_plot=total_sla_plot)
+                                     out_file_name="dummy" + ".svg", plot_name=None, total_sla_plot=total_sla_plot)
 
-
-    return tses.values()[0].index[0], tses.values()[0].index[-1]
+    return best_tse.values()[0].index[0], best_tse.values()[0].index[-1]
 
 
 if __name__ == "__main__":

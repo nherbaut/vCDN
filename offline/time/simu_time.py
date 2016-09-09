@@ -99,7 +99,7 @@ session.flush()
 
 for i in range(0, 1):
     tenant_start_count = rs.randint(low=2, high=5)
-    tenant_cdn_count = rs.randint(low=1, high=3)
+    tenant_cdn_count = rs.randint(low=2, high=3)
     draw = rs.choice(su.nodes, size=tenant_start_count + tenant_cdn_count, replace=False)
     tenant_start_nodes = draw[:tenant_start_count]
     tenant_cdn_nodes = draw[tenant_start_count:]
@@ -114,6 +114,7 @@ for i in range(0, 1):
 session.flush()
 
 current_services = []
+isp_cost=0
 # for each our
 
 data = []
