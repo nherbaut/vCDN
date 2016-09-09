@@ -9,7 +9,8 @@ from itertools import chain, combinations, product
 OPTIM_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../optim')
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
 
-
+from threading import Thread, Lock
+mutex = Lock()
 def shortest_path(node1, node2):
     '''
 
@@ -25,10 +26,15 @@ def shortest_path(node1, node2):
         f.write("%s\n" % node1)
     with open(os.path.join(RESULTS_FOLDER, "node2.data"), "w") as f:
         f.write("%s\n" % node2)
-    subprocess.call(["scip", "-c", "read %s" % os.path.join(OPTIM_FOLDER, "sp.zpl"), "-c",
-                     "read %s" % os.path.join(OPTIM_FOLDER, "sp.zpl"), "-c", "optimize ", "-c",
-                     "write solution %s" % (os.path.join(RESULTS_FOLDER, "solutions.data")), "-c", "q"],
-                    stdout=open(os.devnull, 'wb'))
+
+    mutex.acquire()
+    try:
+        subprocess.call(["scip", "-c", "read %s" % os.path.join(OPTIM_FOLDER, "sp.zpl"), "-c",
+                         "read %s" % os.path.join(OPTIM_FOLDER, "sp.zpl"), "-c", "optimize ", "-c",
+                         "write solution %s" % (os.path.join(RESULTS_FOLDER, "solutions.data")), "-c", "q"],
+                        stdout=open(os.devnull, 'wb'))
+    finally:
+        mutex.release()
     # read sp.zpl
     # optimize
     # write solution solutions.data

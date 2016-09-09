@@ -74,7 +74,7 @@ def merge_services(s1, s2):
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
 DATA_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../data')
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 Base.metadata.create_all(engine)
 rs = np.random.RandomState(1)
@@ -100,8 +100,8 @@ session.add(tenant)
 session.flush()
 
 for i in range(0, 1):
-    tenant_start_count = rs.randint(low=2, high=3)
-    tenant_cdn_count = rs.randint(low=1, high=2)
+    tenant_start_count = rs.randint(low=2, high=5)
+    tenant_cdn_count = rs.randint(low=2, high=3)
     draw = rs.choice(su.nodes, size=tenant_start_count + tenant_cdn_count, replace=False)
     tenant_start_nodes = draw[:tenant_start_count]
     tenant_cdn_nodes = draw[tenant_start_count:]

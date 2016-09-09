@@ -81,14 +81,12 @@ def fill_db_with_sla(tenant, file=None,
     tsdf = {file: get_forecast(os.path.join(DATA_FOLDER, file)) for file in
             data_files[0:forecast_series_count]}
 
-    # for windows in range(1, 6,2):
-    #    for centroids in range(1, 20,2):
-    for windows in range(1, 2, 1):
-        for centroids in range(15, 16, 1):
+    for windows in range(1, 6, 2):
+        for centroids in range(1, 20, 2):
             tses = {key: discretize(windows, centroids, ts=value[0], df=value[1]) for key, value in tsdf.items()}
             slas = chunk_series_as_sla(tses)
             logging.debug("%d slas generated for (%d,%d)" % (
-            sum([1 for sublist in slas.values() for item in sublist]), windows, centroids))
+                sum([1 for sublist in slas.values() for item in sublist]), windows, centroids))
             price = price_slas([item for sublist in slas.values() for item in sublist])
 
             logging.debug("For (%d,%d) the price is %lf" % (windows, centroids, price))

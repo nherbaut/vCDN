@@ -1,4 +1,5 @@
 import logging
+import multiprocessing
 import os
 import sys
 from collections import Counter
@@ -186,7 +187,7 @@ class Service(Base):
     @classmethod
     def get_optimal(cls, slas, serviceSpecFactory=ServiceSpecFactory, max_vhg_count=10, max_vcdn_count=10):
         session = Session()
-        threadpool = ThreadPool(1)
+        threadpool = ThreadPool(multiprocessing.cpu_count())
         thread_param = []
 
         max_vhg_count = min(max_vhg_count,
@@ -203,8 +204,8 @@ class Service(Base):
             for vcdn_count in range(1, min(vhg_count, max_vcdn_count) + 1):
                 thread_param.append(([sla.id for sla in slas], vhg_count, vcdn_count))
 
-        # services = threadpool.map(f, thread_param)
-        services = [f(x) for x in thread_param]
+        services = threadpool.map(f, thread_param)
+        #services = [f(x) for x in thread_param]
         services = session.query(Service).filter(Service.id.in_(services)).all()
 
         for service in services:
@@ -233,7 +234,7 @@ class Service(Base):
 
     def __init__(self, slasIDS, serviceSpecFactory=ServiceSpecFactory, vhg_count=1, vcdn_count=1):
         session = Session()
-        #print("7777777777777777 %s" % str(session))
+        # print("7777777777777777 %s" % str(session))
 
         self.slas = session.query(Sla).filter(Sla.id.in_(slasIDS)).all()
         self.vhg_count = vhg_count

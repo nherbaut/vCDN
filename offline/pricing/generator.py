@@ -72,7 +72,7 @@ def p(t, r, m):
     return r if t > m else np.exp(t * np.log(r) / m)
 
 
-def price_slas(slas, f=partial(p, r=1, m=24)):
+def price_slas(slas, f=partial(p, r=0.40, m=24)):
     prices = []
     for sla in slas:
         prices.append(price_sla(sla[0], sla.index[0], sla.index[-1],  f=f))
