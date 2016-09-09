@@ -12,7 +12,7 @@ import numpy
 from ..core.service import Service
 from ..core.sla import Sla
 from ..core.substrate import Substrate
-from ..time.persistence import session
+from ..time.persistence import Session
 
 OPTIM_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../optim')
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
@@ -256,6 +256,7 @@ if __name__ == "__main__":
     # else:
     #     graphiz_exe="dot"
 
+    session = Session()
     service = session.query(Service).filter(Service.id == args.serviceid).one()
 
     service.slas[0].substrate.write()

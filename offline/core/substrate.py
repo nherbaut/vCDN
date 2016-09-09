@@ -4,9 +4,6 @@ import networkx
 import numpy.random
 from haversine import haversine
 from pygraphml import GraphMLParser
-from sqlalchemy import Column, Integer, Float, ForeignKey, String
-from sqlalchemy.orm import relationship
-from sqlalchemy.schema import Table
 
 from ..time.persistence import *
 
@@ -27,8 +24,8 @@ substrate_to_edge = Table('substrate_to_edges', Base.metadata,
 class Substrate(Base):
     __tablename__ = "Substrate"
     id = Column(Integer, primary_key=True, autoincrement=True)
-    nodes = relationship("Node", secondary=substrate_to_node,cascade="all")
-    edges = relationship("Edge", secondary=substrate_to_edge,cascade="all")
+    nodes = relationship("Node", secondary=substrate_to_node, cascade="all")
+    edges = relationship("Edge", secondary=substrate_to_edge, cascade="all")
 
     def __str__(self):
         # print [x[1] for x in self.nodes.items()]
@@ -52,11 +49,13 @@ class Substrate(Base):
         self.nodes = nodesdict
         self.edges_init = sorted(edges, key=lambda x: "%s%s" % (str(x.node_1), str(x.node_2)))
 
-
     def write(self, path="."):
 
-        edges_file = os.path.join(RESULTS_FOLDER, path,"substrate.edges.data")
-        nodes_file = os.path.join(RESULTS_FOLDER, path,"substrate.nodes.data")
+        if not os.path.exists(os.path.join(RESULTS_FOLDER, path)):
+            os.makedirs(os.path.join(RESULTS_FOLDER, path))
+
+        edges_file = os.path.join(RESULTS_FOLDER, path, "substrate.edges.data")
+        nodes_file = os.path.join(RESULTS_FOLDER, path, "substrate.nodes.data")
         edges = self.edges
         nodesdict = self.nodes
         with open(edges_file, 'w') as f:
@@ -130,6 +129,7 @@ class Substrate(Base):
 
     @classmethod
     def fromGrid(cls, width=5, height=5, bw=10 ** 10, delay=10, cpu=10):
+        session=Session()
         edges = []
         nodes = []
 
@@ -139,7 +139,6 @@ class Substrate(Base):
                 nodes.append(node)
                 session.add(node)
                 session.flush()
-
 
         for i in range(1, width + 1):
             for j in range(1, height + 1):
@@ -158,8 +157,7 @@ class Substrate(Base):
                 session.add(edge)
                 session.flush()
 
-
-        return cls(edges, nodes,)
+        return cls(edges, nodes, )
 
     @classmethod
     def fromFile(cls, edges_file=os.path.join(RESULTS_FOLDER, "substrate.edges.data"),

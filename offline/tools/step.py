@@ -11,7 +11,7 @@ from ..core.service import Service
 from ..core.sla import generate_random_slas
 from ..core.solver import solve
 from ..core.substrate import Substrate
-from ..time.persistence import session, Base, engine, drop_all, Tenant
+from ..time.persistence import Session, Base, engine, drop_all, Tenant
 RESULTS_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
 
 
@@ -24,6 +24,7 @@ def valid_topo(topo_spec):
     return (name, spec)
 
 
+session=Session()
 Base.metadata.create_all(engine)
 rs = np.random.RandomState(1)
 # clear the db

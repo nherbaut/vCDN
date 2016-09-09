@@ -43,10 +43,10 @@ param source := read "../results/starters.nodes.data" as "2s" use 1;
 
 
 
-param cpuCost_vHG := read "../pricing/vmg/pricing_for_one_instance.properties" as "1n" use 1;
-param cpuCost_vCDN := read "../pricing/cdn/pricing_for_one_instance.properties" as "1n" use 1;
+param cpuCost_vHG := read "../../pricing/vmg/pricing_for_one_instance.properties" as "1n" use 1;
+param cpuCost_vCDN := read "../../pricing/cdn/pricing_for_one_instance.properties" as "1n" use 1;
 
-param netCost := read "../pricing/net.cost.data" as "1n" use 1;
+param netCost := read "../../pricing/net.cost.data" as "1n" use 1;
 
 var x[N cross NS ] binary;
 var x_cdn[N cross CDN_LABEL ] binary;

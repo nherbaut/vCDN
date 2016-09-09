@@ -7,10 +7,11 @@ from sqlalchemy import or_, and_
 from sqlalchemy.orm.exc import NoResultFound
 
 from ..core.mapping import Mapping
-from ..time.persistence import session, Edge, ServiceEdge, ServiceNode, NodeMapping, EdgeMapping
+from ..time.persistence import Session, Edge, ServiceEdge, ServiceNode, NodeMapping, EdgeMapping
 
 OPTIM_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../optim')
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
+PRICING_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../pricing')
 
 env = Environment(loader=PackageLoader("offline", 'optim'))
 template = env.get_template('optim.zpl.tpl')
@@ -22,20 +23,24 @@ def solve_inplace(allow_violations=False, preassign_vhg=False, path="."):
     :return: a mapping
     '''
 
+    session = Session()
+    if not os.path.exists(os.path.join(RESULTS_FOLDER, path)):
+        os.makedirs(os.path.join(RESULTS_FOLDER, path))
+
     # copy template to target folder
     with open(os.path.join(RESULTS_FOLDER, path, "optim.zpl"), "w") as f:
-        f.write(template.render(dir=os.path.join(RESULTS_FOLDER, path)))
+        f.write(template.render(dir=os.path.join(RESULTS_FOLDER, path), pricing_dir=PRICING_FOLDER))
 
     violations = []
     if not allow_violations:
         if not preassign_vhg:  # run the optim without CDNs
             subprocess.call(
                 ["scip", "-c", "read %s" % os.path.join(RESULTS_FOLDER, path, "optim.zpl"), "-c", "optimize ", "-c",
-                 "write solution %s" % (os.path.join(RESULTS_FOLDER, "solutions.data")), "-c", "q"],
+                 "write solution %s" % (os.path.join(RESULTS_FOLDER, path, "solutions.data")), "-c", "q"],
                 stdout=open(os.devnull, 'wb'))
         else:  # run the optim with CDN using reoptim
             subprocess.call(["scip", "-c", "read %s" % os.path.join(RESULTS_FOLDER, path, "optim.zpl"), "-c",
-                             "read %s" % os.path.join(RESULTS_FOLDER, "initial.sol"), "-c",
+                             "read %s" % os.path.join(RESULTS_FOLDER, path, "initial.sol"), "-c",
                              "set reoptimization enable true", "-c", "optimize ", "-c",
                              "write solution %s" % (os.path.join(RESULTS_FOLDER, path, "solutions.data")), "-c", "q"],
                             stdout=open(os.devnull, 'wb'))
@@ -73,8 +78,7 @@ def solve_inplace(allow_violations=False, preassign_vhg=False, path="."):
 
                     continue
                 except NoResultFound as e:
-                    print
-                    e
+                    print(e)
 
             # search edge
             matches = re.findall("^y\$(.*)\$(.*)\$(.*)\$([^ \t]+)", line)
@@ -113,11 +117,12 @@ def solve_inplace(allow_violations=False, preassign_vhg=False, path="."):
         return mapping
 
 
-def solve(service, substrate):
-    service.write()
-    substrate.write()
+def solve(service, substrate, path):
+    session = Session()
+    service.write(path)
+    substrate.write(path)
     session.flush()
-    mapping = solve_inplace()
+    mapping = solve_inplace(path=path)
     service.mapping = mapping
     if mapping is not None:
         session.add(mapping)

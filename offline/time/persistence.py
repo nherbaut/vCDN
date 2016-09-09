@@ -6,7 +6,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.schema import Table
-
+from sqlalchemy.orm import scoped_session
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
 
 Base = declarative_base()
@@ -74,6 +74,7 @@ class ServiceEdge(Base):
     node_1 = relationship("ServiceNode", foreign_keys=[node_1_id], cascade="save-update")
     node_2 = relationship("ServiceNode", foreign_keys=[node_2_id], cascade="save-update")
     mapping = relationship("Mapping", cascade="save-update")
+    service = relationship("Service", cascade="save-update")
     sla = relationship("Sla", cascade="save-update")
 
 
@@ -115,9 +116,11 @@ class EdgeMapping(Base):
 
 
 # engine = create_engine('sqlite:///%s/example.db' % RESULTS_FOLDER, echo=True)
-engine = create_engine('mysql+mysqldb://root:root@127.0.0.1/paper4', )
 
-session = sessionmaker(bind=engine, autocommit=True)()
+
+engine = create_engine('mysql+mysqldb://root:root@127.0.0.1/paper4', )
+session_factory = sessionmaker(bind=engine, autocommit=True)
+Session = scoped_session(session_factory)
 
 
 def drop_all():

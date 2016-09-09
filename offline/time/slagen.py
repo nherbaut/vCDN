@@ -15,7 +15,7 @@ from ..core.sla import Sla, SlaNodeSpec
 from ..pricing.generator import price_slas
 from ..time.SLA3D import get_tse, chunk_series_as_sla
 from ..time.disc_plot import plot_forecast_and_disc_and_total
-from ..time.persistence import session
+from ..time.persistence import Session
 
 TIME_PATH = os.path.dirname(os.path.realpath(__file__))
 
@@ -65,6 +65,7 @@ def fill_db_with_sla(tenant, file=None,
               date_start_forecast: the date of the first forecast
               date_end_forecast: the date of the last forecast
     '''
+    session = Session()
     locale.setlocale(locale.LC_ALL, 'en_US.utf8')
 
     start_nodes = [node.id for node in kwargs.get("start_nodes", [])]
@@ -80,12 +81,14 @@ def fill_db_with_sla(tenant, file=None,
     tsdf = {file: get_forecast(os.path.join(DATA_FOLDER, file)) for file in
             data_files[0:forecast_series_count]}
 
-    for windows in range(1, 2):
-        for centroids in range(1, 2):
-
+    # for windows in range(1, 6,2):
+    #    for centroids in range(1, 20,2):
+    for windows in range(1, 2, 1):
+        for centroids in range(15, 16, 1):
             tses = {key: discretize(windows, centroids, ts=value[0], df=value[1]) for key, value in tsdf.items()}
             slas = chunk_series_as_sla(tses)
-            logging.debug("%d slas generated for (%d,%d)" % (                sum([1 for sublist in slas.values() for item in sublist]), windows, centroids))
+            logging.debug("%d slas generated for (%d,%d)" % (
+            sum([1 for sublist in slas.values() for item in sublist]), windows, centroids))
             price = price_slas([item for sublist in slas.values() for item in sublist])
 
             logging.debug("For (%d,%d) the price is %lf" % (windows, centroids, price))
@@ -99,9 +102,9 @@ def fill_db_with_sla(tenant, file=None,
     logging.info(
         "best discretization parameters are %s with a price of %ld " % (str(best_discretization_parameter), best_price))
 
-    total_sla_plot = reduce(lambda x, y: pd.Series.add(x, y, fill_value=0),
-                            [item for sublist in best_slas.values() for item in sublist],
-                            pd.Series())
+    total_sla_plot = pd.Series()
+    for item in [item for sublist in best_slas.values() for item in sublist]:
+        total_sla_plot = pd.Series.add(item, total_sla_plot, fill_value=0)
 
     logging.info("generating %d slas for best solution" % (
         sum([1 for sublist in best_slas.values() for item in sublist]),))
@@ -129,7 +132,7 @@ def fill_db_with_sla(tenant, file=None,
     plot_forecast_and_disc_and_total(tsdf, best_discretization_parameter[0], best_discretization_parameter[1],
                                      out_file_name="dummy" + ".svg", plot_name=None, total_sla_plot=total_sla_plot)
 
-    return best_tse.values()[0].index[0], best_tse.values()[0].index[-1]
+    return list(best_tse.values())[0].index[0], list(best_tse.values())[0].index[-1]
 
 
 if __name__ == "__main__":

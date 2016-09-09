@@ -1,16 +1,30 @@
 import logging
+import os
 import sys
 from collections import Counter
+from multiprocessing.pool import ThreadPool
 
+from sqlalchemy import Column, Integer, ForeignKey
 from sqlalchemy import and_
+from sqlalchemy.orm import relationship
 
 from ..core.service_topo import ServiceTopo
 from ..core.sla import Sla, SlaNodeSpec
 from ..core.solver import solve
-from ..time.persistence import *
+from ..time.persistence import ServiceNode, ServiceEdge, Base, service_to_sla
+from ..time.persistence import Session
 
 OPTIM_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../optim')
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
+
+
+def f(x):
+    session = Session()
+    slasIDS, vhg_count, vcdn_count = x
+    service = Service(slasIDS=slasIDS, serviceSpecFactory=ServiceSpecFactory, vhg_count=vhg_count,
+                      vcdn_count=vcdn_count)
+    session.add(service)
+    return service.id
 
 
 class ServiceSpecFactory:
@@ -59,14 +73,14 @@ class Service(Base):
     serviceNodes = relationship("ServiceNode", cascade="all")
     serviceEdges = relationship("ServiceEdge", cascade="all")
     slas = relationship("Sla", secondary=service_to_sla, back_populates="services", cascade="save-update")
-    merged_sla = relationship("Sla", foreign_keys=[sla_id], cascade="save-update")
+    merged_sla = relationship("Sla", foreign_keys=[sla_id], cascade="all")
     mapping = relationship("Mapping", uselist=False, cascade="all", back_populates="service")
 
     def update_mapping(self):
         '''
         :return: updates the internal mapping of the service according to the updated list of SLAS
         '''
-
+        session = Session()
         if self.mapping is None:
             raise AttributeError("no mapping found")
 
@@ -139,6 +153,7 @@ class Service(Base):
         return serviceSpecs
 
     def __get_merged_sla(self, slas):
+        session = Session()
         # create a dict that can accumulate
         merge_sla = Counter()
         # for every SLA
@@ -161,11 +176,18 @@ class Service(Base):
                   max_cdn_to_use=slas[0].max_cdn_to_use)
 
         session.add(sla)
-        session.flush()
+        try:
+            session.flush()
+        except:
+            e = sys.exc_info()[0]
+            print(e)
         return sla
 
     @classmethod
     def get_optimal(cls, slas, serviceSpecFactory=ServiceSpecFactory, max_vhg_count=10, max_vcdn_count=10):
+        session = Session()
+        threadpool = ThreadPool(1)
+        thread_param = []
 
         max_vhg_count = min(max_vhg_count,
                             len(set([nodes.toponode_id for sla in slas for nodes in sla.get_start_nodes()])))
@@ -179,26 +201,28 @@ class Service(Base):
 
         for vhg_count in range(1, max_vhg_count + 1):
             for vcdn_count in range(1, min(vhg_count, max_vcdn_count) + 1):
+                thread_param.append(([sla.id for sla in slas], vhg_count, vcdn_count))
 
-                service = cls(slas, serviceSpecFactory=ServiceSpecFactory, vhg_count=vhg_count,
-                              vcdn_count=vcdn_count)
-                session.add(service)
+        # services = threadpool.map(f, thread_param)
+        services = [f(x) for x in thread_param]
+        services = session.query(Service).filter(Service.id.in_(services)).all()
 
-                if service.mapping is not None:
-                    # candidate!
+        for service in services:
+            if service.mapping is not None:
+                # candidate!
+                logging.debug(
+                    "----------We have a candidate service with (%d,%d), with cost %lf" % (
+                        vhg_count, vcdn_count, service.mapping.objective_function))
+                if service.mapping.objective_function < best_cost:
+                    best_cost = service.mapping.objective_function
+                    best_service = service
                     logging.debug(
-                        "----------We have a candidate service with (%d,%d), with cost %lf" % (
-                            vhg_count, vcdn_count, service.mapping.objective_function))
-                    if service.mapping.objective_function < best_cost:
-                        best_cost = service.mapping.objective_function
-                        if best_service is not None:
-                            session.delete(best_service)
-                        best_service = service
-                        logging.debug(
-                            "its the best so far")
-                        session.flush()
-                        continue
+                        "its the best so far")
+                    session.flush()
+                    continue
 
+        for service in services:
+            if service.id != best_service.id:
                 session.delete(service)
                 session.flush()
 
@@ -207,11 +231,14 @@ class Service(Base):
 
         return best_service
 
-    def __init__(self, slas, serviceSpecFactory=ServiceSpecFactory, vhg_count=1, vcdn_count=1):
-        self.slas = slas
+    def __init__(self, slasIDS, serviceSpecFactory=ServiceSpecFactory, vhg_count=1, vcdn_count=1):
+        session = Session()
+        #print("7777777777777777 %s" % str(session))
+
+        self.slas = session.query(Sla).filter(Sla.id.in_(slasIDS)).all()
         self.vhg_count = vhg_count
         self.vcdn_count = vcdn_count
-        self.merged_sla = self.__get_merged_sla(slas)
+        self.merged_sla = self.__get_merged_sla(self.slas)
         self.serviceSpecFactory = serviceSpecFactory
 
         self.topo = {sla: ServiceTopo(sla=sla, vhg_count=vhg_count, vcdn_count=vcdn_count, hint_node_mappings=None) for
@@ -240,7 +267,8 @@ class Service(Base):
             session.flush()
 
         # create temp mapping for vhg<->vcdn hints
-        self.__solve()
+        assert self.id is not None
+        self.__solve(path=str(self.id))
         session.flush()
 
         if self.mapping is not None:
@@ -266,16 +294,17 @@ class Service(Base):
 
             session.delete(self.mapping)
             session.flush()
-            self.__solve()
+            self.__solve(path=str(self.id))
             session.flush()
 
-    def __solve(self):
+    def __solve(self, path="."):
         '''
         Solve the service according to specs
         :return: nothing, service.mapping may be initialized with an actual possible mapping
         '''
+        session = Session()
         if len(self.slas) > 0:
-            solve(self, self.slas[0].substrate)
+            solve(self, self.slas[0].substrate, path)
             if self.mapping is not None:
                 session.add(self.mapping)
 
@@ -301,6 +330,9 @@ class Service(Base):
 
     def write(self, path="."):
 
+        if not os.path.exists(os.path.join(RESULTS_FOLDER, path)):
+            os.makedirs(os.path.join(RESULTS_FOLDER, path))
+
         mode = "w"
         # slas = self.slas
         slas = [self.merged_sla]
@@ -320,8 +352,6 @@ class Service(Base):
                 for snode_id, cpu in topo.dump_nodes():
                     f.write("%s_%s %lf\n" % (snode_id, postfix, cpu))
                     # sys.stdout.write("%s_%s %lf\n" % (snode_id, postfix, cpu))
-
-
 
 
                     # write constraints on CDN placement
@@ -371,4 +401,5 @@ class Service(Base):
 
     @classmethod
     def getFromSla(cls, sla):
+        session = Session()
         return session.query(Service).filter(Sla.id == sla.id).join(Service.slas).filter(Sla.id == sla.id).one()

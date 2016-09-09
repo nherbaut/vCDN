@@ -4,12 +4,12 @@ import sys
 
 import numpy as np
 import pandas as pd
-
+import os
 from ..core.service import Service
 from ..core.sla import findSLAByDate
 from ..core.substrate import Substrate
 from ..time.namesgenerator import get_random_name
-from ..time.persistence import *
+from ..time.persistence import engine, drop_all, Base, Session, Tenant
 from ..time.slagen import fill_db_with_sla
 from ..tools.candelPlot import candelPlot
 
@@ -60,11 +60,12 @@ def merge_services(s1, s2):
         logging.debug("INDIVIDUAL COSTS FOR %s : %lf" % ("\t".join([str(s1), str(s2)]), individual_costs))
         if consolidated_cost < individual_costs:
             logging.debug("CREATED %s AND OPTIMAL" % s3)
+            session.flush()
             return s3, (s3.mapping - s1.mapping)
         else:
             logging.debug("CREATED %s BUT SUBOPTIMAL" % s3)
             session.delete(s3)
-
+    session.flush()
     return None, None
 
 
@@ -82,7 +83,7 @@ drop_all()
 
 # create the topo and load it
 su = Substrate.fromGrid(delay=20, cpu=100000, )
-
+session=Session()
 for node in su.nodes:
     session.add(node)
     session.flush()
@@ -99,8 +100,8 @@ session.add(tenant)
 session.flush()
 
 for i in range(0, 1):
-    tenant_start_count = rs.randint(low=2, high=5)
-    tenant_cdn_count = rs.randint(low=2, high=3)
+    tenant_start_count = rs.randint(low=2, high=3)
+    tenant_cdn_count = rs.randint(low=1, high=2)
     draw = rs.choice(su.nodes, size=tenant_start_count + tenant_cdn_count, replace=False)
     tenant_start_nodes = draw[:tenant_start_count]
     tenant_cdn_nodes = draw[tenant_start_count:]
@@ -209,7 +210,6 @@ for adate in pd.date_range(date_start_forecast, date_end_forecast, freq="H"):
             session.delete(merged_service)
             session.flush()
         else:
-            # session.add(merged_service)
             session.flush()
             su.consume_service(merged_service)
             su.write()

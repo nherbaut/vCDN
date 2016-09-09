@@ -3,7 +3,7 @@ import scipy.integrate as integrate
 from sqlalchemy import Column, Integer, DateTime, Float, ForeignKey, String, PickleType
 from sqlalchemy.orm import relationship
 
-from ..time.persistence import session, Base, service_to_sla
+from ..time.persistence import Session, Base, service_to_sla
 
 tcp_win = 65535.0
 
@@ -37,10 +37,10 @@ class Sla(Base):
     tenant = relationship("Tenant", cascade="all")
 
     sla_node_specs = relationship("SlaNodeSpec", cascade="all, delete-orphan")
-    services = relationship("Service", secondary=service_to_sla, back_populates="slas", cascade="all")
+    services = relationship("Service", secondary=service_to_sla, back_populates="slas", cascade="save-update")
 
     substrate_id = Column(Integer, ForeignKey("Substrate.id"))
-    substrate = relationship("Substrate", cascade="all")
+    substrate = relationship("Substrate", cascade="save-update")
 
 
 
@@ -69,6 +69,7 @@ class Sla(Base):
 
 
 def findSLAByDate(date):
+    session = Session()
     return session.query(Sla).filter(Sla.start_date <= date).filter(Sla.end_date > date).all()
 
 
