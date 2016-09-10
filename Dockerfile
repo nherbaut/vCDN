@@ -39,10 +39,6 @@ WORKDIR /opt/simuservice/
 COPY ./offline /opt/simuservice/offline
 
 RUN echo "/etc/init.d/mysql start && mysql -u root -proot -h localhost -e 'CREATE database paper4;'"> bootstrap.sh
-RUN echo "#!/usr/bin/env python" >> do_simu.py
-RUN echo "import matplotlib" >> do_simu.py
-RUN echo "matplotlib.use('Agg')"  >> do_simu.py
 
-RUN echo "from offline.time.simu_time import do_simu" >> do_simu.py
-RUN echo "do_simu()" >> do_simu.py
-RUN chmod +x ./bootstrap.sh ./do_simu.py
+COPY ./start.py /opt/simuservice
+RUN chmod +x ./bootstrap.sh 
