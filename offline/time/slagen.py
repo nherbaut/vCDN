@@ -37,6 +37,7 @@ import tempfile
 
 
 def get_forecast(file, force_refresh=False):
+
     file = os.path.abspath(file)
     out_file = os.path.abspath(file + ".forecast")
     if force_refresh or not os.path.isfile(out_file):
@@ -44,9 +45,12 @@ def get_forecast(file, force_refresh=False):
             df = pd.read_csv(file, names=["time", "values"])
             ts = pd.Series(df["values"].values, index=pd.to_datetime(df["time"]))
             resampled = ts.resample("1H").mean().bfill()
+            resampled=resampled[-100:]
             resampled.to_csv(f)
+
+        print ("look %s"%f.name)
         subprocess.call(["%s/compute_forecast.R" % TIME_PATH, "-i", "%s" % f.name, "-o", out_file], cwd=TIME_PATH,
-                        stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb')
+                        #stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb')
                         )
 
     with open(out_file, "r") as f:

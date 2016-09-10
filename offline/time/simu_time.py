@@ -18,7 +18,7 @@ from ..time.slagen import fill_db_with_sla
 
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
 DATA_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../data')
-logging.basicConfig(level=logging.ERROR)
+logging.basicConfig(level=logging.INFO)
 rs = np.random.RandomState(1)
 
 
