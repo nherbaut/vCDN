@@ -9,15 +9,21 @@ def perform_forecast_bench(folder):
     means=[]
     for file in data_files :
         if "daily" in file and not "forecast" in file:
+            print("%s"%file)
             ts, df=get_forecast(file, force_refresh=True)
-            edata=np.abs(np.subtract(df["fc0"],df["fcmean"]),df["fc0"])
+            edata=np.abs(np.subtract(df["fc0"],df["fcmean"]))
+            mape = 100* np.mean(np.divide(np.abs(np.subtract(df["fc0"], df["fcmean"])),df["fc0"]))
             edata=edata[edata>0]
+            q=0
+            for j in range(24+1,len(df["fc0"]-24-1)):
+                q+=np.abs(df["fc0"][j]-df["fc0"][j-24])
             mea=np.mean(edata)
-            e=100*np.mean(edata[:-1])
-            means.append(e)
+            mase=mea/(1.0/(len(df["fc0"])-24)*q)
+            means.append((mase,mea,mape,file ))
+            print("%s:\t%lf\t%lf\t%lf" % (file,mase,mea,mape, ))
 
     for mean in sorted(means):
-        print("%lf",mean)
+        print("%s:\t%lf\t%lf\t%lf"%(mean[3],mean[0],mean[1],mean[2]))
 
 
     pass

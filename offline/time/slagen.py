@@ -143,7 +143,7 @@ def fill_db_with_sla(data_files, pricer, tenant, **kwargs):
     plot_forecast_and_disc_and_total(tsdf, best_discretization_parameter[0], best_discretization_parameter[1],
                                      out_file_name="dummy" + ".svg", plot_name=None, total_sla_plot=total_sla_plot)
 
-    return list(best_tse.values())[0].index[0], list(best_tse.values())[0].index[-1], best_price
+    return list(best_tse.values())[0].index[0], list(best_tse.values())[0].index[-1], best_price, best_discretization_parameter
 
 
 if __name__ == "__main__":

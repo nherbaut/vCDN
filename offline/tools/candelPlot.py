@@ -59,7 +59,7 @@ def candelPlot(x, y, y1, sla_hi, sla_low):
 
     ax1.grid(True)
     plt.savefig("candel.svg")
-    plt.show()
+    #plt.show()
 
 
 if __name__ == "__main__":
