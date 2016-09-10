@@ -271,5 +271,4 @@ def do_simu(migration_costs_func=migration_calculator, sla_pricer=price_slas, lo
         #    print("(%lf,%lf,%lf,%lf)," % (y[i], y1[i], sla_hi[i], sla_low[i]))
         # print("]")
         candelPlot(np.arange(0, len(y)), y, y1, sla_hi, sla_low)
-        print("%s,%lf,%lf,%lf,%d" % (
-            str(best_discretization_parameter), sum([x[0] for x in data]), sum(ttbw[1:]), total_sla_price, sla_count))
+        return  (str(best_discretization_parameter), sum([x[0] for x in data]), sum(ttbw[1:]), total_sla_price, sla_count)
