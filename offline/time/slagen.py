@@ -45,7 +45,6 @@ def get_forecast(file, force_refresh=False):
             df = pd.read_csv(file, names=["time", "values"])
             ts = pd.Series(df["values"].values, index=pd.to_datetime(df["time"]))
             resampled = ts.resample("1H").mean().bfill()
-            resampled=resampled[-100:]
             resampled.to_csv(f)
 
         subprocess.call(["%s/compute_forecast.R" % TIME_PATH, "-i", "%s" % f.name, "-o", out_file], cwd=TIME_PATH,
