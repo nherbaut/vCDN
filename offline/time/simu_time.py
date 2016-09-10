@@ -24,7 +24,7 @@ rs = np.random.RandomState(1)
 
 
 # Print iterations progress
-def printProgress(iteration, total, prefix='', suffix='', decimals=1, barLength=100,file=sys.stderr):
+def printProgress(iteration, total, prefix='', suffix='', decimals=1, barLength=100, file=sys.stderr):
     """
     Call in a loop to create terminal progress bar
     @params:
@@ -121,7 +121,7 @@ def do_simu(migration_costs_func=migration_calculator, sla_pricer=price_slas):
     session.flush()
 
     for i in range(0, 1):
-        tenant_start_count = rs.randint(low=2, high=4)
+        tenant_start_count = rs.randint(low=5, high=6)
         tenant_cdn_count = rs.randint(low=2, high=3)
         draw = rs.choice(su.nodes, size=tenant_start_count + tenant_cdn_count, replace=False)
         tenant_start_nodes = draw[:tenant_start_count]
@@ -134,7 +134,7 @@ def do_simu(migration_costs_func=migration_calculator, sla_pricer=price_slas):
                       "daily" in file and not file.startswith(".") and file.endswith(".csvx")]
         rs.shuffle(data_files)
         # print("using : %s" % (" ".join([file for file in data_files])))
-        date_start_forecast, date_end_forecast, total_sla_price, best_discretization_parameter= fill_db_with_sla(
+        date_start_forecast, date_end_forecast, total_sla_price, best_discretization_parameter, sla_count = fill_db_with_sla(
             data_files, sla_pricer, tenant,
             start_nodes=tenant_start_nodes,
             cdn_nodes=tenant_cdn_nodes, substrate=su,
@@ -270,4 +270,5 @@ def do_simu(migration_costs_func=migration_calculator, sla_pricer=price_slas):
         #    print("(%lf,%lf,%lf,%lf)," % (y[i], y1[i], sla_hi[i], sla_low[i]))
         # print("]")
         candelPlot(np.arange(0, len(y)), y, y1, sla_hi, sla_low)
-        print("%s,%lf,%lf,%lf" % (str(best_discretization_parameter), sum([x[0] for x in data]), sum(ttbw[1:]), total_sla_price))
+        print("%s,%lf,%lf,%lf,%d" % (
+        str(best_discretization_parameter), sum([x[0] for x in data]), sum(ttbw[1:]), total_sla_price, sla_count))

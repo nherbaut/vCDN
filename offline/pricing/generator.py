@@ -73,6 +73,7 @@ def p(t, r, m):
 
 #r=0 => (1,1)
 #r=1 => (1,20)
+
 def price_slas(slas, f=partial(p, r=0.25, m=24)):
     prices = []
     for sla in slas:
