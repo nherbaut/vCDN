@@ -48,7 +48,6 @@ def get_forecast(file, force_refresh=False):
             resampled=resampled[-100:]
             resampled.to_csv(f)
 
-        print ("look %s"%f.name)
         subprocess.call(["%s/compute_forecast.R" % TIME_PATH, "-i", "%s" % f.name, "-o", out_file], cwd=TIME_PATH,
                       stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb')
                         )

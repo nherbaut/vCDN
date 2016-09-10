@@ -18,7 +18,7 @@ from ..time.slagen import fill_db_with_sla
 
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
 DATA_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../data')
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.ERROR)
 rs = np.random.RandomState(1)
 
 
@@ -110,6 +110,7 @@ def do_simu(migration_costs_func=migration_calculator, sla_pricer=price_slas):
     session = Session()
     # create the topo and load it
     su = Substrate.fromGrid(delay=2, cpu=10000000, bw=10 ** 12)
+    su.write(RESULTS_FOLDER)
 
     session.add(su)
     session.flush()
