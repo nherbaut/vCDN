@@ -50,7 +50,7 @@ def get_forecast(file, force_refresh=False):
 
         print ("look %s"%f.name)
         subprocess.call(["%s/compute_forecast.R" % TIME_PATH, "-i", "%s" % f.name, "-o", out_file], cwd=TIME_PATH,
-                        #stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb')
+                      stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb')
                         )
 
     with open(out_file, "r") as f:
