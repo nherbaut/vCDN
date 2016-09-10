@@ -10,8 +10,9 @@ def perform_forecast_bench(folder):
     for file in data_files :
         if "daily" in file and not "forecast" in file:
             ts, df=get_forecast(file, force_refresh=True)
-            edata=np.abs(np.divide(np.subtract(df["fc0"],df["fcmean"]),df["fc0"]))
+            edata=np.abs(np.subtract(df["fc0"],df["fcmean"]),df["fc0"])
             edata=edata[edata>0]
+            mea=np.mean(edata)
             e=100*np.mean(edata[:-1])
             means.append(e)
 
