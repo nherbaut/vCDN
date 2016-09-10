@@ -15,6 +15,7 @@ from ..pricing.generator import price_slas
 from ..time.namesgenerator import get_random_name
 from ..time.persistence import engine, drop_all, Base, Session, Tenant
 from ..time.slagen import fill_db_with_sla
+from ..tools.candelPlot import candelPlot
 
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
 DATA_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../data')
@@ -132,7 +133,7 @@ def do_simu(migration_costs_func=migration_calculator, sla_pricer=price_slas):
                       "daily" in file and not file.startswith(".") and file.endswith(".csvx")]
         rs.shuffle(data_files)
         # print("using : %s" % (" ".join([file for file in data_files])))
-        date_start_forecast, date_end_forecast, total_sla_price = fill_db_with_sla(
+        date_start_forecast, date_end_forecast, total_sla_price, best_discretization_parameter= fill_db_with_sla(
             data_files, sla_pricer, tenant,
             start_nodes=tenant_start_nodes,
             cdn_nodes=tenant_cdn_nodes, substrate=su,
@@ -267,5 +268,5 @@ def do_simu(migration_costs_func=migration_calculator, sla_pricer=price_slas):
         # for i in range(0, len(y)):
         #    print("(%lf,%lf,%lf,%lf)," % (y[i], y1[i], sla_hi[i], sla_low[i]))
         # print("]")
-        # candelPlot(np.arange(0, len(y)), y, y1, sla_hi, sla_low)
-        print("%lf,%lf,%lf" % (sum([x[0] for x in data]), sum(ttbw[1:]), total_sla_price))
+        candelPlot(np.arange(0, len(y)), y, y1, sla_hi, sla_low)
+        print("%s,%lf,%lf,%lf" % (str(best_discretization_parameter), sum([x[0] for x in data]), sum(ttbw[1:]), total_sla_price))
