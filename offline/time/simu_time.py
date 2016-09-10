@@ -19,7 +19,7 @@ from ..tools.candelPlot import candelPlot
 
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
 DATA_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../data')
-logging.basicConfig(level=logging.INFO)
+
 rs = np.random.RandomState(1)
 
 
@@ -103,7 +103,9 @@ def merge_services(s1, s2, migration_costs_func):
     return None, None
 
 
-def do_simu(migration_costs_func=migration_calculator, sla_pricer=price_slas):
+def do_simu(migration_costs_func=migration_calculator, sla_pricer=price_slas, loglevel=logging.INFO):
+    logging.basicConfig(filename='simu.log', level=loglevel)
+
     Base.metadata.create_all(engine)
     # clear the db
     drop_all()
@@ -270,4 +272,4 @@ def do_simu(migration_costs_func=migration_calculator, sla_pricer=price_slas):
         # print("]")
         candelPlot(np.arange(0, len(y)), y, y1, sla_hi, sla_low)
         print("%s,%lf,%lf,%lf,%d" % (
-        str(best_discretization_parameter), sum([x[0] for x in data]), sum(ttbw[1:]), total_sla_price, sla_count))
+            str(best_discretization_parameter), sum([x[0] for x in data]), sum(ttbw[1:]), total_sla_price, sla_count))
