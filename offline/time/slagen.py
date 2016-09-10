@@ -2,7 +2,6 @@
 # Generate SLAS from a forecast
 import argparse
 import datetime
-import locale
 import logging
 import os
 import os.path
@@ -38,7 +37,8 @@ import tempfile
 
 
 def get_forecast(file, force_refresh=False):
-    out_file = file + ".forecast"
+    file = os.path.abspath(file)
+    out_file = os.path.abspath(file + ".forecast")
     if force_refresh or not os.path.isfile(out_file):
         with tempfile.NamedTemporaryFile() as f:
             df = pd.read_csv(file, names=["time", "values"])
@@ -48,7 +48,8 @@ def get_forecast(file, force_refresh=False):
             resampled.to_csv(f)
 
             subprocess.call(["%s/compute_forecast.R" % TIME_PATH, "-i", "%s" % f.name, "-o", out_file], cwd=TIME_PATH,
-                            stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
+                            # stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb')
+                            )
 
     with open(out_file, "r") as f:
         df = pd.read_csv(f)
@@ -77,7 +78,6 @@ def fill_db_with_sla(data_files, pricer, tenant, **kwargs):
               date_end_forecast: the date of the last forecast
     '''
     session = Session()
-    locale.setlocale(locale.LC_ALL, 'C')
 
     start_nodes = [node.id for node in kwargs.get("start_nodes", [])]
     cdn_nodes = [node.id for node in kwargs.get("cdn_nodes", [])]

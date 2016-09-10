@@ -22,7 +22,7 @@ opt_parser = OptionParser(option_list=option_list);
 opt = parse_args(opt_parser);
 
 
-compute_forecast <- function(in_file, out, limit, plot ){
+compute_forecast <- function(in_file, out, limit, plot, lengthforecast){
 
 
 
@@ -48,17 +48,18 @@ compute_forecast <- function(in_file, out, limit, plot ){
     m<-auto.arima(data)
     print(m)
     #predict
-    fc<-forecast(m,level=c(95,80),opt$lengthforecast)
+    fc<-forecast(m,level=c(95,80),lengthforecast)
     fcmean<-as.xts(append(coredata(fc$x),fc$mean),v1)
     fc95<-as.xts(append(coredata(fc$x),fc$upper[,"95%"]),v1)
     fc80<-as.xts(append(coredata(fc$x),fc$upper[,"80%"]),v1)
     fc0<-as.xts(v2,v1)
     fc_merged<-merge(fcmean,fc95,fc80,fc0)
-    write.zoo(file=opt$out,fc_merged,sep = ",")
+    print(out)
+    write.zoo(file=out,fc_merged,sep = ",")
     print(paste("csv data writter in " , opt$out))
 
     if(plot){
-        outfile<-paste(opt$out,".pdf",sep="")
+        outfile<-paste(out,".pdf",sep="")
         pdf(file=outfile)
         plot(fc)
         print(paste("pdf data writter in " , outfile))
@@ -69,4 +70,4 @@ compute_forecast <- function(in_file, out, limit, plot ){
 }
 
 
-compute_forecast (opt$in_file, opt$out, opt$limit, opt$plot);
+compute_forecast (opt$in_file, opt$out, opt$limit, opt$plot,opt$lengthforecast);
