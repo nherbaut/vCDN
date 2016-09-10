@@ -77,7 +77,7 @@ def fill_db_with_sla(data_files, pricer, tenant, **kwargs):
               date_end_forecast: the date of the last forecast
     '''
     session = Session()
-    locale.setlocale(locale.LC_ALL, 'en_US.utf8')
+    locale.setlocale(locale.LC_ALL, 'C')
 
     start_nodes = [node.id for node in kwargs.get("start_nodes", [])]
     cdn_nodes = [node.id for node in kwargs.get("cdn_nodes", [])]
