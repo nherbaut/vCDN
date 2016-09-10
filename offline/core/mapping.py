@@ -10,7 +10,7 @@ from ..time.persistence import Base
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
 PRICING_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../pricing')
 
-migration_price_calculator = get_migration_calculator()
+
 
 
 class Mapping(Base):
@@ -23,6 +23,7 @@ class Mapping(Base):
     node_mappings = relationship("NodeMapping", cascade="all")
     edge_mappings = relationship("EdgeMapping", cascade="all")
     objective_function = Column(Float)
+
 
     def dump_cdn_node_mapping(self):
         '''
@@ -93,13 +94,15 @@ class Mapping(Base):
             obj = pickle.load(self, file)
             return cls(obj.service_node_id, obj.edgesSol)
 
-    def __sub__(self, b):
+
+    @classmethod
+    def get_migration_cost(cls,a, b,migration_costs_func):
         res = {}
-        res = {nm.service_node.id: (nm.service_node.cpu, 0) for nm in self.node_mappings}
+        res = {nm.service_node.id: (nm.service_node.cpu, 0) for nm in a.node_mappings}
         for nm in b.node_mappings:
             if nm.service_node.service_id in res:
                 res[nm.service_node.id] = (res[nm.service_node.service_id][0], nm.service_node.cpu)
             else:
                 res[nm.service_node.id] = (0, nm.service_node.cpu)
 
-        return migration_price_calculator(filter(lambda x: x[0]+x[1]!=0,res.values()))
+        return migration_costs_func(filter(lambda x: x[0]+x[1]!=0,res.values()))

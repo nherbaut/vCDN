@@ -18,30 +18,25 @@ def shortest_path(node1, node2):
     :param node2: a name of a topo node
     :return: the shortest_path length
     '''
+    #print("%s %s" % (node1,node2))
 
     if node1 == node2:
         return 0
 
 
 
-    mutex.acquire()
+
     with open(os.path.join(RESULTS_FOLDER, "node1.data"), "w") as f:
         f.write("%s\n" % node1)
     with open(os.path.join(RESULTS_FOLDER, "node2.data"), "w") as f:
         f.write("%s\n" % node2)
 
 
-    try:
-        subprocess.call(["scip", "-c", "read %s" % os.path.join(OPTIM_FOLDER, "sp.zpl"), "-c",
+
+    subprocess.call(["scip", "-c", "read %s" % os.path.join(OPTIM_FOLDER, "sp.zpl"), "-c",
                          "read %s" % os.path.join(OPTIM_FOLDER, "sp.zpl"), "-c", "optimize ", "-c",
                          "write solution %s" % (os.path.join(RESULTS_FOLDER, "solutions.data")), "-c", "q"],
                         stdout=open(os.devnull, 'wb'))
-    finally:
-        mutex.release()
-    # read sp.zpl
-    # optimize
-    # write solution solutions.data
-    # q
 
 
     with open(os.path.join(RESULTS_FOLDER, "solutions.data"), "r") as sol:
@@ -167,7 +162,12 @@ def build_exhaustive_tree(data, settings, tree):
 
 def shortest_path_cached(node1, node2):
     if (node1, node2) not in cache:
-        cache[(node1, node2)] = shortest_path(node1, node2)
+        mutex.acquire()
+        try:
+            cache[(node1, node2)] = shortest_path(node1, node2)
+        finally:
+            mutex.release()
+
 
     return cache[(node1, node2)]
 
@@ -216,7 +216,7 @@ def get_node_clusters(nodes, class_count, substrate):
     min_score = sys.maxint
     candidate = None
 
-    substrate.write()
+
 
     for i in combinaisons:
         tree = Tree(distance=do_dist)

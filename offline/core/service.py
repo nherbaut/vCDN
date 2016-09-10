@@ -19,6 +19,8 @@ OPTIM_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../opt
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
 
 
+
+
 def f(x):
     session = Session()
     slasIDS, vhg_count, vcdn_count = x
@@ -187,7 +189,7 @@ class Service(Base):
     @classmethod
     def get_optimal(cls, slas, serviceSpecFactory=ServiceSpecFactory, max_vhg_count=10, max_vcdn_count=10):
         session = Session()
-        threadpool = ThreadPool(multiprocessing.cpu_count())
+        threadpool = ThreadPool(multiprocessing.cpu_count()-1)
         thread_param = []
 
         max_vhg_count = min(max_vhg_count,
@@ -204,8 +206,8 @@ class Service(Base):
             for vcdn_count in range(1, min(vhg_count, max_vcdn_count) + 1):
                 thread_param.append(([sla.id for sla in slas], vhg_count, vcdn_count))
 
-        #services = threadpool.map(f, thread_param)
-        services = [f(x) for x in thread_param]
+        services = threadpool.map(f, thread_param)
+        #services = [f(x) for x in thread_param]
         services = session.query(Service).filter(Service.id.in_(services)).all()
 
         for service in services:
@@ -222,13 +224,15 @@ class Service(Base):
                     session.flush()
                     continue
 
+        if best_service is None:
+            raise ValueError("Cannot compute any successful service")
+
         for service in services:
             if service.id != best_service.id:
                 session.delete(service)
                 session.flush()
 
-        if best_service is None:
-            raise ValueError("Cannot compute any successful service")
+
 
         return best_service
 

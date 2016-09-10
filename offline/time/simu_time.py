@@ -6,18 +6,43 @@ import sys
 import numpy as np
 import pandas as pd
 
+from ..core.mapping import Mapping
 from ..core.service import Service
 from ..core.sla import findSLAByDate
 from ..core.substrate import Substrate
+from ..pricing.generator import migration_calculator
+from ..pricing.generator import price_slas
 from ..time.namesgenerator import get_random_name
 from ..time.persistence import engine, drop_all, Base, Session, Tenant
 from ..time.slagen import fill_db_with_sla
-from ..tools.candelPlot import candelPlot
 
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
 DATA_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../data')
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.ERROR)
 rs = np.random.RandomState(1)
+
+
+# Print iterations progress
+def printProgress(iteration, total, prefix='', suffix='', decimals=1, barLength=100,file=sys.stderr):
+    """
+    Call in a loop to create terminal progress bar
+    @params:
+        iteration   - Required  : current iteration (Int)
+        total       - Required  : total iterations (Int)
+        prefix      - Optional  : prefix string (Str)
+        suffix      - Optional  : suffix string (Str)
+        decimals    - Optional  : positive number of decimals in percent complete (Int)
+        barLength   - Optional  : character length of bar (Int)
+    """
+    formatStr = "{0:." + str(decimals) + "f}"
+    percents = formatStr.format(100 * (iteration / float(total)))
+    filledLength = int(round(barLength * iteration / float(total)))
+    bar = 'X' * filledLength + '-' * (barLength - filledLength)
+    file.write('\r%s |%s| %s%s %s' % (prefix, bar, percents, '%', suffix)),
+    file.flush()
+    if iteration == total:
+        file.write('\n')
+        file.flush()
 
 
 class bcolors:
@@ -47,7 +72,7 @@ def col(arg, colr=bcolors.ENDC):
     return colr + str(arg) + bcolors.ENDC
 
 
-def merge_services(s1, s2):
+def merge_services(s1, s2, migration_costs_func):
     '''
 
     :param s1: a service with a mapping
@@ -61,14 +86,15 @@ def merge_services(s1, s2):
     s3 = Service.get_optimal(s1.slas + s2.slas)
 
     if s3 is not None and s3.mapping is not None:
-        consolidated_cost = s3.mapping.objective_function + (s3.mapping - s1.mapping)
+        consolidated_cost = s3.mapping.objective_function + Mapping.get_migration_cost(s3.mapping, s1.mapping,
+                                                                                       migration_costs_func)
         individual_costs = s2.mapping.objective_function + s1.mapping.objective_function
         logging.debug("CONSOLIDATED COSTS for %s : %lf" % (s3, s3.mapping.objective_function))
         logging.debug("INDIVIDUAL COSTS FOR %s : %lf" % ("\t".join([str(s1), str(s2)]), individual_costs))
         if consolidated_cost < individual_costs:
             logging.debug("CREATED %s AND OPTIMAL" % s3)
             session.flush()
-            return s3, (s3.mapping - s1.mapping)
+            return s3, Mapping.get_migration_cost(s3.mapping, s1.mapping, migration_costs_func)
         else:
             logging.debug("CREATED %s BUT SUBOPTIMAL" % s3)
             session.delete(s3)
@@ -76,21 +102,14 @@ def merge_services(s1, s2):
     return None, None
 
 
-def do_simu():
+def do_simu(migration_costs_func=migration_calculator, sla_pricer=price_slas):
     Base.metadata.create_all(engine)
     # clear the db
     drop_all()
 
-    # create the topo and load it
-    su = Substrate.fromGrid(delay=20, cpu=100000, )
     session = Session()
-    for node in su.nodes:
-        session.add(node)
-        session.flush()
-
-    for edge in su.edges:
-        session.add(edge)
-        session.flush()
+    # create the topo and load it
+    su = Substrate.fromGrid(delay=2, cpu=10000000, bw=10 ** 12)
 
     session.add(su)
     session.flush()
@@ -100,7 +119,7 @@ def do_simu():
     session.flush()
 
     for i in range(0, 1):
-        tenant_start_count = rs.randint(low=2, high=5)
+        tenant_start_count = rs.randint(low=2, high=4)
         tenant_cdn_count = rs.randint(low=2, high=3)
         draw = rs.choice(su.nodes, size=tenant_start_count + tenant_cdn_count, replace=False)
         tenant_start_nodes = draw[:tenant_start_count]
@@ -109,12 +128,16 @@ def do_simu():
         # fill the db with some data
         # fill_db_with_sla()
         # fill_db_with_sla(tenant, substrate=su)
-        data_files = [file for file in os.listdir(DATA_FOLDER) if "daily" in file]
+        data_files = [file for file in os.listdir(DATA_FOLDER) if
+                      "daily" in file and not file.startswith(".") and file.endswith(".csvx")]
         rs.shuffle(data_files)
-        print("using : %s" % (" ".join([file for file in data_files])))
-        date_start_forecast, date_end_forecast = fill_db_with_sla(tenant, start_nodes=tenant_start_nodes,
-                                                                  cdn_nodes=tenant_cdn_nodes, substrate=su,
-                                                                  data_files=data_files, delay=100, rs=rs)
+        # print("using : %s" % (" ".join([file for file in data_files])))
+        date_start_forecast, date_end_forecast, total_sla_price = fill_db_with_sla(
+            data_files, sla_pricer, tenant,
+            start_nodes=tenant_start_nodes,
+            cdn_nodes=tenant_cdn_nodes, substrate=su,
+            delay=100, rs=rs,
+        )
 
         session.flush()
 
@@ -124,8 +147,13 @@ def do_simu():
 
         data = []
         total_bandwidth = sys.float_info.max
+        date_counter = 0
+        printProgress(date_counter, len(pd.date_range(date_start_forecast, date_end_forecast, freq="H")),
+                      prefix='Progress:', suffix='Complete', barLength=50)
         for adate in pd.date_range(date_start_forecast, date_end_forecast, freq="H"):
-
+            date_counter += 1
+            printProgress(date_counter, len(pd.date_range(date_start_forecast, date_end_forecast, freq="H")),
+                          prefix='Progress:', suffix='Complete', barLength=50)
             active_service = []
             actives_sla = findSLAByDate(adate)
             legacy_slas = []
@@ -191,7 +219,7 @@ def do_simu():
                     # if already merged, or common slas
                     if len(set(service.slas) & set(merged_service.slas)) > 0:
                         continue
-                    merged_service_res, migration_costs = merge_services(service, merged_service)
+                    merged_service_res, migration_costs = merge_services(service, merged_service, migration_costs_func)
                     # merged_service_res, migration_costs = None, None
                     if migration_costs is not None:
                         total_migration_costs += migration_costs
@@ -216,7 +244,6 @@ def do_simu():
                 else:
                     session.flush()
                     su.consume_service(merged_service)
-                    su.write()
                     logging.info("CREATION SUCCESSFUL")
             else:
                 # no new sla => no migration cost
@@ -228,15 +255,17 @@ def do_simu():
                 "ISP cost: %lf (migration : %lf)" % (isp_cost + total_migration_costs, total_migration_costs))
 
             data.append(
-                (isp_cost, cost_non_migrated, bw_new_slas / total_bandwidth, bw_removed_slas / total_bandwidth))
+                (isp_cost, cost_non_migrated, bw_new_slas / total_bandwidth, bw_removed_slas / total_bandwidth,
+                 total_bandwidth))
             logging.info(("SERVICES:\n%s" % yellow(("\n".join([str(s) for s in list(session.query(Service).all())])))))
             logging.info("SUBSTRATE: %s" % su)
             total_bandwidth = max(1, sum(
                 [sum([sla.get_total_bandwidth() for sla in service.slas]) for service in session.query(Service).all()]))
 
-        y, y1, sla_hi, sla_low = zip(*data)
-        print("[")
-        for i in range(0, len(y)):
-            print("(%lf,%lf,%lf,%lf)," % (y[i], y1[i], sla_hi[i], sla_low[i]))
-        print("]")
-        candelPlot(np.arange(0, len(y)), y, y1, sla_hi, sla_low)
+        y, y1, sla_hi, sla_low, ttbw = zip(*data)
+        # print("[")
+        # for i in range(0, len(y)):
+        #    print("(%lf,%lf,%lf,%lf)," % (y[i], y1[i], sla_hi[i], sla_low[i]))
+        # print("]")
+        # candelPlot(np.arange(0, len(y)), y, y1, sla_hi, sla_low)
+        print("%lf,%lf,%lf" % (sum([x[0] for x in data]), sum(ttbw[1:]), total_sla_price))

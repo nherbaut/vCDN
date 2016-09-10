@@ -5,6 +5,7 @@ import datetime
 import locale
 import logging
 import os
+import os.path
 import subprocess
 import sys
 
@@ -33,33 +34,36 @@ def discretize(windows, centroids, ts, df, forecast_detector=get_forecast_from_d
     return get_tse(ts_forecasts, windows, centroids)
 
 
+import tempfile
+
+
 def get_forecast(file):
-    import tempfile
+    out_file = file + ".forecast"
+    if not os.path.isfile(out_file):
+        with tempfile.NamedTemporaryFile() as f:
+            df = pd.read_csv(file, names=["time", "values"])
+            ts = pd.Series(df["values"].values, index=pd.to_datetime(df["time"]))
 
-    with tempfile.NamedTemporaryFile() as f:
-        output = tempfile.NamedTemporaryFile()
-        df = pd.read_csv(file, names=["time", "values"])
-        ts = pd.Series(df["values"].values, index=pd.to_datetime(df["time"]))
+            resampled = ts.resample("1H").mean().bfill()
+            resampled.to_csv(f)
 
-        resampled = ts.resample("1H").mean().bfill()
-        resampled.to_csv(f)
+            subprocess.call(["%s/compute_forecast.R" % TIME_PATH, "-i", "%s" % f.name, "-o", out_file], cwd=TIME_PATH,
+                            stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
 
-        subprocess.call(["%s/compute_forecast.R" % TIME_PATH, "-i", "%s" % f.name, "-o", output.name], cwd=TIME_PATH,
-                        stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb'))
-
-    with open(output.name, "r") as f:
+    with open(out_file, "r") as f:
         df = pd.read_csv(f)
     ts = pd.Series(data=df["fcmean"].values,
                    index=df.apply(lambda row: datetime.datetime.strptime(row['Index'], '%Y-%m-%d %H:%M:%S'),
                                   axis=1).values)
 
-
     return ts, df
 
 
-def fill_db_with_sla(tenant, file=None,
-                     data_files=None,
-                     **kwargs):
+class SlaPricerWrapper:
+    pricer = price_slas
+
+
+def fill_db_with_sla(data_files, pricer, tenant, **kwargs):
     '''
 
     :param file: the file to read the data from
@@ -86,7 +90,6 @@ def fill_db_with_sla(tenant, file=None,
     best_discretization_parameter = None
     best_tse = None
 
-    do_price = kwargs.get("price_slas", price_slas)
     tsdf = {file: get_forecast(os.path.join(DATA_FOLDER, file)) for file in
             data_files[0:forecast_series_count]}
 
@@ -96,7 +99,7 @@ def fill_db_with_sla(tenant, file=None,
             slas = chunk_series_as_sla(tses)
             logging.debug("%d slas generated for (%d,%d)" % (
                 sum([1 for sublist in slas.values() for item in sublist]), windows, centroids))
-            price = do_price([item for sublist in slas.values() for item in sublist])
+            price = pricer([item for sublist in slas.values() for item in sublist])
 
             logging.debug("For (%d,%d) the price is %lf" % (windows, centroids, price))
             if price < best_price:
@@ -139,7 +142,7 @@ def fill_db_with_sla(tenant, file=None,
     plot_forecast_and_disc_and_total(tsdf, best_discretization_parameter[0], best_discretization_parameter[1],
                                      out_file_name="dummy" + ".svg", plot_name=None, total_sla_plot=total_sla_plot)
 
-    return list(best_tse.values())[0].index[0], list(best_tse.values())[0].index[-1]
+    return list(best_tse.values())[0].index[0], list(best_tse.values())[0].index[-1],best_price
 
 
 if __name__ == "__main__":

@@ -51,6 +51,8 @@ class Substrate(Base):
 
     def write(self, path="."):
 
+        assert path != "."
+
         if not os.path.exists(os.path.join(RESULTS_FOLDER, path)):
             os.makedirs(os.path.join(RESULTS_FOLDER, path))
 
@@ -129,7 +131,7 @@ class Substrate(Base):
 
     @classmethod
     def fromGrid(cls, width=5, height=5, bw=10 ** 10, delay=10, cpu=10):
-        session=Session()
+        session = Session()
         edges = []
         nodes = []
 
@@ -210,15 +212,20 @@ class Substrate(Base):
         self.__handle_service(service, -1)
 
     def __handle_service(self, service, factor):
-
+        session=Session()
         # print "consuming..."
         for ns in service.mapping.node_mappings:
             # get topo node
             ns.node.cpu_capacity = ns.node.cpu_capacity + factor * ns.service_node.cpu
 
+
             # print "\teater %lf flurom %s, remaining %s" % (service.nodes[ns[1]].cpu, ns[1], self)
         for es in service.mapping.edge_mappings:
             es.edge.bandwidth = es.edge.bandwidth + factor * es.serviceEdge.bandwidth
+
+        session.flush()
+
+
 
     def deduce_bw(es, edges, service):
         candidate_edges = filter(lambda x: x[0] == es.start_topo_node_id and x[1] == es.end_topo_node_id, edges)
