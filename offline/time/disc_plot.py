@@ -7,7 +7,7 @@ import pandas as pd
 
 from ..time.SLA3D import get_tse
 
-locale.setlocale(locale.LC_ALL, 'en_US.utf8')
+locale.setlocale(locale.LC_ALL, 'C')
 
 
 def plot_forecast_and_disc_and_total(tsr, windows, centroids, plot_name="default", out_file_name="default.svg",total_sla_plot=None):
