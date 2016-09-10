@@ -20,7 +20,7 @@ service_to_sla = Table('service_to_sla', Base.metadata,
 class Tenant(Base):
     __tablename__ = 'tenant'
     id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String(16))
+    name = Column(String(128))
     slas = relationship("Sla")
 
 
