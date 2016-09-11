@@ -195,14 +195,14 @@ class Service(Base):
         max_vcdn_count = min(max_vhg_count, max_vcdn_count)
 
         logging.debug("----------Looking for optima solution to embed %s with max_vhg=%d and max_vcdn=%d" % (
-            " ".join([str(sla) for sla in slas]), max_vhg_count, max_vcdn_count))
+            " ".join([str(sla.id) for sla in slas]), max_vhg_count, max_vcdn_count))
 
         best_cost = sys.float_info.max
         best_service = None
 
-        # for vhg_count in range( max_vhg_count + 1,1,-2):
-        #    for vcdn_count in range(min(vhg_count, max_vcdn_count) + 1,1,-2):
-        #        thread_param.append(([sla.id for sla in slas], vhg_count, vcdn_count))
+        for vhg_count in range( max_vhg_count,1,-1):
+           for vcdn_count in range(min(vhg_count, max_vcdn_count) + 1,1,-1):
+               thread_param.append(([sla.id for sla in slas], vhg_count, vcdn_count))
         thread_param.append(([sla.id for sla in slas], max_vhg_count, min(max_vhg_count, max_vcdn_count)))
 
         services = threadpool.map(f, thread_param)

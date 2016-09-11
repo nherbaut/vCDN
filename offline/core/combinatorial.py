@@ -179,14 +179,14 @@ def get_vhg_cdn_mapping(vhgs, cdns):
     :param cdns: [ ("1025",'cdn1'), ("1026",'cdn3')]
     :return: [ "vhg1":"cdn3"]
     '''
-    logging.debug("managing %d vhgs and %d cdns" % (len(vhgs), len(cdns)))
+    #logging.debug("managing %d vhgs and %d cdns" % (len(vhgs), len(cdns)))
     res = {}
     for vhg in vhgs:
         best = sys.maxint
         for cdn in cdns:
             value = shortest_path_cached(vhg[0], cdn[0])
             if value is not None:
-                logging.debug("from %s to %s we have %lf" % (vhg[1], cdn[1], value))
+                #logging.debug("from %s to %s we have %lf" % (vhg[1], cdn[1], value))
                 if value < best:
                     best = value
                     res[vhg[1]] = cdn[1]
@@ -203,7 +203,7 @@ def get_node_clusters(nodes, class_count, substrate):
     :param substrate: the substrate on which to perform the computation
     :return: a dict with where keys are nodes and values are their respective class
     '''
-    logging.debug("get_node_clusters %s %d" % (nodes, class_count))
+    #logging.debug("get_node_clusters %s %d" % (nodes, class_count))
     data = defaultdict(list)
     for i in powerset(nodes):
         if len(i) > 0:
