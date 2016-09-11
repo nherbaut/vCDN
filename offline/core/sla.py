@@ -3,6 +3,8 @@ import scipy.integrate as integrate
 from sqlalchemy import Column, Integer, DateTime, Float, ForeignKey, String, PickleType
 from sqlalchemy.orm import relationship
 
+
+from ..core.substrate import Substrate
 from ..time.persistence import Session, Base, service_to_sla
 
 tcp_win = 65535.0

@@ -115,12 +115,16 @@ class ServiceTopo:
                     continue
 
         # add CDN edges if available
-        if hint_node_mappings is not None:
-            vhg_mapping = [(nmapping.node.id, nmapping.service_node.node_id) for nmapping in hint_node_mappings if
-                           "VHG" in nmapping.service_node.node_id]
-            cdn_mapping = [(nm.toponode_id, "CDN%d" % index) for index, nm in enumerate(mapped_cdn_nodes, start=1)]
-            for vhg, cdn in get_vhg_cdn_mapping(vhg_mapping, cdn_mapping).items():
-                service.add_edge(vhg, cdn, bandwidth=service.node[vhg]["bandwidth"])
+        try:
+            if hint_node_mappings is not None:
+                vhg_mapping = [(nmapping.node.id, nmapping.service_node.node_id) for nmapping in hint_node_mappings if
+                               "VHG" in nmapping.service_node.node_id]
+                cdn_mapping = [(nm.toponode_id, "CDN%d" % index) for index, nm in enumerate(mapped_cdn_nodes, start=1)]
+                for vhg, cdn in get_vhg_cdn_mapping(vhg_mapping, cdn_mapping).items():
+                    if vhg in service.node:
+                        service.add_edge(vhg, cdn, bandwidth=service.node[vhg]["bandwidth"])
+        except:
+            print('oups')
 
         return service, delay_path, delay_route
 

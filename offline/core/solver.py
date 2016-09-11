@@ -37,19 +37,22 @@ def solve_inplace(allow_violations=False, preassign_vhg=False, path="."):
             subprocess.call(
                 ["scip", "-c", "read %s" % os.path.join(RESULTS_FOLDER, path, "optim.zpl"), "-c", "optimize ", "-c",
                  "write solution %s" % (os.path.join(RESULTS_FOLDER, path, "solutions.data")), "-c", "q"],
-                stdout=open(os.devnull, 'wb'))
+            #    stdout=open(os.devnull, 'wb')
+            )
         else:  # run the optim with CDN using reoptim
             subprocess.call(["scip", "-c", "read %s" % os.path.join(RESULTS_FOLDER, path, "optim.zpl"), "-c",
                              "read %s" % os.path.join(RESULTS_FOLDER, path, "initial.sol"), "-c",
                              "set reoptimization enable true", "-c", "optimize ", "-c",
                              "write solution %s" % (os.path.join(RESULTS_FOLDER, path, "solutions.data")), "-c", "q"],
-                            stdout=open(os.devnull, 'wb'))
+                            #stdout=open(os.devnull, 'wb')
+                            )
 
     else:
         subprocess.call(
             ["scip", "-c", "read %s" % os.path.join(RESULTS_FOLDER, path, "optim.zpl"), "-c", "optimize ", "-c",
              "write solution %s" % (os.path.join(RESULTS_FOLDER, path, "solutions.data")), "-c", "q"],
-            stdout=open(os.devnull, 'wb'))
+        #    stdout=open(os.devnull, 'wb')
+        )
     # plotting.plotsol()
     # os.subprocess.call(["cat", "./substrate.dot", "|", "dot", "-Tpdf", "-osol.pdf"])
     with open(os.path.join(RESULTS_FOLDER, path, "solutions.data"), "r") as sol:

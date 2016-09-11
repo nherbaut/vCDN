@@ -10,8 +10,6 @@ import matplotlib.pyplot as plt
 import numpy
 
 from ..core.service import Service
-from ..core.sla import Sla
-from ..core.substrate import Substrate
 from ..time.persistence import Session
 
 OPTIM_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../optim')
@@ -158,6 +156,7 @@ def plotsol_from_db(**kwargs):
     nodesSol = []
     edgesSol = []
     net = kwargs["net"]
+    service_id = str(kwargs["service"].id)
     if not net:  # we don't display solution, only substrate
         mapping = kwargs["service"].mapping
 
@@ -166,14 +165,14 @@ def plotsol_from_db(**kwargs):
         nodesSol = mapping.dump_node_mapping()
         edgesSol = mapping.dump_edge_mapping()
 
-    with open(os.path.join(RESULTS_FOLDER, "substrate.edges.data"), 'r') as f:
+    with open(os.path.join(RESULTS_FOLDER, service_id, "substrate.edges.data"), 'r') as f:
         data = f.read()
         for line in data.split("\n"):
             line = line.split("\t")
             if len(line) == 4:
                 edges.append(line)
 
-    with open(os.path.join(RESULTS_FOLDER, "substrate.nodes.data"), 'r') as f:
+    with open(os.path.join(RESULTS_FOLDER, service_id, "substrate.nodes.data"), 'r') as f:
         data = f.read()
         for line in data.split("\n"):
 
@@ -181,7 +180,7 @@ def plotsol_from_db(**kwargs):
             if (len(line) == 2):
                 nodesdict[line[0]] = line[1]
 
-    with open(os.path.join(RESULTS_FOLDER, "substrate.dot"), 'w') as f:
+    with open(os.path.join(RESULTS_FOLDER, service_id, "substrate.dot"), 'w') as f:
         f.write("graph{rankdir=LR;overlap = voronoi;\n\n\n\n subgraph{\n\n\n")
         # f.write("graph{rankdir=LR;\n\n\n\n subgraph{\n\n\n")
 
@@ -258,19 +257,21 @@ if __name__ == "__main__":
 
     session = Session()
     service = session.query(Service).filter(Service.id == args.serviceid).one()
-
-    service.slas[0].substrate.write()
+    service_id = str(args.serviceid)
+    #service.slas[0].substrate.write(path=str(args.serviceid))
 
     dosvg = args.dosvg
     plotsol_from_db(service_link_linewidth=args.service_link_linewidth, net=args.net, service=service)
     if not dosvg:
         file = tempfile.mkstemp(".pdf")[1]
-        subprocess.Popen(["neato", os.path.join(RESULTS_FOLDER, "./substrate.dot"), "-Tpdf", "-o", file]).wait()
+        subprocess.Popen(
+            ["neato", os.path.join(RESULTS_FOLDER, service_id, "./substrate.dot"), "-Tpdf", "-o", file]).wait()
         if args.view:
             subprocess.Popen(["evince", file]).wait()
     else:
         file = tempfile.mkstemp(".svg")[1]
-        subprocess.Popen(["neato", os.path.join(RESULTS_FOLDER, "./substrate.dot"), "-Tsvg", "-o", file]).wait()
+        subprocess.Popen(
+            ["neato", os.path.join(RESULTS_FOLDER, service_id, "./substrate.dot"), "-Tsvg", "-o", file]).wait()
         if args.view:
             subprocess.Popen(["eog", file]).wait()
-        shutil.copy(file, os.path.join(RESULTS_FOLDER, "./res.svg"))
+        shutil.copy(file, os.path.join(RESULTS_FOLDER, service_id,"./res.svg"))
