@@ -10,6 +10,7 @@ import sys
 
 import numpy as np
 import pandas as pd
+from multiprocessing.pool import Pool
 
 from ..core.sla import Sla, SlaNodeSpec
 from ..pricing.generator import price_slas
@@ -37,10 +38,9 @@ import tempfile
 
 
 def get_forecast(file, force_refresh=False):
-
     file = os.path.abspath(file)
     out_file = os.path.abspath(file + ".forecast")
-
+    print(" forecast already exist? %s" % os.path.isfile(out_file))
     if force_refresh or not os.path.isfile(out_file):
         with tempfile.NamedTemporaryFile(delete=False) as f:
             df = pd.read_csv(file, names=["time", "values"])
@@ -49,7 +49,7 @@ def get_forecast(file, force_refresh=False):
             resampled.to_csv(f)
 
         subprocess.call(["%s/compute_forecast.R" % TIME_PATH, "-i", "%s" % f.name, "-o", out_file], cwd=TIME_PATH,
-                      stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb')
+                        #stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb')
                         )
     else:
         logging.debug("file %s is already present! no need to re-gerenate" % out_file)
@@ -60,7 +60,7 @@ def get_forecast(file, force_refresh=False):
                    index=df.apply(lambda row: datetime.datetime.strptime(row['Index'], '%Y-%m-%d %H:%M:%S'),
                                   axis=1).values)
 
-    return ts, df
+    return file, ts, df
 
 
 class SlaPricerWrapper:
@@ -145,7 +145,8 @@ def fill_db_with_sla(data_files, pricer, tenant, **kwargs):
     plot_forecast_and_disc_and_total(tsdf, best_discretization_parameter[0], best_discretization_parameter[1],
                                      out_file_name="dummy" + ".svg", plot_name=None, total_sla_plot=total_sla_plot)
 
-    return list(best_tse.values())[0].index[0], list(best_tse.values())[0].index[-1], best_price, best_discretization_parameter, len(best_slas.keys())
+    return list(best_tse.values())[0].index[0], list(best_tse.values())[0].index[
+        -1], best_price, best_discretization_parameter, len(best_slas.keys())
 
 
 if __name__ == "__main__":
