@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # from functools import partial
 
-from offline.pricing.generator import price_slas, p
-from offline.time.simu_time import do_simu
 from offline.tools.forecast_bench import perform_forecast_bench
 
 # import offline.time.slaplot
