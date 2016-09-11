@@ -10,7 +10,6 @@ import sys
 
 import numpy as np
 import pandas as pd
-from multiprocessing.pool import Pool
 
 from ..core.sla import Sla, SlaNodeSpec
 from ..pricing.generator import price_slas
@@ -40,7 +39,7 @@ import tempfile
 def get_forecast(file, force_refresh=False):
     file = os.path.abspath(file)
     out_file = os.path.abspath(file + ".forecast")
-    print(" forecast already exist? %s" % os.path.isfile(out_file))
+    logging.debug(" forecast already exist? %s" % os.path.isfile(out_file))
     if force_refresh or not os.path.isfile(out_file):
         with tempfile.NamedTemporaryFile(delete=False) as f:
             df = pd.read_csv(file, names=["time", "values"])
@@ -49,7 +48,7 @@ def get_forecast(file, force_refresh=False):
             resampled.to_csv(f)
 
         subprocess.call(["%s/compute_forecast.R" % TIME_PATH, "-i", "%s" % f.name, "-o", out_file], cwd=TIME_PATH,
-                        #stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb')
+                        # stdout=open(os.devnull, 'wb'), stderr=open(os.devnull, 'wb')
                         )
     else:
         logging.debug("file %s is already present! no need to re-gerenate" % out_file)
@@ -98,11 +97,11 @@ def fill_db_with_sla(data_files, pricer, tenant, **kwargs):
 
     for windows in range(1, 11, 2):
         for centroids in range(1, 21, 2):
-            tses = {key: discretize(windows, centroids, ts=value[0], df=value[1]) for key, value in tsdf.items()}
+            tses = {key: discretize(windows, centroids, ts=value[1], df=value[2]) for key, value in tsdf.items()}
             slas = chunk_series_as_sla(tses)
-            logging.debug("%d slas generated for (%d,%d)" % (
-                sum([1 for sublist in slas.values() for item in sublist]), windows, centroids))
             price = pricer([item for sublist in slas.values() for item in sublist])
+            logging.debug("%d slas generated for (%d,%d)" % (sum([1 for sublist in slas.values() for item in sublist]), windows, centroids))
+
 
             logging.debug("For (%d,%d) the price is %lf" % (windows, centroids, price))
             if price < best_price:
@@ -119,7 +118,7 @@ def fill_db_with_sla(data_files, pricer, tenant, **kwargs):
     for item in [item for sublist in best_slas.values() for item in sublist]:
         total_sla_plot = pd.Series.add(item, total_sla_plot, fill_value=0)
 
-    logging.info("generating %d slas for best solution" % (
+    logging.info("generating     %d slas for best solution" % (
         sum([1 for sublist in best_slas.values() for item in sublist]),))
 
     for key, sla_list in best_slas.items():

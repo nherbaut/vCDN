@@ -70,4 +70,10 @@ write.zoo(file=out,fc_merged,sep = ",")
 print(paste("csv data writter in " , out))
 
 
+    if(opt$plot){
+        outfile<-paste(out,".pdf",sep="")
+        pdf(file=outfile)
+        plot(fc)
+        print(paste("pdf data writter in " , outfile))
+    }
 

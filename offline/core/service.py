@@ -19,8 +19,6 @@ OPTIM_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../opt
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
 
 
-
-
 def f(x):
     session = Session()
     slasIDS, vhg_count, vcdn_count = x
@@ -189,7 +187,7 @@ class Service(Base):
     @classmethod
     def get_optimal(cls, slas, serviceSpecFactory=ServiceSpecFactory, max_vhg_count=10, max_vcdn_count=10):
         session = Session()
-        threadpool = ThreadPool(multiprocessing.cpu_count()-1)
+        threadpool = ThreadPool(multiprocessing.cpu_count() - 1)
         thread_param = []
 
         max_vhg_count = min(max_vhg_count,
@@ -202,9 +200,10 @@ class Service(Base):
         best_cost = sys.float_info.max
         best_service = None
 
-        for vhg_count in range(1, max_vhg_count + 1):
-            for vcdn_count in range(1, min(vhg_count, max_vcdn_count) + 1):
-                thread_param.append(([sla.id for sla in slas], vhg_count, vcdn_count))
+        # for vhg_count in range( max_vhg_count + 1,1,-2):
+        #    for vcdn_count in range(min(vhg_count, max_vcdn_count) + 1,1,-2):
+        #        thread_param.append(([sla.id for sla in slas], vhg_count, vcdn_count))
+        thread_param.append(([sla.id for sla in slas], max_vhg_count, min(max_vhg_count, max_vcdn_count)))
 
         services = threadpool.map(f, thread_param)
         #services = [f(x) for x in thread_param]
@@ -215,7 +214,7 @@ class Service(Base):
                 # candidate!
                 logging.debug(
                     "----------We have a candidate service with (%d,%d), with cost %lf" % (
-                        vhg_count, vcdn_count, service.mapping.objective_function))
+                        service.vhg_count, service.vcdn_count, service.mapping.objective_function))
                 if service.mapping.objective_function < best_cost:
                     best_cost = service.mapping.objective_function
                     best_service = service
@@ -231,8 +230,6 @@ class Service(Base):
             if service.id != best_service.id:
                 session.delete(service)
                 session.flush()
-
-
 
         return best_service
 

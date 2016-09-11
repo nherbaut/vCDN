@@ -15,19 +15,20 @@ def plot_forecast_and_disc_and_total(tsr, windows, centroids, plot_name="default
     plot_count = len(tsr)
     tse_sum = pd.Series()
     for index, (plot_name, data) in enumerate(tsr.items(), start=1):
-        tse1 = get_tse(data[0], windows, centroids)
+        time_serie=data[1]
+        tse1 = get_tse(time_serie, windows, centroids)
         tse_sum=pd.Series.add(tse_sum, tse1, fill_value=0)
         ax = plt.subplot((plot_count+1) / 2+1, 2, index)
-        ax.set_xlim([data[0].index[0], data[0].index[-1]])
-        ax.set_ylim([min(data[0]) * 0.75, max(data[0]) * 1.25])
+        ax.set_xlim([time_serie.index[0], time_serie.index[-1]])
+        ax.set_ylim([min(time_serie) * 0.75, max(time_serie) * 1.25])
         ax.xaxis_date()
 
-        ax.plot(data[0].index, tse1, zorder=3)
+        ax.plot(time_serie.index, tse1, zorder=3)
 
-        ax.fill_between(data[0].index, tse1, 0, where=tse1 >= data[0], facecolor='red', interpolate=True, alpha=0.2,
+        ax.fill_between(time_serie.index, tse1, 0, where=tse1 >= time_serie, facecolor='red', interpolate=True, alpha=0.2,
                         zorder=2,
                         label="discretization (%d,%d)" % (windows, centroids), linewidth=3)
-        ax.fill_between(data[0].index, data[0], 0, where=data[0] >= 0, facecolor='green', interpolate=True, alpha=1,
+        ax.fill_between(time_serie.index, time_serie, 0, where=time_serie >= 0, facecolor='green', interpolate=True, alpha=1,
                         zorder=3,
                         hatch="/", label="traffic prediction", linewidth=0)
         ax.set_title(plot_name)
