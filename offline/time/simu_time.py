@@ -5,7 +5,7 @@ import sys
 
 import numpy as np
 import pandas as pd
-
+import multiprocessing
 from ..core.mapping import Mapping
 from ..core.service import Service
 from ..core.sla import findSLAByDate
@@ -102,8 +102,8 @@ def merge_services(s1, s2, migration_costs_func):
     return None, None
 
 
-def do_simu(migration_costs_func=migration_calculator, sla_pricer=price_slas, loglevel=logging.INFO):
-    logging.basicConfig(filename='simu.log', level=loglevel)
+def do_simu(migration_costs_func=migration_calculator, sla_pricer=price_slas, loglevel=logging.INFO,threads=multiprocessing.cpu_count()-1):
+    logging.basicConfig(filename='simu.log', level=loglevel,)
 
     Base.metadata.create_all(engine)
     # clear the db
@@ -210,7 +210,7 @@ def do_simu(migration_costs_func=migration_calculator, sla_pricer=price_slas, lo
 
             if len(new_slas) > 0:
 
-                new_slas_service = Service.get_optimal([s for s in actives_sla if s not in legacy_slas])
+                new_slas_service = Service.get_optimal([s for s in actives_sla if s not in legacy_slas],threads=threads)
 
                 cost_non_migrated = sum(
                     [service.mapping.objective_function for service in session.query(Service).all()])

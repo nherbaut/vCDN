@@ -185,9 +185,10 @@ class Service(Base):
         return sla
 
     @classmethod
-    def get_optimal(cls, slas, serviceSpecFactory=ServiceSpecFactory, max_vhg_count=10, max_vcdn_count=10):
+    def get_optimal(cls, slas, serviceSpecFactory=ServiceSpecFactory, max_vhg_count=10, max_vcdn_count=10,
+                    threads=multiprocessing.cpu_count() - 1):
         session = Session()
-        threadpool = ThreadPool(multiprocessing.cpu_count() - 1)
+        threadpool = ThreadPool(threads)
         thread_param = []
 
         max_vhg_count = min(max_vhg_count,
@@ -200,13 +201,13 @@ class Service(Base):
         best_cost = sys.float_info.max
         best_service = None
 
-        for vhg_count in range( max_vhg_count,1,-1):
-           for vcdn_count in range(min(vhg_count, max_vcdn_count) + 1,1,-1):
-               thread_param.append(([sla.id for sla in slas], vhg_count, vcdn_count))
+        for vhg_count in range(max_vhg_count, 1, -1):
+            for vcdn_count in range(min(vhg_count, max_vcdn_count) + 1, 1, -1):
+                thread_param.append(([sla.id for sla in slas], vhg_count, vcdn_count))
         thread_param.append(([sla.id for sla in slas], max_vhg_count, min(max_vhg_count, max_vcdn_count)))
 
         services = threadpool.map(f, thread_param)
-        #services = [f(x) for x in thread_param]
+        # services = [f(x) for x in thread_param]
         services = session.query(Service).filter(Service.id.in_(services)).all()
 
         for service in services:
