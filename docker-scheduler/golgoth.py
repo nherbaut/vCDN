@@ -7,9 +7,10 @@ from docker import Client
 cli = Client(base_url='unix://var/run/docker.sock')
 containers = []
 for price in list((i * 10 ** exp for exp in range(-2, 10) for i in range(5, 6))):
-    for discount in np.arange(0.3, 0.55, 0.05):
+    for discount in np.arange(0.3, 0.55, 0.01):
         while len(cli.containers()) >= 3:
             time.sleep(1)
+        print("launching %lf, %lf"%(price,discount))
         container = cli.create_container(image='nherbaut/simu-time',
                                          command="bash -c './bootstrap.sh > /dev/null && ./start.py -l DEBUG -i %lf -d %lf -t 3  >> /opt/simuservice/out/res.txt && echo hn:$HOSTNAME >> /opt/simuservice/out/res.txt && mkdir /opt/simuservice/out/$HOSTNAME && cp /opt/simuservice/*.svg /opt/simuservice/out/$HOSTNAME'" % (
                                              price, discount),
