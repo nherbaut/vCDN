@@ -42,6 +42,6 @@ RUN echo "/etc/init.d/mysql start && mysql -u root -proot -h localhost -e 'CREAT
 
 COPY ./start.py /opt/simuservice
 RUN chmod +x ./bootstrap.sh
-
+RUN mkdir /opt/simuservice/out/
 
 CMD ./bootstrap.sh && ./start.py -i $I -d $D -t $T|tee -a /opt/simuservice/out/res.txt
