@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 import logging
+import multiprocessing
 import os
 import sys
 
 import numpy as np
 import pandas as pd
-import multiprocessing
+
 from ..core.mapping import Mapping
 from ..core.service import Service
 from ..core.sla import findSLAByDate
@@ -19,7 +20,7 @@ from ..tools.candelPlot import candelPlot
 
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
 DATA_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../data')
-rs = np.random.RandomState(4)
+rs = np.random.RandomState(5)
 
 
 # Print iterations progress
@@ -92,18 +93,19 @@ def merge_services(s1, s2, migration_costs_func):
         logging.debug("CONSOLIDATED COSTS for %s : %lf" % (s3, s3.mapping.objective_function))
         logging.debug("INDIVIDUAL COSTS FOR %s : %lf" % ("\t".join([str(s1), str(s2)]), individual_costs))
         if consolidated_cost < individual_costs:
-            logging.debug("CREATED %s AND OPTIMAL" % s3)
+            logging.debug(green("CREATED %s AND OPTIMAL we win %lf (%lf %%)" % (s3, (individual_costs - consolidated_cost),100*(individual_costs - consolidated_cost)/individual_costs )))
             session.flush()
             return s3, Mapping.get_migration_cost(s3.mapping, s1.mapping, migration_costs_func)
         else:
-            logging.debug("CREATED %s BUT SUBOPTIMAL" % s3)
+            logging.debug(yellow("CREATED %s BUT SUBOPTIMAL" % s3))
             session.delete(s3)
     session.flush()
     return None, None
 
 
-def do_simu(migration_costs_func=migration_calculator, sla_pricer=price_slas, loglevel=logging.INFO,threads=multiprocessing.cpu_count()-1):
-    logging.basicConfig(filename='simu.log', level=loglevel,)
+def do_simu(migration_costs_func=migration_calculator, sla_pricer=price_slas, loglevel=logging.INFO,
+            threads=multiprocessing.cpu_count() - 1):
+    logging.basicConfig(filename='simu.log', level=loglevel, )
 
     Base.metadata.create_all(engine)
     # clear the db
@@ -124,7 +126,7 @@ def do_simu(migration_costs_func=migration_calculator, sla_pricer=price_slas, lo
     for i in range(0, 1):
         tenant_start_count = rs.randint(low=3, high=5)
         tenant_cdn_count = rs.randint(low=2, high=3)
-        logging.debug("vmg_max=%d vcdn_max=%d"%(tenant_start_count,tenant_cdn_count))
+        logging.debug("vmg_max=%d vcdn_max=%d" % (tenant_start_count, tenant_cdn_count))
         draw = rs.choice(su.nodes, size=tenant_start_count + tenant_cdn_count, replace=False)
         tenant_start_nodes = draw[:tenant_start_count]
         tenant_cdn_nodes = draw[tenant_start_count:]
@@ -211,7 +213,8 @@ def do_simu(migration_costs_func=migration_calculator, sla_pricer=price_slas, lo
 
             if len(new_slas) > 0:
 
-                new_slas_service = Service.get_optimal([s for s in actives_sla if s not in legacy_slas],threads=threads)
+                new_slas_service = Service.get_optimal([s for s in actives_sla if s not in legacy_slas],
+                                                       threads=threads)
 
                 cost_non_migrated = sum(
                     [service.mapping.objective_function for service in session.query(Service).all()])
@@ -272,4 +275,5 @@ def do_simu(migration_costs_func=migration_calculator, sla_pricer=price_slas, lo
         #    print("(%lf,%lf,%lf,%lf)," % (y[i], y1[i], sla_hi[i], sla_low[i]))
         # print("]")
         candelPlot(np.arange(0, len(y)), y, y1, sla_hi, sla_low)
-        return  (str(best_discretization_parameter), sum([x[0] for x in data]), sum(ttbw[1:]), total_sla_price, sla_count)
+        return (
+            str(best_discretization_parameter), sum([x[0] for x in data]), sum(ttbw[1:]), total_sla_price, sla_count)

@@ -25,7 +25,7 @@ if numeric_level is None:
     numeric_level = logging.INFO
 
 
-a,b,c,d,e = do_simu(migration_costs_func=lambda x: sum([abs(y[0] - y[1]) for y in x]) * args.ispmigration,
+a,b,c,d,e = do_simu(migration_costs_func=lambda x: sum([10+abs(y[0] - y[1]) for y in x]) * args.ispmigration,
         sla_pricer=partial(price_slas, f=partial(p, r=args.cdnDiscount, m=24)), loglevel=numeric_level, threads=args.threads)
 
 print("%lf,%lf,%s,%lf,%lf,%lf,%d" % (args.ispmigration,args.cdnDiscount,a,b,c,d,e))

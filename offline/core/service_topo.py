@@ -25,7 +25,7 @@ class ServiceTopo:
     def __compute_service_topo(self, substrate, mapped_start_nodes, mapped_cdn_nodes, vhg_count, vcdn_count,
                                hint_node_mappings=None):
         vhg_count = min(len(mapped_start_nodes), vhg_count)
-        vcdn_count = min(len(mapped_cdn_nodes), vcdn_count,vhg_count)
+        vcdn_count = min(vcdn_count,vhg_count)
 
         vmg_calc = get_vmg_calculator()
         service = nx.DiGraph()
@@ -122,7 +122,8 @@ class ServiceTopo:
                 cdn_mapping = [(nm.toponode_id, "CDN%d" % index) for index, nm in enumerate(mapped_cdn_nodes, start=1)]
                 for vhg, cdn in get_vhg_cdn_mapping(vhg_mapping, cdn_mapping).items():
                     if vhg in service.node:
-                        service.add_edge(vhg, cdn, bandwidth=service.node[vhg]["bandwidth"])
+                        #service.add_edge(vhg, cdn, bandwidth=service.node[vhg]["bandwidth"])
+                        service.add_edge(vhg, cdn, bandwidth=service.node[vhg]["bandwidth"]/10.0)
         except:
             print('oups')
 
