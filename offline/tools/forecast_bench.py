@@ -139,17 +139,15 @@ def plot_forecast_bench(means):
                           # key=lambda x: os.path.basename(x["file"]).split("daily")[0]))])
                           key=lambda x: -x["MAPE"]))]).T
 
-    nprice_95 =  np.ones(len(price_fc95))*100
-    nprice_80 =  np.divide(price_fc80,price_fc95)*100
-    nprice_mean = np.divide(price_fcmean,price_fc95)*100
+    nprice_95 = np.divide(price_fc95, price_fcmean) * 100
+    nprice_80 =  np.divide(price_fc80,price_fcmean)*100
+    #nprice_mean = np.divide(price_fcmean,price_fc95)*100
 
-    print("%s"%nprice_95)
-    print("%s" % nprice_80)
-    print("%s" % nprice_mean)
+
     #ax1.set_ylim(0, np.max(nprice_95))
-    ax1.bar(index, nprice_95, width=0.3, color='b', label="95% CI",)
-    ax1.bar(index+0.3, nprice_80, width=0.3, color='g', label="80% CI",)
-    ax1.bar(index+0.3+0.3, nprice_mean, width=0.3, color='r', label="Prediction",)
+    ax1.bar(index, nprice_95, width=0.5, color='b', label="95% CI price increase",)
+    ax1.bar(index+0.5, nprice_80, width=0.5, color='g', label="80% CI CI price increase",)
+
 
 
     ax1.set_title("Prices for Forecasts (% wrt 95% CI)")
