@@ -96,7 +96,7 @@ def fill_db_with_sla(data_files, pricer, tenant, **kwargs):
             data_files[0:forecast_series_count]}
 
     for windows in range(1, 11, 2):
-        for centroids in range(1, 21, 2):
+        for centroids in range(1, 11, 1):
             tses = {key: discretize(windows, centroids, ts=value[1], df=value[2]) for key, value in tsdf.items()}
             slas = chunk_series_as_sla(tses)
             price = pricer([item for sublist in slas.values() for item in sublist])

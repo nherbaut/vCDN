@@ -44,4 +44,4 @@ COPY ./start.py /opt/simuservice
 RUN chmod +x ./bootstrap.sh
 
 
-CMD ./bootstrap.sh && ./start.py -i $I -d $D |tee -a /opt/simuservice/out/res.txt
+CMD ./bootstrap.sh && ./start.py -i $I -d $D -t $T|tee -a /opt/simuservice/out/res.txt
