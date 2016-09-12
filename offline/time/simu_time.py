@@ -19,7 +19,7 @@ from ..tools.candelPlot import candelPlot
 
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
 DATA_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../data')
-rs = np.random.RandomState(3)
+rs = np.random.RandomState(4)
 
 
 # Print iterations progress
@@ -124,6 +124,7 @@ def do_simu(migration_costs_func=migration_calculator, sla_pricer=price_slas, lo
     for i in range(0, 1):
         tenant_start_count = rs.randint(low=3, high=5)
         tenant_cdn_count = rs.randint(low=2, high=3)
+        logging.debug("vmg_max=%d vcdn_max=%d"%(tenant_start_count,tenant_cdn_count))
         draw = rs.choice(su.nodes, size=tenant_start_count + tenant_cdn_count, replace=False)
         tenant_start_nodes = draw[:tenant_start_count]
         tenant_cdn_nodes = draw[tenant_start_count:]
