@@ -70,6 +70,18 @@ def perform_forecast_bench(folders, filter=lambda x: True if "daily" in x and no
 
 
 def plot_forecast_bench(means):
+    def sort_by_name_and_mape(x):
+        file = x["file"]
+        mape = x["MAPE"]
+        if "IX" in file:
+            return 10 ** 10 + mape
+        if "linx" in file:
+            return 10 ** 15 + mape
+        if "ecix" in file:
+            return 10 ** 20 + mape
+        else:
+            return 10 ** 25 + mape
+
     fig, ax1 = plt.subplots()
 
     ax2 = ax1.twinx()
@@ -77,11 +89,16 @@ def plot_forecast_bench(means):
     # ax1.set_title('Forecast Accuracy over every dataset')
     ax1.set_ylabel('MAPE Metric')
     ax2.set_ylabel('MASE Metric')
+    import pickle
+    with open("means.pickle","w") as f:
+        pickle.dump(means,f)
+    exit(-2)
+
     index, mape, mase, file = zip(
         *[(index, x["MAPE"], x["MASE"], os.path.basename(x["file"]).split("daily")[0]) for index, x in
           enumerate(sorted(means,
                            # key=lambda x: os.path.basename(x["file"]).split("daily")[0]))])
-                           key=lambda x: -x["MAPE"]))])
+                           key=sort_by_name_and_mape))])
 
     ax1.set_xticks(np.arange(0, len(file) + 1, 1))
 
@@ -108,7 +125,7 @@ def plot_forecast_bench(means):
     fig, ax1 = plt.subplots()
     ax1.set_xticks(np.arange(0, len(file) + 1, 1))
     ax1.set_xticklabels(np.array(file))
-    ax1.set_xticklabels(ax1.xaxis.get_majorticklabels(), rotation=45, fontsize=9)
+    ax1.set_xticklabels(ax1.xaxis.get_majorticklabels(), rotation=45, fontsize=7)
 
     index, file, fcmean_score, fc80_score, fc95_score = zip(
         *[(index, os.path.basename(x["file"].split("daily")[0]), x["sla_vio_mean"], x["sla_vio_fc80"],
@@ -119,8 +136,8 @@ def plot_forecast_bench(means):
                            key=lambda x: -x["MAPE"]))])
 
     ax1.bar(np.array(index), fcmean_score, width=0.3, color='r', label="Prediction", )
-    ax1.bar(np.array(index)+0.3, np.array(fc80_score)+2, width=0.3, color='g', label="80% CI", )
-    ax1.bar(np.array(index)+0.3+0.3, np.array(fc95_score)+1, width=0.3, color='b', label="95% CI", )
+    ax1.bar(np.array(index) + 0.3, np.array(fc80_score) + 2, width=0.3, color='g', label="80% CI", )
+    ax1.bar(np.array(index) + 0.3 + 0.3, np.array(fc95_score) + 1, width=0.3, color='b', label="95% CI", )
     ax1.set_title("SLA violations for Forecasts")
     ax1.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     plt.savefig("slas.svg")
@@ -140,15 +157,13 @@ def plot_forecast_bench(means):
                           key=lambda x: -x["MAPE"]))]).T
 
     nprice_95 = np.divide(price_fc95, price_fcmean) * 100
-    nprice_80 =  np.divide(price_fc80,price_fcmean)*100
-    #nprice_mean = np.divide(price_fcmean,price_fc95)*100
+    nprice_80 = np.divide(price_fc80, price_fcmean) * 100
+    # nprice_mean = np.divide(price_fcmean,price_fc95)*100
 
 
-    #ax1.set_ylim(0, np.max(nprice_95))
-    ax1.bar(index, nprice_95, width=0.5, color='b', label="95% CI price increase",)
-    ax1.bar(index+0.5, nprice_80, width=0.5, color='g', label="80% CI CI price increase",)
-
-
+    # ax1.set_ylim(0, np.max(nprice_95))
+    ax1.bar(index, nprice_95, width=0.5, color='b', label="95% CI price increase", )
+    ax1.bar(index + 0.5, nprice_80, width=0.5, color='g', label="80% CI CI price increase", )
 
     ax1.set_title("Prices for Forecasts (% wrt 95% CI)")
     ax1.legend(loc='center left', bbox_to_anchor=(1, 0.5))

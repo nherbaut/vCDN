@@ -11,8 +11,8 @@ library("rPython")
 option_list = list(
 
 make_option(c("-p", "--plot"), action="store_true", default=FALSE),
-make_option(c("-o", "--out"), type="character", default="./forecast.csv", help="output file name [default= %default]", metavar="character"),
-make_option(c("-i", "--in_file"), type="character", help="intput file name [default= %default]", metavar="character"),
+make_option(c("-o", "--out"), type="character", default="./dummy", help="output file name [default= %default]", metavar="character"),
+make_option(c("-i", "--in_file"), default="../data/ma-i-daily_1H.csvx", type="character", help="intput file name [default= %default]", metavar="character"),
 make_option(c("-l", "--lengthforecast"), type="numeric", default=24, help="Number of forcast to generate", metavar="numeric"),
 make_option(c("-t", "--limit"), type="numeric", default=24, help="limit reading the file up to ith element", metavar="numeric")
 

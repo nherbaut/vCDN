@@ -32,18 +32,20 @@ for key in sorted(pdata.keys()):
         xticks = mtick.FormatStrFormatter(fmt)
         ax1.xaxis.set_major_formatter(xticks)
 
+        ax1.grid()
+
         #x_smooth = np.linspace(x_sm.min(), x_sm.max(), 10)
         #y_smooth = spline(x_sm, y_sm, x_smooth,order=2)
 
         #ax1.plot(x_smooth, y_smooth, label=key)
-        ax1.plot(discounts, isp_prices, label="ISP price %s"%key)
-        ax2.plot(np.ones(len(discounts))*100-discounts, cdn_price, label="CDN price %s"%key,color="r")
+        ax1.plot(discounts, isp_prices, label="System + Network Cost for ISP")
+        ax2.plot(np.ones(len(discounts))*100-discounts, cdn_price, label="SLA embedding price for CDN",color="r")
 
         h1, l1 = ax1.get_legend_handles_labels()
         h2, l2 = ax2.get_legend_handles_labels()
 
         plt.legend(h1 + h2, l1 + l2, loc='best', )
-
+        plt.savefig("discount-price-isp-cdn-comparizon-%s.svg"%key)
         plt.show(block=True)
         #break
 
