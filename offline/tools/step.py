@@ -24,14 +24,17 @@ def valid_topo(topo_spec):
     return (name, spec)
 
 
-session=Session()
+
+
+
 Base.metadata.create_all(engine)
 rs = np.random.RandomState(1)
 # clear the db
 drop_all()
 tenant = Tenant(name="default")
+session=Session()
 session.add(tenant)
-session.commit()
+
 
 parser = argparse.ArgumentParser(description='1 iteration for solver')
 parser.add_argument('-d', "--dry-run", dest='dry', action='store_true')
@@ -55,10 +58,11 @@ vhgpa = args.vhgpa
 
 rs = np.random.RandomState()
 
-su = Substrate.fromSpec(args.topo)
+#su = Substrate.fromSpec(args.topo)
+su = Substrate.fromGrid(delay=2, cpu=10000000, bw=10 ** 12)
 
 session.add(su)
-session.commit()
+su.write(path=RESULTS_PATH )
 
 if args.solve_disable:
     print("Not tried to find a solution (--__solve-disable)")
@@ -69,19 +73,18 @@ if args.solve_disable:
 
 sla = generate_random_slas(rs, su, 1, start_count=args.s,  end_count=args.cdn,tenant=tenant)[0]
 session.add(sla)
-session.commit()
+session.flush()
 
-slas_spec={sla.id:{"VHG":3,"VCDN":3}}
-service = Service([sla], service_spec=slas_spec)
+
+service = Service(slasIDS=[sla.id])
 session.add(service)
-session.commit()
-service.__solve()
+
 
 
 if service.mapping is not None:
     if not dry:
         su.consume_service(service)
-        su.write()
+        su.write(RESULTS_PATH)
         print("success %lf"%service.mapping.objective_function)
 
     exit(0)

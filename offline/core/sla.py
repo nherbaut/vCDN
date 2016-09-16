@@ -84,6 +84,7 @@ def write_sla(sla, seed=None):
 
 
 def generate_random_slas(rs, substrate, count=1000, start_count=0, end_count=0, tenant=None):
+    session=Session()
     res = []
     for i in range(0, count):
         bitrate = getRandomBitrate(rs)
@@ -103,15 +104,20 @@ def generate_random_slas(rs, substrate, count=1000, start_count=0, end_count=0, 
         random_nodes = rs.choice(substrate.nodes, size=start_count + end_count, replace=False)
 
         start_nodes = random_nodes[:start_count]
+        nodespecs=[]
+        for sn in start_nodes:
+
+            nodespecs.append(SlaNodeSpec(type="start",topoNode=sn, attributes={"bandwidth": bandwidth / (1.0 * len(start_nodes))}))
 
         cdn_nodes = random_nodes[start_count:]
+        for cdnn in cdn_nodes:
+            nodespecs.append(SlaNodeSpec(type="cdn", topoNode=sn, attributes={"bandwidth": bandwidth / (1.0 * len(start_nodes))}))
 
         res.append(
             Sla(start_date=None, end_date=None,
                 bandwidth=bandwidth,
                 tenant_id=tenant.id,
-                start_nodes=start_nodes,
-                cdn_nodes=cdn_nodes,
+                sla_node_specs=nodespecs,
                 substrate=substrate,
                 delay=delay
                 ))
