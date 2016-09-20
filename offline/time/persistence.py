@@ -59,10 +59,10 @@ class ServiceNode(Base):
     cpu = Column(Float, )
 
     def is_vhg(self):
-        return "VHG" in self.node_id
+        return "VHG" in self.name
 
     def is_vcdn(self):
-        return "VCDN" in self.node_id
+        return "VCDN" in self.name
 
 
 class ServiceEdge(Base):

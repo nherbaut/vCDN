@@ -36,7 +36,8 @@ def shortest_path(node1, node2):
     subprocess.call(["scip", "-c", "read %s" % os.path.join(OPTIM_FOLDER, "sp.zpl"), "-c",
                          "read %s" % os.path.join(OPTIM_FOLDER, "sp.zpl"), "-c", "optimize ", "-c",
                          "write solution %s" % (os.path.join(RESULTS_FOLDER, "solutions.data")), "-c", "q"],
-                        stdout=open(os.devnull, 'wb'))
+                       stdout=open(os.devnull, 'wb')
+                    )
 
 
     with open(os.path.join(RESULTS_FOLDER, "solutions.data"), "r") as sol:

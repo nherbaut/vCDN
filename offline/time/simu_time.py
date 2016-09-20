@@ -113,8 +113,8 @@ def do_simu(migration_costs_func=migration_calculator, sla_pricer=price_slas, lo
 
     session = Session()
     # create the topo and load it
-    #su = Substrate.fromGrid(delay=2, cpu=10000000, bw=10 ** 12)
-    su=Substrate.fromSpec()
+    su = Substrate.fromGrid(delay=2, cpu=10**12, bw=10 ** 12)
+    #su=Substrate.fromSpec()
     su.write(RESULTS_FOLDER)
 
     session.add(su)

@@ -70,12 +70,12 @@ def solve_inplace(allow_violations=False, preassign_vhg=False, path="."):
             matches = re.findall("^x\$(.*)\$([^ \t]+)", line)
             if (len(matches) > 0):
                 try:
-                    node_id = matches[0][0]
+                    node = session.query(Node).filter(Node.name==matches[0][0]).one()
                     snode_id, service_id, sla_id = matches[0][1].split("_")
                     service_node_id = session.query("ServiceNode.id").filter(
                         and_(ServiceNode.sla_id == sla_id, ServiceNode.service_id == service_id,
                              ServiceNode.name == snode_id)).one()[0]
-                    nodeMapping = NodeMapping(node_id=node_id, service_node_id=service_node_id, service_id=service_id,
+                    nodeMapping = NodeMapping(node_id=node.id, service_node_id=service_node_id, service_id=service_id,
                                               sla_id=sla_id)
                     nodesSols.append(nodeMapping)
 

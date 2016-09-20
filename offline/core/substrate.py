@@ -154,21 +154,22 @@ class Substrate(Base):
 
         for i in range(1, width + 1):
             for j in range(1, height + 1):
-                node = Node(id=str("%02d%02d" % (i, j)), cpu_capacity=cpu)
+                node = Node(name=str("%02d%02d" % (i, j)), cpu_capacity=cpu)
                 nodes.append(node)
                 session.add(node)
                 session.flush()
 
         for i in range(1, width + 1):
             for j in range(1, height + 1):
+
                 if j + 1 <= height:
-                    edge = Edge(node_1="%02d%02d" % (i, j), node_2="%02d%02d" % (i, j + 1), bandwidth=bw, delay=delay)
+                    edge = Edge(node_1=session.query(Node).filter(Node.name=="%02d%02d" % (i, j)).one(), node_2=session.query(Node).filter(Node.name=="%02d%02d" % (i, j + 1)).one(), bandwidth=bw, delay=delay)
                     edges.append(edge)
                 if i + 1 <= width:
-                    edge = Edge(node_1="%02d%02d" % (i, j), node_2="%02d%02d" % (i + 1, j), bandwidth=bw, delay=delay)
+                    edge = Edge(node_1=session.query(Node).filter(Node.name=="%02d%02d" % (i, j)).one(), node_2=session.query(Node).filter(Node.name=="%02d%02d" % (i + 1, j)).one(), bandwidth=bw, delay=delay)
                     edges.append(edge)
                 if j + 1 <= height and i + 1 <= width:
-                    edge = Edge(node_1="%02d%02d" % (i, j), node_2="%02d%02d" % (i + 1, j + 1), bandwidth=bw,
+                    edge = Edge(node_1=session.query(Node).filter(Node.name=="%02d%02d" % (i, j)).one(), node_2=session.query(Node).filter(Node.name=="%02d%02d" % (i + 1, j + 1)).one(), bandwidth=bw,
                                 delay=delay)
                     edges.append(edge)
 

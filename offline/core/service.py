@@ -99,7 +99,7 @@ class Service(Base):
         # update edge mapping topology, delete them if they are not present anymore
         for em in self.mapping.edge_mappings:
             edge = em.serviceEdge
-            service_edge = (edge.node_1.node_id, edge.node_2.node_id)
+            service_edge = (edge.node_1.name, edge.node_2.name)
             if service_edge in edges_from_new_topo:
                 edge.bandwidth = edges_from_new_topo[service_edge]
             else:
@@ -109,18 +109,18 @@ class Service(Base):
         # **don't** update CPU, just remove VHG or VCDN if they are not present anymore.
         for nm in self.mapping.node_mappings:
 
-            if nm.service_node.node_id not in nodes_from_new_topo:
+            if nm.service_node.name not in nodes_from_new_topo:
                 session.delete(nm)
                 session.flush()
         # prune service edges
         for se in self.serviceEdges:
-            if (se.node_1.node_id, se.node_2.node_id) not in edges_from_new_topo:
+            if (se.node_1.name, se.node_2.name) not in edges_from_new_topo:
                 session.delete(se)
                 session.flush()
 
         # prune service nodes
         for sn in self.serviceNodes:
-            if sn.node_id not in nodes_from_new_topo:
+            if sn.name not in nodes_from_new_topo:
                 session.delete(sn)
                 session.flush()
 
@@ -206,8 +206,8 @@ class Service(Base):
                 thread_param.append(([sla.id for sla in slas], vhg_count, vcdn_count))
 
 
-        services = threadpool.map(f, thread_param)
-        # services = [f(x) for x in thread_param]
+        #services = threadpool.map(f, thread_param)
+        services = [f(x) for x in thread_param]
         services = session.query(Service).filter(Service.id.in_(services)).all()
 
         for service in services:
@@ -362,7 +362,7 @@ class Service(Base):
             for sla in slas:
                 postfix = "%d_%d" % (self.id, sla.id)
                 for index, value in enumerate(sla.get_cdn_nodes(), start=1):
-                    f.write("CDN%d_%s %s\n" % (index, postfix, value.toponode_id))
+                    f.write("CDN%d_%s %s\n" % (index, postfix, value.topoNode.name))
 
         # write constraints on starter placement
         with open(os.path.join(RESULTS_FOLDER, path, "starters.nodes.data"), mode) as f:

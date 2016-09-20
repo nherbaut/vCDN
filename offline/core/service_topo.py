@@ -117,9 +117,9 @@ class ServiceTopo:
         # add CDN edges if available
         try:
             if hint_node_mappings is not None:
-                vhg_mapping = [(nmapping.node.id, nmapping.service_node.name) for nmapping in hint_node_mappings if
+                vhg_mapping = [(nmapping.node.name, nmapping.service_node.name) for nmapping in hint_node_mappings if
                                "VHG" in nmapping.service_node.name]
-                cdn_mapping = [(nm.toponode_id, "CDN%d" % index) for index, nm in enumerate(mapped_cdn_nodes, start=1)]
+                cdn_mapping = [(nm.topoNode.name, "CDN%d" % index) for index, nm in enumerate(mapped_cdn_nodes, start=1)]
                 for vhg, cdn in get_vhg_cdn_mapping(vhg_mapping, cdn_mapping).items():
                     if vhg in service.node:
                         # service.add_edge(vhg, cdn, bandwidth=service.node[vhg]["bandwidth"])
