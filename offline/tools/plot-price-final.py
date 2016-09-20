@@ -39,7 +39,7 @@ for key in sorted(pdata.keys()):
 
         #ax1.plot(x_smooth, y_smooth, label=key)
         ax1.plot(discounts, isp_prices, label="System + Network Cost for ISP")
-        ax2.plot(np.ones(len(discounts))*100-discounts, cdn_price, label="SLA embedding price for CDN",color="r")
+        ax2.plot(discounts, cdn_price, label="SLA embedding price for CDN",color="r")
 
         h1, l1 = ax1.get_legend_handles_labels()
         h2, l2 = ax2.get_legend_handles_labels()

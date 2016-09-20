@@ -2,20 +2,19 @@
 
 import argparse
 import os
-
-from mininet.cli import CLI
-from mininet.log import setLogLevel, info
-from mininet.net import Containernet, Mininet
-from mininet.node import RemoteController, OVSSwitch
-from mininet.link import TCLink
-
 from functools import partial
-import numpy as np
 
-from simulator.topoloader.topoloader import loadTopo
+import numpy as np
+from mininet.cli import CLI
+from mininet.link import TCLink
+from mininet.log import setLogLevel, info
+from mininet.net import Containernet
+from mininet.node import RemoteController, OVSSwitch
+
+from simulator.topoloader import loadTopo
 
 rs = np.random.RandomState()
-RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../offline/results')
+RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'offline/results')
 
 parser = argparse.ArgumentParser(description='1 iteration for solver')
 parser.add_argument('--pickle', help="solution file pickle", default="mapping.data", type=str)
