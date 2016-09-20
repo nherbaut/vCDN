@@ -4,7 +4,7 @@ from    __future__ import division
 import multiprocessing
 import os
 import sys
-from multiprocessing.pool import Pool
+from multiprocessing.pool import ThreadPool
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -35,7 +35,7 @@ def perform_forecast_bench(folders, filter=lambda x: True if "daily" in x and no
     for folder in folders:
         data_files += [os.path.join(folder, file) for file in os.listdir(folder) if filter(file)]
 
-    pool = Pool(multiprocessing.cpu_count() - 1)
+    pool = ThreadPool(multiprocessing.cpu_count() - 1)
     forecasts = pool.map(get_forecast, data_files)
     means = []
     for file, ts, df in forecasts:

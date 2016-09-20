@@ -57,7 +57,7 @@ v1<-as.POSIXct(v1)
 data<-ts(v2[1:(length(v1)-fc_len)],frequency=24)
 #automatically fit sarima
 m<-auto.arima(data)
-print(m))
+print(m)
 #predict
 fc<-forecast(m,level=c(95,80,50),lengthforecast)
 fcmean<-as.xts(append(coredata(fc$x),fc$mean),v1)

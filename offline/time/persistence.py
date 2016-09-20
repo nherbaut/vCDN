@@ -4,9 +4,10 @@ from sqlalchemy import Column, Integer, String, ForeignKey, Float
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
+from sqlalchemy.orm import scoped_session
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.schema import Table
-from sqlalchemy.orm import scoped_session
+
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
 
 Base = declarative_base()
@@ -26,29 +27,32 @@ class Tenant(Base):
 
 class Node(Base):
     __tablename__ = "Node"
-    id = Column(String(16), primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(16), primary_key=True)
     cpu_capacity = Column(Float, )
 
     def __str__(self):
-        return "%s\t%e" % (self.id, self.cpu_capacity)
+        return "%s\t%e" % (self.name, self.cpu_capacity)
 
 
 class Edge(Base):
     __tablename__ = "Edge"
     id = Column(Integer, primary_key=True)
-    node_1 = Column(String(16), ForeignKey("Node.id"))
-    node_2 = Column(String(16), ForeignKey("Node.id"))
+    node_1_id = Column(Integer, ForeignKey("Node.id"))
+    node_2_id = Column(Integer, ForeignKey("Node.id"))
     delay = Column(Float, )
     bandwidth = Column(Float, )
+    node_1 = relationship("Node", foreign_keys=node_1_id)
+    node_2 = relationship("Node", foreign_keys=node_2_id)
 
     def __str__(self):
-        return "%s\t%s\t%e\t%e" % (self.node_1, self.node_2, self.bandwidth, self.delay)
+        return "%s\t%s\t%e\t%e" % (self.node_1.name, self.node_2.name, self.bandwidth, self.delay)
 
 
 class ServiceNode(Base):
     __tablename__ = "ServiceNode"
     id = Column(Integer, primary_key=True, autoincrement=True)
-    node_id = Column(String(16))
+    name = Column(String(16))
     service_id = Column(Integer, ForeignKey("Service.id"))
     sla_id = Column(Integer, ForeignKey("Sla.id"))
     sla = relationship("Sla")
@@ -77,14 +81,13 @@ class ServiceEdge(Base):
     service = relationship("Service", cascade="save-update")
     sla = relationship("Sla", cascade="save-update")
 
-
     bandwidth = Column(Float)
 
 
 class NodeMapping(Base):
     __tablename__ = "NodeMapping"
     id = Column(Integer, primary_key=True, autoincrement=True)
-    node_id = Column(String(16), ForeignKey('Node.id'))
+    node_id = Column(Integer, ForeignKey('Node.id'))
     sla_id = Column(Integer, ForeignKey('Sla.id'))
     service_node_id = Column(Integer, ForeignKey('ServiceNode.id'))
     service_id = Column(Integer, ForeignKey('Service.id'))
@@ -126,4 +129,3 @@ Session = scoped_session(session_factory)
 def drop_all():
     Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(engine)
-

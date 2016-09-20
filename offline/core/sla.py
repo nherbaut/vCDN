@@ -21,7 +21,7 @@ class SlaNodeSpec(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     sla_id = Column(Integer, ForeignKey("Sla.id"))
     sla = relationship("Sla", cascade="save-update")
-    toponode_id = Column(String(16), ForeignKey("Node.id"), nullable=False)
+    toponode_id = Column(Integer, ForeignKey("Node.id"), nullable=False)
     topoNode = relationship("Node", order_by="Node.id", cascade="save-update")
     attributes = Column(PickleType)
     type = Column(String(16))

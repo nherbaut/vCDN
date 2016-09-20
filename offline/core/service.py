@@ -251,18 +251,18 @@ class Service(Base):
 
         for sla in [self.merged_sla]:
             for node, cpu in self.topo[sla].getServiceNodes():
-                node = ServiceNode(node_id=node, cpu=cpu, sla_id=sla.id)
+                node = ServiceNode(name=node, cpu=cpu, sla_id=sla.id)
                 session.add(node)
                 self.serviceNodes.append(node)
 
             for node_1, node_2, bandwidth in self.topo[sla].getServiceEdges():
                 snode_1 = session.query(ServiceNode).filter(
                     and_(ServiceNode.sla_id == sla.id, ServiceNode.service_id == self.id,
-                         ServiceNode.node_id == node_1)).one()
+                         ServiceNode.name == node_1)).one()
 
                 snode_2 = session.query(ServiceNode).filter(
                     and_(ServiceNode.sla_id == sla.id, ServiceNode.service_id == self.id,
-                         ServiceNode.node_id == node_2)).one()
+                         ServiceNode.name == node_2)).one()
 
                 sedge = ServiceEdge(node_1=snode_1, node_2=snode_2, bandwidth=bandwidth, sla_id=sla.id)
                 session.add(sedge)
@@ -284,11 +284,11 @@ class Service(Base):
                 for node_1, node_2, bandwidth in self.topo[sla].getServiceCDNEdges():
                     snode_1 = session.query(ServiceNode).filter(
                         and_(ServiceNode.sla_id == sla.id, ServiceNode.service_id == self.id,
-                             ServiceNode.node_id == node_1)).one()
+                             ServiceNode.name == node_1)).one()
 
                     snode_2 = session.query(ServiceNode).filter(
                         and_(ServiceNode.sla_id == sla.id, ServiceNode.service_id == self.id,
-                             ServiceNode.node_id == node_2)).one()
+                             ServiceNode.name == node_2)).one()
 
                     sedge = ServiceEdge(node_1=snode_1, node_2=snode_2, bandwidth=bandwidth, sla_id=sla.id)
                     session.add(sedge)

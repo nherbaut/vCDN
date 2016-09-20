@@ -1,7 +1,7 @@
 import collections
 import operator
 import sys
-
+import traceback
 import networkx as nx
 from networkx.algorithms.shortest_paths.generic import shortest_path
 
@@ -25,7 +25,7 @@ class ServiceTopo:
     def __compute_service_topo(self, substrate, mapped_start_nodes, mapped_cdn_nodes, vhg_count, vcdn_count,
                                hint_node_mappings=None):
         vhg_count = min(len(mapped_start_nodes), vhg_count)
-        vcdn_count = min(vcdn_count,vhg_count)
+        vcdn_count = min(vcdn_count, vhg_count)
 
         vmg_calc = get_vmg_calculator()
         service = nx.DiGraph()
@@ -40,23 +40,23 @@ class ServiceTopo:
         for index, cdn in enumerate(mapped_cdn_nodes, start=1):
             service.add_node("CDN%d" % index, type="CDN", cpu=0, ratio=0.65)
 
-        for key, topoNode in enumerate(mapped_start_nodes, start=1):
-            service.add_node("S%d" % key, cpu=0, type="S", mapping=topoNode.toponode_id)
+        for key, slaNodeSpec in enumerate(mapped_start_nodes, start=1):
+            service.add_node("S%d" % key, cpu=0, type="S", mapping=slaNodeSpec.topoNode.name)
             service.add_edge("S0", "S%d" % key, delay=sys.maxint, bandwidth=0)
 
         # create s<-> vhg edges
-        for toponode_id, vmg_id in get_node_clusters(map(lambda x: x.toponode_id, mapped_start_nodes), vhg_count,
-                                                     substrate=substrate).items():
-            s = [n[0] for n in service.nodes(data=True) if n[1].get("mapping", None) == toponode_id][0]
+        for toponode_name, vmg_id in get_node_clusters(map(lambda x: x.topoNode.name, mapped_start_nodes), vhg_count,
+                                                       substrate=substrate).items():
+            s = [n[0] for n in service.nodes(data=True) if n[1].get("mapping", None) == toponode_name][0]
             service.add_edge(s, "VHG%d" % vmg_id, delay=sys.maxint, bandwidth=0)
 
         # create vhg <-> vcdn edges
         # here, each S "votes" for a vCDN and tell its VHG
 
-        for toponode_id, vCDN_id in get_node_clusters(map(lambda x: x.toponode_id, mapped_start_nodes), vcdn_count,
-                                                      substrate=substrate).items():
+        for toponode_name, vCDN_id in get_node_clusters(map(lambda x: x.topoNode.name, mapped_start_nodes), vcdn_count,
+                                                        substrate=substrate).items():
             # get the S from the toponode_id
-            s = [n[0] for n in service.nodes(data=True) if n[1].get("mapping", None) == toponode_id][0]
+            s = [n[0] for n in service.nodes(data=True) if n[1].get("mapping", None) == toponode_name][0]
 
             vcdn = "VCDN%d" % vCDN_id
             # get the vhg from the S
@@ -117,15 +117,15 @@ class ServiceTopo:
         # add CDN edges if available
         try:
             if hint_node_mappings is not None:
-                vhg_mapping = [(nmapping.node.id, nmapping.service_node.node_id) for nmapping in hint_node_mappings if
-                               "VHG" in nmapping.service_node.node_id]
+                vhg_mapping = [(nmapping.node.id, nmapping.service_node.name) for nmapping in hint_node_mappings if
+                               "VHG" in nmapping.service_node.name]
                 cdn_mapping = [(nm.toponode_id, "CDN%d" % index) for index, nm in enumerate(mapped_cdn_nodes, start=1)]
                 for vhg, cdn in get_vhg_cdn_mapping(vhg_mapping, cdn_mapping).items():
                     if vhg in service.node:
-                        #service.add_edge(vhg, cdn, bandwidth=service.node[vhg]["bandwidth"])
-                        service.add_edge(vhg, cdn, bandwidth=service.node[vhg]["bandwidth"]/10.0)
+                        # service.add_edge(vhg, cdn, bandwidth=service.node[vhg]["bandwidth"])
+                        service.add_edge(vhg, cdn, bandwidth=service.node[vhg]["bandwidth"] / 10.0)
         except:
-            print('oups')
+            traceback.print_exc()
 
         return service, delay_path, delay_route
 

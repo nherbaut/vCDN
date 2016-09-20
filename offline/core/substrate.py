@@ -11,7 +11,7 @@ RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../r
 DATA_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../data')
 
 substrate_to_node = Table('substrate_to_nodes', Base.metadata,
-                          Column('node_id', String(16), ForeignKey('Node.id')),
+                          Column('node_id', Integer, ForeignKey('Node.id')),
                           Column('substrate_id', Integer, ForeignKey('Substrate.id'))
                           )
 
@@ -19,6 +19,20 @@ substrate_to_edge = Table('substrate_to_edges', Base.metadata,
                           Column('edge_id', Integer, ForeignKey('Edge.id')),
                           Column('substrate_id', Integer, ForeignKey('Substrate.id'))
                           )
+
+
+def get_delay(node1, node2):
+    return haversine((float(node1.attributes()["d29"].value), float(node1.attributes()["d32"].value)),
+                     (float(node2.attributes()["d29"].value), float(node2.attributes()["d32"].value))) / (
+               299.300 * 0.6)
+
+
+def isOK(node1, node2):
+    try:
+        get_delay(node1, node2)
+    except:
+        return False
+    return True
 
 
 class Substrate(Base):
@@ -37,16 +51,17 @@ class Substrate(Base):
     def get_nodes_sum(self):
         return sum([x.cpu for x in self.nodes.items()])
 
-    def __init__(self, edges, nodesdict):
+    def __init__(self, edges, nodes):
         '''
 
         :param edges: a list of edge spec
-        :param nodesdict: a dict of nodes spec
+        :param nodes: a dict of nodes spec
         :param cpuCost: the global cost for CPU
         :param netCost:  the global cost for network
         '''
+        session = Session()
         self.edges = edges
-        self.nodes = nodesdict
+        self.nodes = nodes
         self.edges_init = sorted(edges, key=lambda x: "%s%s" % (str(x.node_1), str(x.node_2)))
 
     def write(self, path="."):
@@ -131,6 +146,8 @@ class Substrate(Base):
 
     @classmethod
     def fromGrid(cls, width=5, height=5, bw=10 ** 10, delay=10, cpu=10):
+        width = int(width)
+        height = int(height)
         session = Session()
         edges = []
         nodes = []
@@ -184,26 +201,39 @@ class Substrate(Base):
 
     @classmethod
     def fromGraph(cls, rs, file):
+        session = Session()
         parser = GraphMLParser()
 
         g = parser.parse(os.path.join(DATA_FOLDER, file))
+        nodes = [Node(name=str(n.id), cpu_capacity=max(rs.normal(100, 5, 1)[0], 0)) for n in g.nodes()]
+        nodes_from_g = {str(n.id): n for n in g.nodes()}
+        session.add_all(nodes)
+        session.flush()
 
-        nodes = {str(n.id): n for n in g.nodes()}
-        edges = [(str(e.node1.id), str(e.node2.id), float(e.attributes()["d42"].value),
-                  get_delay(nodes[str(e.node1.id)], nodes[str(e.node2.id)]))
-                 for e in g.edges() if "d42" in e.attributes() and isOK(nodes[str(e.node1.id)], nodes[str(e.node2.id)])]
+        edges = [Edge
+                 (node_1=session.query(Node).filter(Node.name==str(e.node1.id)).one(),
+                  node_2=session.query(Node).filter(Node.name==str(e.node2.id)).one(),
+                  bandwidth=float(e.attributes()["d42"].value),
+                  delay=get_delay(nodes_from_g[str(e.node1.id)], nodes_from_g[str(e.node2.id)])
+                  )
 
-        # for which we have all the data
-        valid_nodes = list(set([e[0] for e in edges] + [e[1] for e in edges]))
+                 for e in g.edges() if
+                 "d42" in e.attributes()
+                 and isOK(nodes_from_g[str(e.node1.id)], nodes_from_g[str(e.node2.id)])
+                 ]
+        session.add_all(edges)
+        session.flush()
 
-        nodes = set([str(n.id) for n in g.nodes() if str(n.id) in valid_nodes])
-        nodesdict = {}
+        # filter out nodes for which we have edges
+        valid_nodes = list(set([e.node_1.name for e in edges] + [e.node_2.name for e in edges]))
+        nodes = list(set([n for n in nodes if str(n.name) in valid_nodes]))
 
-        for l in nodes:
-            value = max(rs.normal(100, 5, 1)[0], 0)
-            nodesdict[str(l)] = value
+        session.add_all(nodes)
+        session.flush()
+        session.add_all(edges)
+        session.flush()
 
-        return cls(edges, nodesdict)
+        return cls(edges, nodes)
 
     def release_service(self, service):
         self.__handle_service(service, +1)
@@ -212,7 +242,7 @@ class Substrate(Base):
         self.__handle_service(service, -1)
 
     def __handle_service(self, service, factor):
-        session=Session()
+        session = Session()
         # print "consuming..."
         for ns in service.mapping.node_mappings:
             # get topo node
@@ -224,8 +254,6 @@ class Substrate(Base):
             es.edge.bandwidth = es.edge.bandwidth + factor * es.serviceEdge.bandwidth
 
         session.flush()
-
-
 
     def deduce_bw(es, edges, service):
         candidate_edges = filter(lambda x: x[0] == es.start_topo_node_id and x[1] == es.end_topo_node_id, edges)
@@ -239,18 +267,6 @@ class Substrate(Base):
                 "hein?"
             return True
         return False
-
-    def get_delay(node1, node2):
-        return haversine((float(node1.attributes()["d29"].value), float(node1.attributes()["d32"].value)),
-                         (float(node2.attributes()["d29"].value), float(node2.attributes()["d32"].value))) / (
-                   299.300 * 0.6)
-
-    def isOK(node1, node2):
-        try:
-            get_delay(node1, node2)
-        except:
-            return False
-        return True
 
     def get_substrate(rs, file=os.path.join(DATA_FOLDER, 'Geant2012.graphml')):
         su = Substrate.fromGraph(rs, file)
