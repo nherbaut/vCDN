@@ -35,7 +35,7 @@ def solve_inplace(allow_violations=False, preassign_vhg=False, path="."):
     if not allow_violations:
         if not preassign_vhg:  # run the optim without CDNs
             subprocess.call(
-                ["scip", "-c", "read %s" % os.path.join(RESULTS_FOLDER, path, "optim.zpl"), "-c", "optimize ", "-c",
+                ["scip", "-c", "read %s" % os.path.join(RESULTS_FOLDER, path, "optim.zpl"),  "-c", "optimize ", "-c",
                  "write solution %s" % (os.path.join(RESULTS_FOLDER, path, "solutions.data")), "-c", "q"],
                 stdout=open(os.devnull, 'wb')
             )
@@ -70,7 +70,7 @@ def solve_inplace(allow_violations=False, preassign_vhg=False, path="."):
             matches = re.findall("^x\$(.*)\$([^ \t]+)", line)
             if (len(matches) > 0):
                 try:
-                    node = session.query(Node).filter(Node.name==matches[0][0]).one()
+                    node = session.query(Node).filter(Node.name == matches[0][0]).one()
                     snode_id, service_id, sla_id = matches[0][1].split("_")
                     service_node_id = session.query("ServiceNode.id").filter(
                         and_(ServiceNode.sla_id == sla_id, ServiceNode.service_id == service_id,
@@ -127,7 +127,9 @@ def solve(service, substrate, path):
     substrate.write(path)
     session.flush()
     mapping = solve_inplace(path=path)
+
     service.mapping = mapping
     if mapping is not None:
+        mapping.substrate = substrate
         session.add(mapping)
     session.flush()

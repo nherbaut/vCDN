@@ -13,7 +13,8 @@ GEANT_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../data/
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
 
 
-def create_experiment_and_optimize(starts, cdns, sourcebw, topo, seed):
+def create_experiment_and_optimize(starts, cdns, sourcebw, topo, seed, vhg_count=None, vcdn_count=None,
+                                   automatic=True):
     session = Session()
     Base.metadata.create_all(engine)
     drop_all()
@@ -21,6 +22,14 @@ def create_experiment_and_optimize(starts, cdns, sourcebw, topo, seed):
     rs = RandomState(seed)
 
     su = Substrate.fromSpec(topo, rs)
+    nodes_names = [n.name for n in su.nodes]
+
+    for s in starts:
+        assert s in nodes_names, "%s not in %s" % (s, nodes_names)
+
+    for s in cdns:
+        assert s in nodes_names, "%s not in %s" % (s, nodes_names)
+
     su.write(RESULTS_FOLDER)
     session.add(su)
     session.flush()
@@ -29,13 +38,14 @@ def create_experiment_and_optimize(starts, cdns, sourcebw, topo, seed):
     session.add(tenant)
 
     sla_node_specs = []
+    bw_per_s = sourcebw * float(len(starts))
     for start in starts:
         ns = SlaNodeSpec(topoNode=session.query(Node).filter(Node.name == start).one(), type="start",
-                         attributes={"bandwidth": 1})
+                         attributes={"bandwidth": bw_per_s})
         sla_node_specs.append(ns)
 
     for cdn in cdns:
-        ns = SlaNodeSpec(toponode_id=session.query(Node).filter(Node.name == start).one(), type="cdn",
+        ns = SlaNodeSpec(topoNode=session.query(Node).filter(Node.name == cdn).one(), type="cdn",
                          attributes={"bandwidth": 1})
         sla_node_specs.append(ns)
 
@@ -43,5 +53,14 @@ def create_experiment_and_optimize(starts, cdns, sourcebw, topo, seed):
     session.add(sla)
     session.flush()
 
-    service = Service([sla.id])
-    print("success : %lf" % service.mapping.objective_function)
+    if not automatic:
+        service = Service([sla.id], vhg_count=vhg_count, vcdn_count=vcdn_count)
+    else:
+        service = Service.get_optimal([sla],remove_service=True)
+
+    session.add(service)
+    session.flush()
+    if service.mapping is not None:
+        print("success : %lf for service %d" % (service.mapping.objective_function, service.id))
+    else:
+        print("Failure!")

@@ -186,13 +186,13 @@ class Service(Base):
 
     @classmethod
     def get_optimal(cls, slas, serviceSpecFactory=ServiceSpecFactory, max_vhg_count=10, max_vcdn_count=10,
-                    threads=multiprocessing.cpu_count() - 1):
+                    threads=multiprocessing.cpu_count() -1,remove_service=True):
         session = Session()
         threadpool = ThreadPool(threads)
         thread_param = []
 
         max_vhg_count = min(max_vhg_count,
-                            len(set([nodes.toponode_id for sla in slas for nodes in sla.get_start_nodes()])))
+                            len(set([nodes.topoNode.name for sla in slas for nodes in sla.get_start_nodes()])))
         max_vcdn_count = min(max_vhg_count, max_vcdn_count)
 
         logging.debug("----------Looking for optima solution to embed %s with max_vhg=%d and max_vcdn=%d" % (
@@ -206,8 +206,8 @@ class Service(Base):
                 thread_param.append(([sla.id for sla in slas], vhg_count, vcdn_count))
 
 
-        #services = threadpool.map(f, thread_param)
-        services = [f(x) for x in thread_param]
+        services = threadpool.map(f, thread_param)
+        #services = [f(x) for x in thread_param]
         services = session.query(Service).filter(Service.id.in_(services)).all()
 
         for service in services:
@@ -229,8 +229,9 @@ class Service(Base):
 
         for service in services:
             if service.id != best_service.id:
-                session.delete(service)
-                session.flush()
+                if remove_service:
+                    session.delete(service)
+                    session.flush()
 
         return best_service
 

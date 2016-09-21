@@ -91,7 +91,7 @@ class Substrate(Base):
     @classmethod
     def fromSpec(cls, specs, rs=numpy.random.RandomState()):
         if specs[0] == "grid":
-            return cls.__fromSpec(list(specs[1]) + [10 ** 10, 1, 5])
+            return cls.__fromSpec(list(specs[1]) + [10 ** 10, 1, 1000])
         elif specs[0] == "file":
             return cls.fromGraph(rs, specs[1][0])
         elif specs[0] == "powerlaw":
@@ -206,7 +206,7 @@ class Substrate(Base):
         parser = GraphMLParser()
 
         g = parser.parse(os.path.join(DATA_FOLDER, file))
-        nodes = [Node(name=str(n.id), cpu_capacity=max(rs.normal(100, 5, 1)[0], 0)) for n in g.nodes()]
+        nodes = [Node(name=str(n.id), cpu_capacity=max(rs.normal(10000, 5, 1)[0], 0)) for n in g.nodes()]
         nodes_from_g = {str(n.id): n for n in g.nodes()}
         session.add_all(nodes)
         session.flush()

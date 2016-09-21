@@ -106,21 +106,22 @@ def generate_random_slas(rs, substrate, count=1000, start_count=0, end_count=0, 
         start_nodes = random_nodes[:start_count]
         nodespecs=[]
         for sn in start_nodes:
-
             nodespecs.append(SlaNodeSpec(type="start",topoNode=sn, attributes={"bandwidth": bandwidth / (1.0 * len(start_nodes))}))
 
         cdn_nodes = random_nodes[start_count:]
         for cdnn in cdn_nodes:
             nodespecs.append(SlaNodeSpec(type="cdn", topoNode=sn, attributes={"bandwidth": bandwidth / (1.0 * len(start_nodes))}))
 
-        res.append(
-            Sla(start_date=None, end_date=None,
+        sla=Sla(start_date=None, end_date=None,
                 bandwidth=bandwidth,
                 tenant_id=tenant.id,
                 sla_node_specs=nodespecs,
                 substrate=substrate,
                 delay=delay
-                ))
+                )
+        session.add(sla)
+        session.flush()
+        res.append(sla)
 
     return res
 

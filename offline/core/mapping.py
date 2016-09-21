@@ -18,10 +18,13 @@ class Mapping(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
 
     service_id = Column(Integer, ForeignKey('Service.id'), nullable=False)
+    substrate_id=Column(Integer, ForeignKey('Substrate.id'))
     service = relationship("Service", cascade="save-update", back_populates="mapping")
 
     node_mappings = relationship("NodeMapping", cascade="all")
     edge_mappings = relationship("EdgeMapping", cascade="all")
+    substrate = relationship("Substrate", cascade="none")
+
     objective_function = Column(Float)
 
 
@@ -30,26 +33,26 @@ class Mapping(Base):
 
         :return: [("CDN1","1021"),("CDN2","1125")]
         '''
-        return [(nm.service_node.node_id, nm.node.id) for nm in self.node_mappings if
-                nm.service_node.node_id.lower().startswith("cdn")]
+        return [(nm.service_node.name, nm.node.name) for nm in self.node_mappings if
+                nm.service_node.name.lower().startswith("cdn")]
 
     def dump_starter_node_mapping(self):
         '''
 
         :return: [("S2","1021"),("S3","1125")]
         '''
-        return [(nm.service_node.node_id, nm.node.id) for nm in self.node_mappings if
-                nm.service_node.node_id.lower().startswith("s")]
+        return [(nm.service_node.name, nm.node.name) for nm in self.node_mappings if
+                nm.service_node.name.lower().startswith("s")]
 
     def dump_node_mapping(self):
-        return [(nm.node.id, nm.service_node.node_id) for nm in self.node_mappings]
+        return [(nm.node.name, nm.service_node.name) for nm in self.node_mappings]
 
     def dump_edge_mapping(self):
         '''
 
         :return: [("1241","1242","VHG1","VCDN1"),("5123","5123","VHG3","VCDN3")]
         '''
-        return [(em.edge.node_1, em.edge.node_2, em.serviceEdge.node_1.node_id, em.serviceEdge.node_2.node_id) for
+        return [(em.edge.node_1.name, em.edge.node_2.name, em.serviceEdge.node_1.name, em.serviceEdge.node_2.name) for
                 em in self.edge_mappings]
 
     def __init__(self, node_mappings=node_mappings, edge_mappings=edge_mappings, objective_function=objective_function):
