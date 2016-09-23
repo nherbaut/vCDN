@@ -27,6 +27,9 @@ def create_experiment_and_optimize(starts, cdns, sourcebw, topo, seed, vhg_count
     for s in starts:
         assert s in nodes_names, "%s not in %s" % (s, nodes_names)
 
+    if len(cdns)==1 and cdns[0]=="all":
+        cdns=[node.name for node in su.nodes]
+
     for s in cdns:
         assert s in nodes_names, "%s not in %s" % (s, nodes_names)
 

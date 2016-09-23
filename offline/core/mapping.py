@@ -56,6 +56,7 @@ class Mapping(Base):
                 em in self.edge_mappings]
 
     def __init__(self, node_mappings=node_mappings, edge_mappings=edge_mappings, objective_function=objective_function):
+
         self.node_mappings = node_mappings
         self.edge_mappings = edge_mappings
         self.objective_function = objective_function

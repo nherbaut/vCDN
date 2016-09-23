@@ -48,20 +48,19 @@ param cpuCost_vCDN := read "{{ pricing_dir }}/cdn/pricing_for_one_instance.prope
 
 param netCost := read "{{ pricing_dir }}/net.cost.data" as "1n" use 1;
 
+
+
 var x[N cross NS ] binary;
-var x_cdn[N cross CDN_LABEL ] binary;
 var y [(E union Et) cross ES ] binary;
-var y_cdn [(E union Et) cross ES ] binary;
 var w binary;
 
 
 
 minimize cost:
-    sum <u,v> in E union Et:(
-		sum <i,j> in ES:(y[u,v,i,j] * bwS[i,j] * netCost)) +
-		sum<vhg> in VHG_LABEL:(cpuCost_vHG*cpuS[vhg])+
-		sum<vcdn> in VCDN_LABEL:(cpuCost_vCDN*cpuS[vcdn]);
-
+    sum <u,v> in E union Et:(sum <i,j> in ES:(y[u,v,i,j] * bwS[i,j] * netCost)) +
+	sum<vhg> in VHG_LABEL:(cpuCost_vHG*cpuS[vhg])+
+	sum<vcdn> in VCDN_LABEL:(cpuCost_vCDN*cpuS[vcdn])+
+	sum<u,cdn> in (N cross CDN_LABEL ): x[u,cdn]*100000;
 
 
 #maximize cost:
@@ -72,8 +71,9 @@ minimize cost:
 
 
 subto everyNodeIsMapped:
-	forall <j> in NS:
+	forall <j> in NS \ CDN_LABEL:
 		sum<i> in N: x[i,j]==1;
+
 
 
 subto popRes:
@@ -121,9 +121,14 @@ subto sources:
     forall <name,id> in STARTERS_MAPPING:
         x[id,name]==1;
 
-subto cdn:
+subto cdnMaybe:
     forall <name,id> in CDN_MAPPING:
-        x[id,name]==1;
+        x[id,name]<=1;
+
+subto cdnNo:
+    forall <name,id> in {<name,id> in (CDN_LABEL cross  N) \ CDN_MAPPING}:
+        x[id,name]==0;
+
 
 
 

@@ -64,6 +64,7 @@ fcmean<-as.xts(append(coredata(fc$x),fc$mean),v1)
 fc95<-as.xts(append(coredata(fc$x),fc$upper[,"95%"]),v1)
 fc80<-as.xts(append(coredata(fc$x),fc$upper[,"80%"]),v1)
 fc50<-as.xts(append(coredata(fc$x),fc$upper[,"50%"]),v1)
+
 fc0<-as.xts(v2,v1)
 fc_merged<-merge(fcmean,fc95,fc80,fc50,fc0)
 print(out)

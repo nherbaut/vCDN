@@ -151,6 +151,7 @@ def plotsol_from_db(**kwargs):
     edgesSol = []
     net = kwargs["net"]
     service = kwargs["service"]
+    su = service.slas[0].substrate
 
     if not net:  # we don't display solution, only substrate
         mapping = service.mapping
@@ -162,9 +163,9 @@ def plotsol_from_db(**kwargs):
         nodesSol = mapping.dump_node_mapping()
         edgesSol = mapping.dump_edge_mapping()
 
-    edges = [(edge.node_1.name, edge.node_2.name, edge.bandwidth, edge.delay) for edge in mapping.substrate.edges]
+    edges = [(edge.node_1.name, edge.node_2.name, edge.bandwidth, edge.delay) for edge in su .edges]
 
-    nodesdict = {node.name: node.cpu_capacity for node in mapping.substrate.nodes}
+    nodesdict = {node.name: node.cpu_capacity for node in su.nodes}
 
     with open(os.path.join(RESULTS_FOLDER, str(service.id), "substrate.dot"), 'w') as f:
         f.write("graph{rankdir=LR;overlap = voronoi;\n\n\n\n subgraph{\n\n\n")
@@ -179,18 +180,13 @@ def plotsol_from_db(**kwargs):
                 color = "red1"
             else:
                 color = "black"
-            # f.write("%s [shape=box,style=filled,fillcolor=white,color=%s,width=%f,fontsize=15,pos=\"%d,%d\"];\n" % (
-            # node[0], color, min(1, float(node[1]) / avgcpu), int(node[0][:2]), int(node[0][-2:])))
             f.write("%s [shape=box,style=filled,fillcolor=white,color=%s,width=%f,fontsize=15];\n" % (
                 node[0], color, 1,))
 
-        avgbw = [float(edge[2]) for edge in edges]
-        avgbw = sum(avgbw) / len(avgbw)
 
-        avgdelay = reduce(lambda x, y: float(x) + float(y[3]), edges, 0.0) / len(edge)
+
+
         for edge in edges:
-            availbw = float(edge[2])
-            # f.write("%s->%s [ label=\"%d\", penwidth=\"%d\", fontsize=20];\n " % (edge[0], edge[1], float(edge[2]), 1+3*availbw/avgbw))
             f.write("%s--%s [penwidth=\"%d\",fontsize=15,len=2,label=\" \"];\n " % (edge[0], edge[1], 3))
 
         for node in nodesSol:

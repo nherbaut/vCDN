@@ -91,13 +91,13 @@ class Substrate(Base):
     @classmethod
     def fromSpec(cls, specs, rs=numpy.random.RandomState()):
         if specs[0] == "grid":
-            return cls.__fromSpec(list(specs[1]) + [10 ** 10, 1, 1000])
+            return cls.__fromSpec(list(specs[1]))
         elif specs[0] == "file":
             return cls.fromGraph(rs, specs[1][0])
         elif specs[0] == "powerlaw":
-            return cls.fromPowerLaw(list(specs[1]) + [10 ** 10, 1, 5])
+            return cls.fromPowerLaw(list(specs[1]) )
         elif specs[0] == "erdos_renyi":
-            return cls.FromErdosRenyi(list(specs[1]) + [10 ** 10, 1, 5])
+            return cls.FromErdosRenyi(list(specs[1]))
         else:
             return cls.__fromSpec([5, 5] + [10 ** 10, 1, 5])
 
@@ -112,16 +112,27 @@ class Substrate(Base):
         m = int(m)
         p = float(p)
         seed = int(seed)
-        edges = []
-        nodesdict = {}
         g = networkx.powerlaw_cluster_graph(n, m, p, seed)
-        for node in g.nodes():
-            nodesdict[str(node + 1)] = cpu
+        session = Session()
+        nodes = [Node(name=str(n), cpu_capacity=cpu) for n in g.nodes()]
 
-        for i, j in g.edges():
-            edges.append((str(i + 1), str(j + 1), bw, delay))
+        session.add_all(nodes)
+        session.flush()
 
-        return cls(edges, nodesdict)
+        edges = [Edge
+                 (node_1=session.query(Node).filter(Node.name == str(e[0])).one(),
+                  node_2=session.query(Node).filter(Node.name == str(e[1])).one(),
+                  bandwidth=bw,
+                  delay=delay
+                  )
+                 for e in g.edges()
+
+                 ]
+        session.add_all(edges)
+        session.flush()
+
+        return cls(edges, nodes
+                   )
 
     @classmethod
     def FromErdosRenyi(cls, specs):
@@ -133,16 +144,26 @@ class Substrate(Base):
         n = int(n)
         p = float(p)
         seed = int(seed)
-        edges = []
-        nodesdict = {}
         g = networkx.erdos_renyi_graph(n, p, seed)
-        for node in g.nodes():
-            nodesdict[str(node + 1)] = cpu
+        session = Session()
+        nodes = [Node(name=str(n), cpu_capacity=cpu) for n in g.nodes()]
 
-        for i, j in g.edges():
-            edges.append((str(i + 1), str(j + 1), bw, delay))
+        session.add_all(nodes)
+        session.flush()
 
-        return cls(edges, nodesdict)
+        edges = [Edge
+                 (node_1=session.query(Node).filter(Node.name == str(e[0])).one(),
+                  node_2=session.query(Node).filter(Node.name == str(e[1])).one(),
+                  bandwidth=bw,
+                  delay=delay
+                  )
+                 for e in g.edges()
+
+                 ]
+        session.add_all(edges)
+        session.flush()
+
+        return cls(edges, nodes)
 
     @classmethod
     def fromGrid(cls, width=5, height=5, bw=10 ** 10, delay=10, cpu=10):
@@ -163,13 +184,19 @@ class Substrate(Base):
             for j in range(1, height + 1):
 
                 if j + 1 <= height:
-                    edge = Edge(node_1=session.query(Node).filter(Node.name=="%02d%02d" % (i, j)).one(), node_2=session.query(Node).filter(Node.name=="%02d%02d" % (i, j + 1)).one(), bandwidth=bw, delay=delay)
+                    edge = Edge(node_1=session.query(Node).filter(Node.name == "%02d%02d" % (i, j)).one(),
+                                node_2=session.query(Node).filter(Node.name == "%02d%02d" % (i, j + 1)).one(),
+                                bandwidth=bw, delay=delay)
                     edges.append(edge)
                 if i + 1 <= width:
-                    edge = Edge(node_1=session.query(Node).filter(Node.name=="%02d%02d" % (i, j)).one(), node_2=session.query(Node).filter(Node.name=="%02d%02d" % (i + 1, j)).one(), bandwidth=bw, delay=delay)
+                    edge = Edge(node_1=session.query(Node).filter(Node.name == "%02d%02d" % (i, j)).one(),
+                                node_2=session.query(Node).filter(Node.name == "%02d%02d" % (i + 1, j)).one(),
+                                bandwidth=bw, delay=delay)
                     edges.append(edge)
                 if j + 1 <= height and i + 1 <= width:
-                    edge = Edge(node_1=session.query(Node).filter(Node.name=="%02d%02d" % (i, j)).one(), node_2=session.query(Node).filter(Node.name=="%02d%02d" % (i + 1, j + 1)).one(), bandwidth=bw,
+                    edge = Edge(node_1=session.query(Node).filter(Node.name == "%02d%02d" % (i, j)).one(),
+                                node_2=session.query(Node).filter(Node.name == "%02d%02d" % (i + 1, j + 1)).one(),
+                                bandwidth=bw,
                                 delay=delay)
                     edges.append(edge)
 
@@ -212,8 +239,8 @@ class Substrate(Base):
         session.flush()
 
         edges = [Edge
-                 (node_1=session.query(Node).filter(Node.name==str(e.node1.id)).one(),
-                  node_2=session.query(Node).filter(Node.name==str(e.node2.id)).one(),
+                 (node_1=session.query(Node).filter(Node.name == str(e.node1.id)).one(),
+                  node_2=session.query(Node).filter(Node.name == str(e.node2.id)).one(),
                   bandwidth=float(e.attributes()["d42"].value),
                   delay=get_delay(nodes_from_g[str(e.node1.id)], nodes_from_g[str(e.node2.id)])
                   )

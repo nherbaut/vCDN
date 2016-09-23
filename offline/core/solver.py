@@ -14,7 +14,8 @@ RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../r
 PRICING_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../pricing')
 
 env = Environment(loader=PackageLoader("offline", 'optim'))
-template = env.get_template('optim.zpl.tpl')
+template_optim = env.get_template('optim.zpl.tpl')
+template_optim_debug = env.get_template('batch-debug.sh')
 
 
 def solve_inplace(allow_violations=False, preassign_vhg=False, path="."):
@@ -29,13 +30,19 @@ def solve_inplace(allow_violations=False, preassign_vhg=False, path="."):
 
     # copy template to target folder
     with open(os.path.join(RESULTS_FOLDER, path, "optim.zpl"), "w") as f:
-        f.write(template.render(dir=os.path.join(RESULTS_FOLDER, path), pricing_dir=PRICING_FOLDER))
+        f.write(template_optim.render(dir=os.path.join(RESULTS_FOLDER, path), pricing_dir=PRICING_FOLDER))
+
+    with open(os.path.join(RESULTS_FOLDER, path, "debug.sh"), "w") as f:
+        f.write(template_optim_debug.render(dir=os.path.join(RESULTS_FOLDER, path), pricing_dir=PRICING_FOLDER))
+
+    os.chmod(os.path.join(RESULTS_FOLDER, path, "debug.sh"), 0o711)
+
 
     violations = []
     if not allow_violations:
         if not preassign_vhg:  # run the optim without CDNs
             subprocess.call(
-                ["scip", "-c", "read %s" % os.path.join(RESULTS_FOLDER, path, "optim.zpl"),  "-c", "optimize ", "-c",
+                ["scip", "-c", "read %s" % os.path.join(RESULTS_FOLDER, path, "optim.zpl"), "-c", "optimize ", "-c",
                  "write solution %s" % (os.path.join(RESULTS_FOLDER, path, "solutions.data")), "-c", "q"],
                 stdout=open(os.devnull, 'wb')
             )
@@ -67,11 +74,12 @@ def solve_inplace(allow_violations=False, preassign_vhg=False, path="."):
         for line in data:
 
             # search node
-            matches = re.findall("^x\$(.*)\$([^ \t]+)", line)
+            matches = re.findall("^x\$(.*)\$([^ \t]+) +([^ \t]+)", line)
             if (len(matches) > 0):
                 try:
                     node = session.query(Node).filter(Node.name == matches[0][0]).one()
                     snode_id, service_id, sla_id = matches[0][1].split("_")
+                    value = matches[0][2]
                     service_node_id = session.query("ServiceNode.id").filter(
                         and_(ServiceNode.sla_id == sla_id, ServiceNode.service_id == service_id,
                              ServiceNode.name == snode_id)).one()[0]
@@ -84,9 +92,9 @@ def solve_inplace(allow_violations=False, preassign_vhg=False, path="."):
                     print(e)
 
             # search edge
-            matches = re.findall("^y\$(.*)\$(.*)\$(.*)\$([^ \t]+)", line)
+            matches = re.findall("^y\$(.*)\$(.*)\$(.*)\$([^ \t]+) +([^ \t]+)", line)
             if (len(matches) > 0):
-                node_1, node_2, snode_1, snode_2 = matches[0]
+                node_1, node_2, snode_1, snode_2, value = matches[0]
                 snode_1, service_id, sla_id = snode_1.split("_")
                 snode_2, service_id, sla_id = snode_2.split("_")
 
@@ -117,6 +125,7 @@ def solve_inplace(allow_violations=False, preassign_vhg=False, path="."):
             if (len(matches) > 0):
                 violations.append(matches[0])
                 continue
+
         mapping = Mapping(node_mappings=nodesSols, edge_mappings=edgesSol, objective_function=objective_function)
         return mapping
 
