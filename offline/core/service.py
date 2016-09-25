@@ -94,7 +94,7 @@ class Service(Base):
 
         # retreive info on the new service.
         edges_from_new_topo = {(node_1, node_2): bw for node_1, node_2, bw in self.topo.dump_edges()}
-        nodes_from_new_topo = {node: cpu for node, cpu in self.topo.dump_nodes()}
+        nodes_from_new_topo = {node: cpu for node, cpu, bw in self.topo.getServiceNodes()}
 
         # update edge mapping topology, delete them if they are not present anymore
         for em in self.mapping.edge_mappings:
@@ -186,7 +186,7 @@ class Service(Base):
 
     @classmethod
     def get_optimal(cls, slas, serviceSpecFactory=ServiceSpecFactory, max_vhg_count=10, max_vcdn_count=10,
-                    threads=multiprocessing.cpu_count() -1,remove_service=True):
+                    threads=multiprocessing.cpu_count() - 1, remove_service=True):
         session = Session()
         threadpool = ThreadPool(threads)
         thread_param = []
@@ -205,9 +205,8 @@ class Service(Base):
             for vcdn_count in range(1, min(vhg_count, max_vcdn_count) + 1):
                 thread_param.append(([sla.id for sla in slas], vhg_count, vcdn_count))
 
-
         services = threadpool.map(f, thread_param)
-        #services = [f(x) for x in thread_param]
+        # services = [f(x) for x in thread_param]
         services = session.query(Service).filter(Service.id.in_(services)).all()
 
         for service in services:
@@ -251,8 +250,8 @@ class Service(Base):
         # self.slas}
 
         for sla in [self.merged_sla]:
-            for node, cpu in self.topo[sla].getServiceNodes():
-                node = ServiceNode(name=node, cpu=cpu, sla_id=sla.id)
+            for node, cpu, bw in self.topo[sla].getServiceNodes():
+                node = ServiceNode(name=node, cpu=cpu, sla_id=sla.id, bw=bw)
                 session.add(node)
                 self.serviceNodes.append(node)
 
@@ -279,7 +278,7 @@ class Service(Base):
             self.topo = {sla: ServiceTopo(sla=sla, vhg_count=vhg_count, vcdn_count=vcdn_count,
                                           hint_node_mappings=self.mapping.node_mappings) for sla in [self.merged_sla]}
 
-            # add the CDN Edges to the feast
+            # add the CDN Edges to the graph
             for sla in [self.merged_sla]:
 
                 for node_1, node_2, bandwidth in self.topo[sla].getServiceCDNEdges():
@@ -353,8 +352,8 @@ class Service(Base):
             for sla in slas:
                 postfix = "%d_%d" % (self.id, sla.id)
                 topo = self.topo[sla]
-                for snode_id, cpu in topo.dump_nodes():
-                    f.write("%s_%s %lf\n" % (snode_id, postfix, cpu))
+                for snode_id, cpu, bw in topo.getServiceNodes():
+                    f.write("%s_%s %lf %lf\n" % (snode_id, postfix, cpu,bw))
                     # sys.stdout.write("%s_%s %lf\n" % (snode_id, postfix, cpu))
 
 

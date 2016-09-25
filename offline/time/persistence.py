@@ -57,6 +57,7 @@ class ServiceNode(Base):
     sla_id = Column(Integer, ForeignKey("Sla.id"))
     sla = relationship("Sla")
     cpu = Column(Float, )
+    bw = Column(Float, )
 
     def is_vhg(self):
         return "VHG" in self.name

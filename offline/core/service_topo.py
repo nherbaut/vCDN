@@ -123,7 +123,7 @@ class ServiceTopo:
                 for vhg, cdn in get_vhg_cdn_mapping(vhg_mapping, cdn_mapping).items():
                     if vhg in service.node:
                         # service.add_edge(vhg, cdn, bandwidth=service.node[vhg]["bandwidth"])
-                        service.add_edge(vhg, cdn, bandwidth=service.node[vhg]["bandwidth"] / 10.0)
+                        service.add_edge(vhg, cdn, bandwidth=service.node[vhg]["bandwidth"])
         except:
             traceback.print_exc()
 
@@ -150,18 +150,11 @@ class ServiceTopo:
         '''
         return [n[0] for n in graph.nodes(data=True) if n[1].get("type") == type]
 
-    def dump_nodes(self):
-        '''
-        :return: [("S2",15.12)]
-        '''
-        res = []
-        for node in self.servicetopo.nodes():
-            res.append((node, self.servicetopo.node[node].get("cpu", 0)))
-        return res
+
 
     def getServiceNodes(self):
         for node in self.servicetopo.nodes(data=True):
-            yield node[0], node[1].get("cpu", 0)
+            yield node[0], node[1].get("cpu", 0),node[1].get("bandwidth", 0)
 
     def getServiceCDNNodes(self):
         cdns = self.get_cdn()
