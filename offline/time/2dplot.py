@@ -3,7 +3,7 @@
 import argparse
 import datetime
 import locale
-
+import matplotlib.dates as mdates
 from SLA3D import *
 
 locale.setlocale(locale.LC_ALL, 'en_US.utf8')
@@ -48,15 +48,18 @@ if __name__ == "__main__":
 
 
     ax = plt.axes(xlim=[tsr.index[0], tsr.index[-1]], ylim=[min(tsr) * 0.75, max(tsr) * 1.25], zorder=2)
-    ax.get_xaxis().set_visible(False)
+    #ax.get_xaxis().set_visible(False)
     ax.get_yaxis().set_visible(False)
-
+    ax.xaxis.set_major_locator(mdates.HourLocator(interval=6))
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%H'))
+    
 
 
     ax.plot(tsr95,label="95% CI ",linewidth=2,color="#8888ff",alpha=0.2)
     ax.plot(tsr80,label="80% CI ",linewidth=2,color="#4444ff",alpha=0.2)
     ax.plot(tsr50,label="50% CI ",linewidth=2,color="#0000ff",alpha=0.2)
     ax.plot(tsr, label="observations", linewidth=5,color="red",zorder=3)
+    ax.plot(tsrmean, label="forecasts", linewidth=2,color="black",zorder=1)
 
     ax.plot(np.maximum(0,2*tsrmean-tsr95),linewidth=2,color="#8888ff",alpha=0.2)
     ax.plot(np.maximum(0,2*tsrmean-tsr80),linewidth=2,color="#4444ff",alpha=0.2)
