@@ -13,16 +13,29 @@ GEANT_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../data/
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
 
 
-def create_experiment_and_optimize(starts, cdns, sourcebw, topo, seed, vhg_count=None, vcdn_count=None,
-                                   automatic=True):
+def clean_and_create_experiment(topo,seed):
+    '''
+
+    :param topo: the topology generated according to specs
+    :param seed: the randomset used for generation
+    :return: rs, substrate
+    '''
+
+
     session = Session()
     Base.metadata.create_all(engine)
     drop_all()
 
-    rs = RandomState(seed)
 
+    rs = RandomState(seed)
     su = Substrate.fromSpec(topo, rs)
+    return rs,su
+
+def clean_and_create_experiment_and_optimize(starts, cdns, sourcebw, topo, seed, vhg_count=None, vcdn_count=None,
+                                             automatic=True):
+    rs,su=clean_and_create_experiment(topo,seed)
     nodes_names = [n.name for n in su.nodes]
+    session = Session()
 
     for s in starts:
         assert s in nodes_names, "%s not in %s" % (s, nodes_names)
@@ -63,7 +76,5 @@ def create_experiment_and_optimize(starts, cdns, sourcebw, topo, seed, vhg_count
 
     session.add(service)
     session.flush()
-    if service.mapping is not None:
-        print("success : %lf for service %d" % (service.mapping.objective_function, service.id))
-    else:
-        print("Failure!")
+
+    return service

@@ -93,13 +93,13 @@ class Substrate(Base):
         if specs[0] == "grid":
             return cls.__fromSpec(list(specs[1]))
         elif specs[0] == "file":
-            return cls.fromGraph(rs, specs[1][0])
+            return cls.fromGraph(rs, specs[1])
         elif specs[0] == "powerlaw":
-            return cls.fromPowerLaw(list(specs[1]) )
+            return cls.fromPowerLaw(list(specs[1]))
         elif specs[0] == "erdos_renyi":
             return cls.FromErdosRenyi(list(specs[1]))
         else:
-            return cls.__fromSpec([5, 5] + [10 ** 10, 1, 5])
+            raise ValueError("not a valid topology spec %s" % str(specs))
 
     @classmethod
     def fromPowerLaw(cls, specs):
@@ -228,12 +228,13 @@ class Substrate(Base):
         return cls(edges, nodesdict)
 
     @classmethod
-    def fromGraph(cls, rs, file):
+    def fromGraph(cls, rs, args):
         session = Session()
+        file, cpu = args
         parser = GraphMLParser()
 
         g = parser.parse(os.path.join(DATA_FOLDER, file))
-        nodes = [Node(name=str(n.id), cpu_capacity=max(rs.normal(10000, 5, 1)[0], 0)) for n in g.nodes()]
+        nodes = [Node(name=str(n.id), cpu_capacity=cpu) for n in g.nodes()]
         nodes_from_g = {str(n.id): n for n in g.nodes()}
         session.add_all(nodes)
         session.flush()

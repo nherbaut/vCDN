@@ -1,4 +1,0 @@
-simuservice:
-  image: dngroup/simuservice
-  volumes: 
-   - ./offline/results:/opt/simuservice/offline/results
