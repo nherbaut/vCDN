@@ -56,6 +56,7 @@ parser.add_argument('--topo', help="specify topo to use", default=('grid', ["5",
                     type=valid_topo)
 
 parser.add_argument('--plot', dest="plot", action="store_true")
+parser.add_argument('--disable-heuristic', dest="disable_heuristic", action="store_true")
 parser.add_argument('--dest_folder', help="destination folder for restults", default=RESULTS_FOLDER)
 
 args = parser.parse_args()
@@ -80,7 +81,7 @@ else:
     service = clean_and_create_experiment_and_optimize(args.start, args.cdn, args.sourcebw, args.topo, 0,
                                                        vhg_count=args.vhg,
                                                        vcdn_count=args.vcdn,
-                                                       automatic=args.auto)
+                                                       automatic=args.auto, use_heuristic=not args.disable_heuristic)
 
     if service.mapping is not None:
         with open(os.path.join(args.dest_folder, "price.data"), "w") as f:
@@ -88,6 +89,10 @@ else:
             dest_folder = os.path.join(RESULTS_FOLDER, str(service.id))
             plotsol_from_db(service_link_linewidth=5, net=False, service=service,
                             dest_folder=dest_folder)
+
+        print("Successfull mapping w price: \t %lf"% service.mapping.objective_function)
         subprocess.Popen(
             ["neato", os.path.join(dest_folder, "./substrate.dot"), "-Tsvg", "-o",
              os.path.join(args.dest_folder, "topo.svg")]).wait()
+    else:
+        print("failed to compute mapping")

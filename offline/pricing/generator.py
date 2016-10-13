@@ -31,7 +31,7 @@ def get_vmg_calculator(sys_spec_file_path=os.path.join(PRICING_FOLDER, "vmg/vio_
             return eval(key[0])
 
 
-def get_vcdn_calculator(file_path="cdn/azure_cdn_pricing_zone1.properties"):
+def get_vcdn_calculator(file_path=os.path.join(PRICING_FOLDER, "cdn/azure_cdn_pricing_zone1.properties")):
     '''
 
     :param file_path: specs for cdn pricing

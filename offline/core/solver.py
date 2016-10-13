@@ -15,14 +15,19 @@ PRICING_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../p
 
 env = Environment(loader=PackageLoader("offline", 'optim'))
 template_optim = env.get_template('optim.zpl.tpl')
+template_optim_slow = env.get_template('optim-slow.zpl.tpl')
 template_optim_debug = env.get_template('batch-debug.sh')
 
 
-def solve_inplace(allow_violations=False, preassign_vhg=False, path="."):
+def solve_inplace(allow_violations=False, preassign_vhg=False, path=".", use_heuristic=True):
     '''
     __solve without rewriting intermedia files
     :return: a mapping
     '''
+    if use_heuristic:
+        optim_template = template_optim
+    else:
+        optim_template = template_optim_slow
 
     session = Session()
     if not os.path.exists(os.path.join(RESULTS_FOLDER, path)):
@@ -30,13 +35,12 @@ def solve_inplace(allow_violations=False, preassign_vhg=False, path="."):
 
     # copy template to target folder
     with open(os.path.join(RESULTS_FOLDER, path, "optim.zpl"), "w") as f:
-        f.write(template_optim.render(dir=os.path.join(RESULTS_FOLDER, path), pricing_dir=PRICING_FOLDER))
+        f.write(optim_template.render(dir=os.path.join(RESULTS_FOLDER, path), pricing_dir=PRICING_FOLDER))
 
     with open(os.path.join(RESULTS_FOLDER, path, "debug.sh"), "w") as f:
         f.write(template_optim_debug.render(dir=os.path.join(RESULTS_FOLDER, path), pricing_dir=PRICING_FOLDER))
 
     os.chmod(os.path.join(RESULTS_FOLDER, path, "debug.sh"), 0o711)
-
 
     violations = []
     if not allow_violations:
@@ -130,12 +134,12 @@ def solve_inplace(allow_violations=False, preassign_vhg=False, path="."):
         return mapping
 
 
-def solve(service, substrate, path):
+def solve(service, substrate, path, use_heuristic=True):
     session = Session()
     service.write(path)
     substrate.write(path)
     session.flush()
-    mapping = solve_inplace(path=path)
+    mapping = solve_inplace(path=path, use_heuristic=use_heuristic)
 
     service.mapping = mapping
     if mapping is not None:

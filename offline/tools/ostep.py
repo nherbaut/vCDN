@@ -32,7 +32,7 @@ def clean_and_create_experiment(topo,seed):
     return rs,su
 
 def clean_and_create_experiment_and_optimize(starts, cdns, sourcebw, topo, seed, vhg_count=None, vcdn_count=None,
-                                             automatic=True):
+                                             automatic=True,use_heuristic=True):
     rs,su=clean_and_create_experiment(topo,seed)
     nodes_names = [n.name for n in su.nodes]
     session = Session()
@@ -70,9 +70,9 @@ def clean_and_create_experiment_and_optimize(starts, cdns, sourcebw, topo, seed,
     session.flush()
 
     if not automatic:
-        service = Service([sla.id], vhg_count=vhg_count, vcdn_count=vcdn_count)
+        service = Service([sla.id], vhg_count=vhg_count, vcdn_count=vcdn_count,use_heuristic=use_heuristic)
     else:
-        service = Service.get_optimal([sla],remove_service=True)
+        service = Service.get_optimal([sla],remove_service=True,use_heuristic=use_heuristic)
 
     session.add(service)
     session.flush()

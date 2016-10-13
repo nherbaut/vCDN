@@ -59,17 +59,10 @@ do forall <i> in NS
     do print i, bwN[i];
 
 minimize cost:
-    #sum <u,v> in E union Et:(sum <i,j> in ES:(y[u,v,i,j] * bwS[i,j] * netCost)) +
-	#sum<vhg> in VHG_LABEL:(cpuCost_vHG*cpuS[vhg])+
-	#sum<vcdn> in VCDN_LABEL:(cpuCost_vCDN*cpuS[vcdn])-
-	sum <cdn> in CDN_LABEL: 	sum <vhg,ccdn> in { <vhg,ccdn> in VCDN_INCOMING_LINKS with ccdn==cdn}: 	   x[i,j]*bwN[i] * 10000000;
-
-
-#maximize cost:
-#                        sum <u,v> in E:
-#                                    ((bw[u,v]-sum <i,j> in ES:(y[u,v,i,j] * bwS[i,j] ))/(bw[u,v]))+
-#                            sum <u,v> in Et:
-#                                ((bw[v,u]-sum <i,j> in ES:(y[u,v,i,j] * bwS[i,j] ))/(bw[v,u]));
+    sum <u,v> in E union Et:(sum <i,j> in ES:(y[u,v,i,j] * bwS[i,j] * netCost)) +
+	sum<vhg> in VHG_LABEL:(cpuCost_vHG*cpuS[vhg])+
+	sum<vcdn> in VCDN_LABEL:(cpuCost_vCDN*cpuS[vcdn]);
+	#sum <cdn> in CDN_LABEL: 	sum <vhg,ccdn> in { <vhg,ccdn> in VCDN_INCOMING_LINKS with ccdn==cdn}: 	   x[i,j]*bwN[i] * 10000000;
 
 
 subto everyNodeIsMapped:
