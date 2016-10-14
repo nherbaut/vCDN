@@ -15,7 +15,8 @@ PRICING_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../p
 
 env = Environment(loader=PackageLoader("offline", 'optim'))
 template_optim = env.get_template('optim.zpl.tpl')
-template_optim_slow = env.get_template('optim-slow.zpl.tpl')
+#template_optim_slow = env.get_template('optim-slow.zpl.tpl')
+template_optim_slow = env.get_template('optim.zpl.tpl')
 template_optim_debug = env.get_template('batch-debug.sh')
 
 

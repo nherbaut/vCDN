@@ -9,7 +9,7 @@ from sqlalchemy import Column, Integer, ForeignKey
 from sqlalchemy import and_
 from sqlalchemy.orm import relationship
 
-from ..core.service_topo import ServiceTopoHeuristic, ServiceTopoFull
+from ..core.service_topo import ServiceTopoHeuristic, ServiceTopoFullGenerator
 from ..core.sla import Sla, SlaNodeSpec
 from ..core.solver import solve
 from ..time.persistence import ServiceNode, ServiceEdge, Base, service_to_sla
@@ -77,6 +77,7 @@ class Service(Base):
     merged_sla = relationship("Sla", foreign_keys=[sla_id], cascade="all")
     mapping = relationship("Mapping", uselist=False, cascade="all", back_populates="service")
 
+    # TODO: update
     def update_mapping(self):
         '''
         :return: updates the internal mapping of the service according to the updated list of SLAS
@@ -205,7 +206,7 @@ class Service(Base):
             for vcdn_count in range(1, min(vhg_count, max_vcdn_count) + 1):
                 thread_param.append(([sla.id for sla in slas], vhg_count, vcdn_count, use_heuristic))
 
-        #services = threadpool.map(f, thread_param)
+        # services = threadpool.map(f, thread_param)
         services = [f(x) for x in thread_param]
         services = session.query(Service).filter(Service.id.in_(services)).all()
 
@@ -240,7 +241,7 @@ class Service(Base):
         if use_heuristic:
             serviceTopoClass = ServiceTopoHeuristic
         else:
-            serviceTopoClass = ServiceTopoFull
+            serviceTopoClass = ServiceTopoFullGenerator
 
         self.slas = session.query(Sla).filter(Sla.id.in_(slasIDS)).all()
         self.vhg_count = vhg_count
@@ -248,74 +249,72 @@ class Service(Base):
         self.merged_sla = self.__get_merged_sla(self.slas)
         self.serviceSpecFactory = serviceSpecFactory
 
-        self.topo = {sla: serviceTopoClass(sla=sla, vhg_count=vhg_count, vcdn_count=vcdn_count, hint_node_mappings=None)
-                     for
-                     sla in
-                     [self.merged_sla]}
-        # self.slas}
+        self.topoContainer = serviceTopoClass(sla=self.merged_sla, vhg_count=vhg_count, vcdn_count=vcdn_count,
+                                              hint_node_mappings=None)
 
-        for sla in [self.merged_sla]:
-            for node, cpu, bw in self.topo[sla].getServiceNodes():
-                node = ServiceNode(name=node, cpu=cpu, sla_id=sla.id, bw=bw)
+        for topo in self.topoContainer.getTopos():
+            self.topo = topo
+            for node, cpu, bw in topo.getServiceNodes():
+                node = ServiceNode(name=node, cpu=cpu, sla_id=self.merged_sla.id, bw=bw)
                 session.add(node)
                 self.serviceNodes.append(node)
 
-            for node_1, node_2, bandwidth in self.topo[sla].getServiceEdges():
+            for node_1, node_2, bandwidth in topo.getServiceEdges():
                 snode_1 = session.query(ServiceNode).filter(
-                    and_(ServiceNode.sla_id == sla.id, ServiceNode.service_id == self.id,
+                    and_(ServiceNode.sla_id == self.merged_sla.id, ServiceNode.service_id == self.id,
                          ServiceNode.name == node_1)).one()
 
                 snode_2 = session.query(ServiceNode).filter(
-                    and_(ServiceNode.sla_id == sla.id, ServiceNode.service_id == self.id,
+                    and_(ServiceNode.sla_id == self.merged_sla.id, ServiceNode.service_id == self.id,
                          ServiceNode.name == node_2)).one()
 
-                sedge = ServiceEdge(node_1=snode_1, node_2=snode_2, bandwidth=bandwidth, sla_id=sla.id)
+                sedge = ServiceEdge(node_1=snode_1, node_2=snode_2, bandwidth=bandwidth, sla_id=self.merged_sla.id)
                 session.add(sedge)
                 self.serviceEdges.append(sedge)
             session.flush()
 
+            if use_heuristic:
+                # create temp mapping for vhg<->vcdn hints
+                assert self.id is not None
+                self.__solve(path=str(self.id))
+                session.flush()
 
-        if use_heuristic:
-            # create temp mapping for vhg<->vcdn hints
-            assert self.id is not None
-            self.__solve(path=str(self.id))
-            session.flush()
+                if self.mapping is not None:
+                    self.topo=serviceTopoClass(sla=self.merged_sla, vhg_count=vhg_count, vcdn_count=vcdn_count,
+                                                     hint_node_mappings=self.mapping.node_mappings).getTopos()[0]
 
-            if self.mapping is not None:
-                self.topo = {sla: ServiceTopoHeuristic(sla=sla, vhg_count=vhg_count, vcdn_count=vcdn_count,
-                                                       hint_node_mappings=self.mapping.node_mappings) for sla in
-                             [self.merged_sla]}
+                    # add the CDN Edges to the graph
+                    for sla in [self.merged_sla]:
 
-                # add the CDN Edges to the graph
-                for sla in [self.merged_sla]:
+                        for node_1, node_2, bandwidth in self.topo.getServiceCDNEdges():
+                            snode_1 = session.query(ServiceNode).filter(
+                                and_(ServiceNode.sla_id == sla.id, ServiceNode.service_id == self.id,
+                                     ServiceNode.name == node_1)).one()
 
-                    for node_1, node_2, bandwidth in self.topo[sla].getServiceCDNEdges():
-                        snode_1 = session.query(ServiceNode).filter(
-                            and_(ServiceNode.sla_id == sla.id, ServiceNode.service_id == self.id,
-                                 ServiceNode.name == node_1)).one()
+                            snode_2 = session.query(ServiceNode).filter(
+                                and_(ServiceNode.sla_id == sla.id, ServiceNode.service_id == self.id,
+                                     ServiceNode.name == node_2)).one()
 
-                        snode_2 = session.query(ServiceNode).filter(
-                            and_(ServiceNode.sla_id == sla.id, ServiceNode.service_id == self.id,
-                                 ServiceNode.name == node_2)).one()
+                            sedge = ServiceEdge(node_1=snode_1, node_2=snode_2, bandwidth=bandwidth, sla_id=sla.id)
+                            session.add(sedge)
+                            self.serviceEdges.append(sedge)
+                        session.flush()
 
-                        sedge = ServiceEdge(node_1=snode_1, node_2=snode_2, bandwidth=bandwidth, sla_id=sla.id)
-                        session.add(sedge)
-                        self.serviceEdges.append(sedge)
+                    session.delete(self.mapping)
                     session.flush()
 
-                session.delete(self.mapping)
-                session.flush()
-        self.__solve(path=str(self.id),use_heuristic=use_heuristic)
+            self.__solve(path=str(self.id), use_heuristic=use_heuristic)
+
         session.flush()
 
-    def __solve(self, path=".",use_heuristic=True):
+    def __solve(self, path=".", use_heuristic=True):
         '''
         Solve the service according to specs
         :return: nothing, service.mapping may be initialized with an actual possible mapping
         '''
         session = Session()
         if len(self.slas) > 0:
-            solve(self, self.slas[0].substrate, path,use_heuristic)
+            solve(self, self.slas[0].substrate, path, use_heuristic)
             if self.mapping is not None:
                 session.add(self.mapping)
 
@@ -352,15 +351,14 @@ class Service(Base):
         with open(os.path.join(RESULTS_FOLDER, path, "service.edges.data"), mode) as f:
             for sla in slas:
                 postfix = "%d_%d" % (self.id, sla.id)
-                topo = self.topo[sla]
-                for start, end, bw in topo.dump_edges():
+                for start, end, bw in self.topo.dump_edges():
                     f.write("%s_%s %s_%s %lf\n" % (start, postfix, end, postfix, bw))
 
         with open(os.path.join(RESULTS_FOLDER, path, "service.nodes.data"), mode) as f:
             for sla in slas:
                 postfix = "%d_%d" % (self.id, sla.id)
-                topo = self.topo[sla]
-                for snode_id, cpu, bw in topo.getServiceNodes():
+
+                for snode_id, cpu, bw in self.topo.getServiceNodes():
                     f.write("%s_%s %lf %lf\n" % (snode_id, postfix, cpu, bw))
                     # sys.stdout.write("%s_%s %lf\n" % (snode_id, postfix, cpu))
 
@@ -376,21 +374,21 @@ class Service(Base):
         with open(os.path.join(RESULTS_FOLDER, path, "starters.nodes.data"), mode) as f:
             for sla in slas:
                 postfix = "%d_%d" % (self.id, sla.id)
-                for s, topo, bw in self.topo[sla].get_Starters():
-                    f.write("%s_%s %s %lf\n" % (s, postfix, topo,bw))
+                for s, topo, bw in self.topo.get_Starters():
+                    f.write("%s_%s %s %lf\n" % (s, postfix, topo, bw))
 
         # write the names of the VHG Nodes
         with open(os.path.join(RESULTS_FOLDER, path, "VHG.nodes.data"), mode) as f:
             for sla in slas:
                 postfix = "%d_%d" % (self.id, sla.id)
-                for vhg in self.topo[sla].get_vhg():
+                for vhg in self.topo.get_vhg():
                     f.write("%s_%s\n" % (vhg, postfix))
 
         # write the names of the VCDN nodes
         with open(os.path.join(RESULTS_FOLDER, path, "VCDN.nodes.data"), mode) as f:
             for sla in slas:
                 postfix = "%d_%d" % (self.id, sla.id)
-                for vcdn in self.topo[sla].get_vcdn():
+                for vcdn in self.topo.get_vcdn():
                     f.write("%s_%s\n" % (vcdn, postfix))
 
                     # write path to associate e2e delay
@@ -398,16 +396,16 @@ class Service(Base):
         with open(os.path.join(RESULTS_FOLDER, path, "service.path.delay.data"), "w") as f:
             for sla in slas:
                 postfix = "%d_%d" % (self.id, sla.id)
-                topo = self.topo[sla]
-                for apath, delay in topo.dump_delay_paths():
-                    f.write("%s_%s %lf\n" % (apath, postfix, delay))
+
+                for apath in self.topo.dump_delay_paths():
+                    f.write("%s_%s %lf\n" % (apath, postfix, self.topo.delay))
 
         # write e2e delay constraint
         with open(os.path.join(RESULTS_FOLDER, path, "service.path.data"), "w") as f:
             for sla in slas:
                 postfix = "%d_%d" % (self.id, sla.id)
-                topo = self.topo[sla]
-                for apath, s1, s2 in topo.dump_delay_routes():
+
+                for apath, s1, s2 in self.topo.dump_delay_routes():
                     f.write("%s_%s %s_%s %s_%s\n" % (apath, postfix, s1, postfix, s2, postfix))
 
     @classmethod
