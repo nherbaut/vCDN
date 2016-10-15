@@ -63,10 +63,10 @@ class ServiceTopoFullGenerator(AbstractServiceTopo):
                 for edge in t:
                     serviceT.add_edge(edge[0], edge[1])
 
-                #for s in services:
-                #    if nx.is_isomorphic(s, serviceT, equal_nodes):
-                #        print("removed an isomorph yay")
-                #        raise IsomorphicServiceException()
+                for s in services:
+                    if nx.is_isomorphic(s, serviceT, equal_nodes):
+                        #print("removed an isomorph yay")
+                        raise IsomorphicServiceException()
 
                 services.insert(0,serviceT)
                 workin_nodes = []
