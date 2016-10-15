@@ -4,6 +4,8 @@ import os
 
 from numpy.random import RandomState
 
+from offline.core.service_topo_generator import ServiceTopoFullGenerator
+from offline.core.service_topo_heuristic import ServiceTopoHeuristic
 from ..core.service import Service
 from ..core.sla import Sla, SlaNodeSpec
 from ..core.substrate import Substrate
@@ -13,7 +15,7 @@ GEANT_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../data/
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
 
 
-def clean_and_create_experiment(topo,seed):
+def clean_and_create_experiment(topo, seed):
     '''
 
     :param topo: the topology generated according to specs
@@ -21,27 +23,26 @@ def clean_and_create_experiment(topo,seed):
     :return: rs, substrate
     '''
 
-
     session = Session()
     Base.metadata.create_all(engine)
     drop_all()
 
-
     rs = RandomState(seed)
     su = Substrate.fromSpec(topo, rs)
-    return rs,su
+    return rs, su
+
 
 def clean_and_create_experiment_and_optimize(starts, cdns, sourcebw, topo, seed, vhg_count=None, vcdn_count=None,
-                                             automatic=True,use_heuristic=True):
-    rs,su=clean_and_create_experiment(topo,seed)
+                                             automatic=True, use_heuristic=True):
+    rs, su = clean_and_create_experiment(topo, seed)
     nodes_names = [n.name for n in su.nodes]
     session = Session()
 
     for s in starts:
         assert s in nodes_names, "%s not in %s" % (s, nodes_names)
 
-    if len(cdns)==1 and cdns[0]=="all":
-        cdns=[node.name for node in su.nodes]
+    if len(cdns) == 1 and cdns[0] == "all":
+        cdns = [node.name for node in su.nodes]
 
     for s in cdns:
         assert s in nodes_names, "%s not in %s" % (s, nodes_names)
@@ -69,12 +70,27 @@ def clean_and_create_experiment_and_optimize(starts, cdns, sourcebw, topo, seed,
     session.add(sla)
     session.flush()
 
+    candidates = []
     if not automatic:
-        service = Service([sla.id], vhg_count=vhg_count, vcdn_count=vcdn_count,use_heuristic=use_heuristic)
+        if use_heuristic:
+            topoContainer = ServiceTopoHeuristic(sla=sla, vhg_count=vhg_count, vcdn_count=vcdn_count)
+        else:
+            topoContainer = ServiceTopoFullGenerator(sla=sla, vhg_count=vhg_count, vcdn_count=vcdn_count)
+
+        for topo in topoContainer.getTopos():
+            candidates.append(
+                Service(topo, [sla.id], vhg_count=vhg_count, vcdn_count=vcdn_count, use_heuristic=use_heuristic))
     else:
-        service = Service.get_optimal([sla],remove_service=True,use_heuristic=use_heuristic)
+        service = Service.get_optimal([sla], remove_service=True, use_heuristic=use_heuristic)
+        candidates.append(service)
+    filter(lambda x: x.mapping is not None, candidates)
+    sorted(candidates, key = lambda x: x.mapping, )
+    if len(candidates) > 0:
+        winner = candidates[0]
 
-    session.add(service)
-    session.flush()
+        session.add(winner)
+        session.flush()
 
-    return service
+        return winner
+    else:
+        raise ValueError("failed to compute valide mapping")

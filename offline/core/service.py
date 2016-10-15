@@ -9,7 +9,7 @@ from sqlalchemy import Column, Integer, ForeignKey
 from sqlalchemy import and_
 from sqlalchemy.orm import relationship
 
-from ..core.service_topo import ServiceTopoHeuristic, ServiceTopoFullGenerator
+from offline.core.service_topo_heuristic import ServiceTopoHeuristic
 from ..core.sla import Sla, SlaNodeSpec
 from ..core.solver import solve
 from ..time.persistence import ServiceNode, ServiceEdge, Base, service_to_sla
@@ -145,14 +145,14 @@ class Service(Base):
                 os.remove(f)
 
     def get_service_specs(self, include_cdn=True):
-        serviceSpecs = {}
+        service_specs = {}
         for sla in self.slas:
             spec = self.serviceSpecFactory.fromSla(sla)
             if not include_cdn:
                 spec.vcdn_count = 0
-            serviceSpecs[sla] = spec
+            service_specs[sla] = spec
 
-        return serviceSpecs
+        return service_specs
 
     def __get_merged_sla(self, slas):
         session = Session()
@@ -235,83 +235,75 @@ class Service(Base):
 
         return best_service
 
-    def __init__(self, slasIDS, serviceSpecFactory=ServiceSpecFactory, vhg_count=1, vcdn_count=1, use_heuristic=True):
+    def __init__(self, topo_instance, slasIDS, serviceSpecFactory=ServiceSpecFactory, vhg_count=1, vcdn_count=1,
+                 use_heuristic=True):
         session = Session()
-
-        if use_heuristic:
-            serviceTopoClass = ServiceTopoHeuristic
-        else:
-            serviceTopoClass = ServiceTopoFullGenerator
 
         self.slas = session.query(Sla).filter(Sla.id.in_(slasIDS)).all()
         self.vhg_count = vhg_count
         self.vcdn_count = vcdn_count
         self.merged_sla = self.__get_merged_sla(self.slas)
         self.serviceSpecFactory = serviceSpecFactory
+        self.topo = topo_instance
 
-        self.topoContainer = serviceTopoClass(sla=self.merged_sla, vhg_count=vhg_count, vcdn_count=vcdn_count,
-                                              hint_node_mappings=None)
+        for node, cpu, bw in self.topo.getServiceNodes():
+            node = ServiceNode(name=node, cpu=cpu, sla_id=self.merged_sla.id, bw=bw)
+            session.add(node)
+            self.serviceNodes.append(node)
 
-        for topo in self.topoContainer.getTopos():
-            self.topo = topo
-            for node, cpu, bw in topo.getServiceNodes():
-                node = ServiceNode(name=node, cpu=cpu, sla_id=self.merged_sla.id, bw=bw)
-                session.add(node)
-                self.serviceNodes.append(node)
+        for node_1, node_2, bandwidth in self.topo.getServiceEdges():
+            snode_1 = session.query(ServiceNode).filter(
+                and_(ServiceNode.sla_id == self.merged_sla.id, ServiceNode.service_id == self.id,
+                     ServiceNode.name == node_1)).one()
 
-            for node_1, node_2, bandwidth in topo.getServiceEdges():
-                snode_1 = session.query(ServiceNode).filter(
-                    and_(ServiceNode.sla_id == self.merged_sla.id, ServiceNode.service_id == self.id,
-                         ServiceNode.name == node_1)).one()
+            snode_2 = session.query(ServiceNode).filter(
+                and_(ServiceNode.sla_id == self.merged_sla.id, ServiceNode.service_id == self.id,
+                     ServiceNode.name == node_2)).one()
 
-                snode_2 = session.query(ServiceNode).filter(
-                    and_(ServiceNode.sla_id == self.merged_sla.id, ServiceNode.service_id == self.id,
-                         ServiceNode.name == node_2)).one()
+            sedge = ServiceEdge(node_1=snode_1, node_2=snode_2, bandwidth=bandwidth, sla_id=self.merged_sla.id)
+            session.add(sedge)
+            self.serviceEdges.append(sedge)
+        session.flush()
 
-                sedge = ServiceEdge(node_1=snode_1, node_2=snode_2, bandwidth=bandwidth, sla_id=self.merged_sla.id)
-                session.add(sedge)
-                self.serviceEdges.append(sedge)
+        if use_heuristic:
+            # create temp mapping for vhg<->vcdn hints
+            assert self.id is not None
+            self.__solve(path=str(self.id))
             session.flush()
 
-            if use_heuristic:
-                # create temp mapping for vhg<->vcdn hints
-                assert self.id is not None
-                self.__solve(path=str(self.id))
-                session.flush()
+            if self.mapping is not None:
+                self.topo = ServiceTopoHeuristic(sla=self.merged_sla, vhg_count=vhg_count, vcdn_count=vcdn_count,
+                                                 hint_node_mappings=self.mapping.node_mappings).getTopos()[0]
 
-                if self.mapping is not None:
-                    self.topo=serviceTopoClass(sla=self.merged_sla, vhg_count=vhg_count, vcdn_count=vcdn_count,
-                                                     hint_node_mappings=self.mapping.node_mappings).getTopos()[0]
+                # add the CDN Edges to the graph
+                for sla in [self.merged_sla]:
 
-                    # add the CDN Edges to the graph
-                    for sla in [self.merged_sla]:
+                    for node_1, node_2, bandwidth in self.topo.getServiceCDNEdges():
+                        snode_1 = session.query(ServiceNode).filter(
+                            and_(ServiceNode.sla_id == sla.id, ServiceNode.service_id == self.id,
+                                 ServiceNode.name == node_1)).one()
 
-                        for node_1, node_2, bandwidth in self.topo.getServiceCDNEdges():
-                            snode_1 = session.query(ServiceNode).filter(
-                                and_(ServiceNode.sla_id == sla.id, ServiceNode.service_id == self.id,
-                                     ServiceNode.name == node_1)).one()
+                        snode_2 = session.query(ServiceNode).filter(
+                            and_(ServiceNode.sla_id == sla.id, ServiceNode.service_id == self.id,
+                                 ServiceNode.name == node_2)).one()
 
-                            snode_2 = session.query(ServiceNode).filter(
-                                and_(ServiceNode.sla_id == sla.id, ServiceNode.service_id == self.id,
-                                     ServiceNode.name == node_2)).one()
-
-                            sedge = ServiceEdge(node_1=snode_1, node_2=snode_2, bandwidth=bandwidth, sla_id=sla.id)
-                            session.add(sedge)
-                            self.serviceEdges.append(sedge)
-                        session.flush()
-
-                    session.delete(self.mapping)
+                        sedge = ServiceEdge(node_1=snode_1, node_2=snode_2, bandwidth=bandwidth, sla_id=sla.id)
+                        session.add(sedge)
+                        self.serviceEdges.append(sedge)
                     session.flush()
 
-            self.__solve(path=str(self.id), use_heuristic=use_heuristic)
+                session.delete(self.mapping)
+                session.flush()
+
+        self.__solve(path=str(self.id), use_heuristic=use_heuristic)
 
         session.flush()
 
     def __solve(self, path=".", use_heuristic=True):
-        '''
+        """
         Solve the service according to specs
         :return: nothing, service.mapping may be initialized with an actual possible mapping
-        '''
+        """
         session = Session()
         if len(self.slas) > 0:
             solve(self, self.slas[0].substrate, path, use_heuristic)

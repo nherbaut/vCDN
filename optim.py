@@ -6,6 +6,9 @@ import os
 import subprocess
 from argparse import RawTextHelpFormatter
 
+from offline.core.topo_instance import TopoInstance
+from offline.core.service_topo_heuristic import ServiceTopoHeuristic
+from offline.core.service_topo_generator import ServiceTopoFullGenerator
 from offline.time.plottingDB import plotsol_from_db
 from offline.tools.ostep import clean_and_create_experiment_and_optimize, clean_and_create_experiment
 
@@ -77,6 +80,10 @@ else:
         parser.error('please specify --vhg and --vcdn args if not automatic calculation')
     elif args.auto is True and (args.vhg is not None or args.vcdn is not None):
         parser.error("can't specify vhg count of vcdn count in --auto mode")
+
+
+
+
 
     service = clean_and_create_experiment_and_optimize(args.start, args.cdn, args.sourcebw, args.topo, 0,
                                                        vhg_count=args.vhg,
