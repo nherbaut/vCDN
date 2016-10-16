@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import networkx
+import networkx as nx
 import numpy.random
 from haversine import haversine
 from pygraphml import GraphMLParser
@@ -51,6 +51,12 @@ class Substrate(Base):
     def get_nodes_sum(self):
         return sum([x.cpu for x in self.nodes.items()])
 
+    def get_nodes_by_bw(self):
+        return self.g.degree(weight="bandwidth")
+
+    def get_nodes_by_degree(self):
+        return self.g.degree()
+
     def __init__(self, edges, nodes):
         '''
 
@@ -63,6 +69,14 @@ class Substrate(Base):
         self.edges = edges
         self.nodes = nodes
         self.edges_init = sorted(edges, key=lambda x: "%s%s" % (str(x.node_1), str(x.node_2)))
+
+        self.g = nx.Graph()
+        # it's silly to do that, as most of the underlying graph are nx.Graph objects...
+        for node in self.nodes:
+            self.g.add_node(node.name)
+
+        for edge in self.edges:
+            self.g.add_edge(edge.node_1.name, edge.node_2.name, bandwidth=edge.bandwidth, delay=edge.delay)
 
     def write(self, path="."):
 
@@ -112,7 +126,7 @@ class Substrate(Base):
         m = int(m)
         p = float(p)
         seed = int(seed)
-        g = networkx.powerlaw_cluster_graph(n, m, p, seed)
+        g = nx.powerlaw_cluster_graph(n, m, p, seed)
         session = Session()
         nodes = [Node(name=str(n), cpu_capacity=cpu) for n in g.nodes()]
 
@@ -144,7 +158,7 @@ class Substrate(Base):
         n = int(n)
         p = float(p)
         seed = int(seed)
-        g = networkx.erdos_renyi_graph(n, p, seed)
+        g = nx.erdos_renyi_graph(n, p, seed)
         session = Session()
         nodes = [Node(name=str(n), cpu_capacity=cpu) for n in g.nodes()]
 
@@ -205,27 +219,6 @@ class Substrate(Base):
                 session.flush()
 
         return cls(edges, nodes, )
-
-    @classmethod
-    def fromFile(cls, edges_file=os.path.join(RESULTS_FOLDER, "substrate.edges.data"),
-                 nodes_file=os.path.join(RESULTS_FOLDER, "substrate.nodes.data")):
-
-        edges = []
-        nodesdict = {}
-
-        with open(edges_file, 'r') as f:
-            for line in f.read().split("\n"):
-                if len(line) > 2:
-                    node1, node2, bw, delay = line.split("\t")
-                    edges.append((node1, node2, float(bw), float(delay)))
-
-        with open(nodes_file, 'r') as f:
-            for line in f.read().split("\n"):
-                if len(line) > 2:
-                    nodeid, cpu = line.split("\t")
-                    nodesdict[nodeid] = float(cpu)
-
-        return cls(edges, nodesdict)
 
     @classmethod
     def fromGraph(cls, rs, args):

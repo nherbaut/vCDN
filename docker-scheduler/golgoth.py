@@ -12,7 +12,7 @@ for price in list((i * 10 ** exp for exp in range(-2, 10) for i in range(5, 6)))
             time.sleep(1)
         print("launching %lf, %lf"%(price,discount))
         container = cli.create_container(image='nherbaut/simu-time',
-                                         command="bash -c './bootstrap.sh > /dev/null && ./start.py -l DEBUG -i %lf -d %lf -t %d  >> /opt/simuservice/out/res.txt && echo hn:$HOSTNAME >> /opt/simuservice/out/res.txt && mkdir /opt/simuservice/out/$HOSTNAME && cp /opt/simuservice/*.svg /opt/simuservice/out/$HOSTNAME'" % (
+                                         command="bash -c './bootstrap.sh > /dev/null && ./time_simu.py -l DEBUG -i %lf -d %lf -t %d  >> /opt/simuservice/out/res.txt && echo hn:$HOSTNAME >> /opt/simuservice/out/res.txt && mkdir /opt/simuservice/out/$HOSTNAME && cp /opt/simuservice/*.svg /opt/simuservice/out/$HOSTNAME'" % (
                                              price, discount, thread_per_simu),
                                          host_config=cli.create_host_config(binds=[
                                              '/home/ubuntu/res:/opt/simuservice/out',
