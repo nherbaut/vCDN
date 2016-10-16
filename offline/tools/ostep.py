@@ -45,8 +45,8 @@ def embbed_service(x):
     return service
 
 
-def clean_and_create_experiment_and_optimize(starts, cdns, sourcebw, topo, seed, vhg_count=None, vcdn_count=None,
-                                             automatic=True, use_heuristic=True):
+def create_sla(starts, cdns, sourcebw, topo, seed):
+
     rs, su = clean_and_create_experiment(topo, seed)
     nodes_names = [n.name for n in su.nodes]
     session = Session()
@@ -68,7 +68,7 @@ def clean_and_create_experiment_and_optimize(starts, cdns, sourcebw, topo, seed,
     session.add(tenant)
 
     sla_node_specs = []
-    bw_per_s = sourcebw * float(len(starts))
+    bw_per_s = sourcebw / float(len(starts))
     for start in starts:
         ns = SlaNodeSpec(topoNode=session.query(Node).filter(Node.name == start).one(), type="start",
                          attributes={"bandwidth": bw_per_s})
@@ -82,6 +82,12 @@ def clean_and_create_experiment_and_optimize(starts, cdns, sourcebw, topo, seed,
     sla = Sla(substrate=su, delay=200, max_cdn_to_use=1, tenant_id=tenant.id, sla_node_specs=sla_node_specs)
     session.add(sla)
     session.flush()
+
+    return sla
+
+def optimize_sla(sla,vhg_count=None, vcdn_count=None,
+                                             automatic=True, use_heuristic=True):
+
 
     candidates_param = []
 
@@ -110,7 +116,7 @@ def clean_and_create_experiment_and_optimize(starts, cdns, sourcebw, topo, seed,
 
     pool = ThreadPool(multiprocessing.cpu_count() - 1)
     services = pool.map(embbed_service, candidates_param)
-    #services = [embbed_service(x) for x in candidates_param]
+
 
     filter(lambda x: x.mapping is not None, services)
     sorted(services, key=lambda x: x.mapping, )
