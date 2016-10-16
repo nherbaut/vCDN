@@ -1,5 +1,6 @@
 import collections
 import copy
+import logging
 
 import networkx as nx
 from networkx import shortest_path
@@ -65,10 +66,10 @@ class ServiceTopoFullGenerator(AbstractServiceTopo):
 
                 for s in services:
                     if nx.is_isomorphic(s, serviceT, equal_nodes):
-                        #print("removed an isomorph yay")
+                        # print("removed an isomorph yay")
                         raise IsomorphicServiceException()
 
-                services.insert(0,serviceT)
+                services.insert(0, serviceT)
                 workin_nodes = []
                 for index, sla_node_spec in enumerate(mapped_start_nodes, start=1):
                     serviceT.node["S%d" % index]["bandwidth"] = sla_node_spec.attributes["bandwidth"]
@@ -101,7 +102,7 @@ class ServiceTopoFullGenerator(AbstractServiceTopo):
 
                         except:
                             continue
-                print ("so far, %d services" % len(services))
+                logging.debug("so far, %d services" % len(services))
                 yield TopoInstance(serviceT, delay_path, delay_route, delay)
             except IsomorphicServiceException as e:
                 pass
@@ -115,9 +116,9 @@ def equal_nodes(node1, node2):
     :return: True is nodes can be considered equal for isomorphic transformation
     '''
     if (node1["name"] == node2["name"]) or (node1["type"] == node2["type"]) and (
-            node1["type"] == "VHG" or node1["type"] == "VCDN"):
-        # print "%s is equal to %s" % (node1["name"],node2["name"])
+                    node1["type"] == "VHG" or node1["type"] == "VCDN"):
+        logging.debug("%s is equal to %s" % (node1["name"], node2["name"]))
         return True
     else:
-        # print "%s is NOT equal to %s" % (node1["name"], node2["name"])
+        logging.debug("%s is NOT equal to %s" % (node1["name"], node2["name"]))
         return False

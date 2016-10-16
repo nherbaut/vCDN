@@ -106,9 +106,10 @@ def solve_inplace(allow_violations=False, preassign_vhg=False, path=".", use_heu
                 node_1 = session.query(Node).filter(Node.name == node_1).one()
                 node_2 = session.query(Node).filter(Node.name == node_2).one()
 
+
                 edge = session.query(Edge).filter(or_(and_(Edge.node_1 == node_1, Edge.node_2 == node_2),
                                                       and_(Edge.node_1 == node_2, Edge.node_2 == node_1))).one()
-                snode_1 = session.query(ServiceNode.id).filter(
+                snode_1 = session.query(ServiceNode).filter(
                     and_(ServiceNode.sla_id == sla_id, ServiceNode.service_id == service_id,
                          ServiceNode.name == snode_1)).one()
                 snode_2 = session.query(ServiceNode).filter(
@@ -120,7 +121,7 @@ def solve_inplace(allow_violations=False, preassign_vhg=False, path=".", use_heu
 
                 edgeMapping = EdgeMapping(edge_id=edge.id, serviceEdge_id=sedge_id)
                 edgesSol.append(edgeMapping)
-                continue
+
             matches = re.findall("^objective value: *([0-9\.]*)$", line)
             if (len(matches) > 0):
                 objective_function = float(matches[0])

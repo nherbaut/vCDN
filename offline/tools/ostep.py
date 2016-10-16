@@ -1,12 +1,15 @@
 #!/usr/bin/env python
 
+import logging
+import multiprocessing
 import os
+from multiprocessing.pool import ThreadPool
 
 from numpy.random import RandomState
 
-from offline.core.service_topo_generator import ServiceTopoFullGenerator
-from offline.core.service_topo_heuristic import ServiceTopoHeuristic
 from ..core.service import Service
+from ..core.service_topo_generator import ServiceTopoFullGenerator
+from ..core.service_topo_heuristic import ServiceTopoHeuristic
 from ..core.sla import Sla, SlaNodeSpec
 from ..core.substrate import Substrate
 from ..time.persistence import Session, Base, engine, drop_all, Tenant, Node
@@ -30,6 +33,16 @@ def clean_and_create_experiment(topo, seed):
     rs = RandomState(seed)
     su = Substrate.fromSpec(topo, rs)
     return rs, su
+
+
+def embbed_service(x):
+    session = Session()
+    topology, slasIDS, vhg_count, vcdn_count, use_heuristic = x
+    service = Service(topo_instance=topology, slasIDS=slasIDS, vhg_count=vhg_count,
+                      vcdn_count=vcdn_count, use_heuristic=use_heuristic)
+    session.add(service)
+    session.flush()
+    return service
 
 
 def clean_and_create_experiment_and_optimize(starts, cdns, sourcebw, topo, seed, vhg_count=None, vcdn_count=None,
@@ -70,7 +83,8 @@ def clean_and_create_experiment_and_optimize(starts, cdns, sourcebw, topo, seed,
     session.add(sla)
     session.flush()
 
-    candidates = []
+    candidates_param = []
+
     if not automatic:
         if use_heuristic:
             topoContainer = ServiceTopoHeuristic(sla=sla, vhg_count=vhg_count, vcdn_count=vcdn_count)
@@ -78,19 +92,31 @@ def clean_and_create_experiment_and_optimize(starts, cdns, sourcebw, topo, seed,
             topoContainer = ServiceTopoFullGenerator(sla=sla, vhg_count=vhg_count, vcdn_count=vcdn_count)
 
         for topo in topoContainer.getTopos():
-            candidates.append(
-                Service(topo, [sla.id], vhg_count=vhg_count, vcdn_count=vcdn_count, use_heuristic=use_heuristic))
+            candidates_param.append((topo, [sla.id], vhg_count, vcdn_count, use_heuristic))
     else:
-        service = Service.get_optimal([sla], remove_service=True, use_heuristic=use_heuristic)
-        candidates.append(service)
-    filter(lambda x: x.mapping is not None, candidates)
-    sorted(candidates, key = lambda x: x.mapping, )
-    if len(candidates) > 0:
-        winner = candidates[0]
+        merged_sla = Service.get_merged_sla([sla])
 
-        session.add(winner)
-        session.flush()
+        for vhg_count in range(1, len(merged_sla.get_start_nodes()) + 1):
+            for vcdn_count in range(1, min(len(merged_sla.get_cdn_nodes()), vhg_count) + 1):
+                if use_heuristic:
+                    topoContainer = ServiceTopoHeuristic(sla=merged_sla , vhg_count=vhg_count, vcdn_count=vcdn_count)
+                else:
+                    topoContainer = ServiceTopoFullGenerator(sla=merged_sla , vhg_count=vhg_count, vcdn_count=vcdn_count)
 
-        return winner
+                for topo in topoContainer.getTopos():
+                    candidates_param.append((topo, [merged_sla .id], vhg_count, vcdn_count, use_heuristic))
+
+    logging.debug("service to embed :%d" % len(candidates_param))
+
+    pool = ThreadPool(multiprocessing.cpu_count() - 1)
+    services = pool.map(embbed_service, candidates_param)
+    #services = [embbed_service(x) for x in candidates_param]
+
+    filter(lambda x: x.mapping is not None, services)
+    sorted(services, key=lambda x: x.mapping, )
+
+    if len(services) > 0:
+        winner = services[0]
+        return winner, len(candidates_param)
     else:
         raise ValueError("failed to compute valide mapping")

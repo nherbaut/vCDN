@@ -6,6 +6,7 @@ import traceback
 import networkx as nx
 from networkx import shortest_path
 
+from offline.time.persistence import Session
 from offline.core.combinatorial import get_node_clusters, get_vhg_cdn_mapping
 from offline.core.service_topo import AbstractServiceTopo, get_nodes_by_type
 from offline.pricing.generator import get_vmg_calculator, get_vcdn_calculator
@@ -18,6 +19,7 @@ class ServiceTopoHeuristic(AbstractServiceTopo):
 
     def compute_service_topo(self, substrate, mapped_start_nodes, mapped_cdn_nodes, vhg_count, vcdn_count, delay,
                              hint_node_mappings=None):
+
         vhg_count = min(len(mapped_start_nodes), vhg_count)
         vcdn_count = min(vcdn_count, vhg_count)
 
@@ -121,5 +123,5 @@ class ServiceTopoHeuristic(AbstractServiceTopo):
 
         except:
             traceback.print_exc()
-
-        yield TopoInstance(service, delay_path, delay_route, delay)
+        ti=TopoInstance(service, delay_path, delay_route, delay)
+        yield ti

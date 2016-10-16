@@ -1,10 +1,9 @@
 import scipy
 import scipy.integrate as integrate
+
 from sqlalchemy import Column, Integer, DateTime, Float, ForeignKey, String, PickleType
 from sqlalchemy.orm import relationship
 
-
-from ..core.substrate import Substrate
 from ..time.persistence import Session, Base, service_to_sla
 
 tcp_win = 65535.0
@@ -44,8 +43,6 @@ class Sla(Base):
     substrate_id = Column(Integer, ForeignKey("Substrate.id"))
     substrate = relationship("Substrate", cascade="save-update")
 
-
-
     def __init__(self, *args, **kwargs):
         '''
         :param start_nodes: a list of nodes with their metadata includeing bandwidth {"S1":{"bandwidth":12},"S2":{"bandwidth":13}}
@@ -61,13 +58,13 @@ class Sla(Base):
         self.sla_node_specs = kwargs.get("sla_node_specs", [])
 
     def get_total_bandwidth(self):
-        return sum([start_node.attributes["bandwidth"] for start_node in self.get_start_nodes()] )
+        return sum([start_node.attributes["bandwidth"] for start_node in self.get_start_nodes()])
 
     def get_start_nodes(self):
-        return filter(lambda x: x.type == "start", self.sla_node_specs)
+        return sorted(filter(lambda x: x.type == "start", self.sla_node_specs), key=lambda x: x.toponode_id)
 
     def get_cdn_nodes(self):
-        return filter(lambda x: x.type == "cdn", self.sla_node_specs)
+        return sorted(filter(lambda x: x.type == "cdn", self.sla_node_specs), key=lambda x: x.toponode_id)
 
 
 def findSLAByDate(date):
@@ -84,7 +81,7 @@ def write_sla(sla, seed=None):
 
 
 def generate_random_slas(rs, substrate, count=1000, start_count=0, end_count=0, tenant=None):
-    session=Session()
+    session = Session()
     res = []
     for i in range(0, count):
         bitrate = getRandomBitrate(rs)
@@ -104,21 +101,23 @@ def generate_random_slas(rs, substrate, count=1000, start_count=0, end_count=0, 
         random_nodes = rs.choice(substrate.nodes, size=start_count + end_count, replace=False)
 
         start_nodes = random_nodes[:start_count]
-        nodespecs=[]
+        nodespecs = []
         for sn in start_nodes:
-            nodespecs.append(SlaNodeSpec(type="start",topoNode=sn, attributes={"bandwidth": bandwidth / (1.0 * len(start_nodes))}))
+            nodespecs.append(
+                SlaNodeSpec(type="start", topoNode=sn, attributes={"bandwidth": bandwidth / (1.0 * len(start_nodes))}))
 
         cdn_nodes = random_nodes[start_count:]
         for cdnn in cdn_nodes:
-            nodespecs.append(SlaNodeSpec(type="cdn", topoNode=sn, attributes={"bandwidth": bandwidth / (1.0 * len(start_nodes))}))
+            nodespecs.append(
+                SlaNodeSpec(type="cdn", topoNode=sn, attributes={"bandwidth": bandwidth / (1.0 * len(start_nodes))}))
 
-        sla=Sla(start_date=None, end_date=None,
-                bandwidth=bandwidth,
-                tenant_id=tenant.id,
-                sla_node_specs=nodespecs,
-                substrate=substrate,
-                delay=delay
-                )
+        sla = Sla(start_date=None, end_date=None,
+                  bandwidth=bandwidth,
+                  tenant_id=tenant.id,
+                  sla_node_specs=nodespecs,
+                  substrate=substrate,
+                  delay=delay
+                  )
         session.add(sla)
         session.flush()
         res.append(sla)

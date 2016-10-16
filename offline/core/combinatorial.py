@@ -170,7 +170,9 @@ def shortest_path_cached(node1, node2):
             mutex.release()
 
 
-    return cache[(node1, node2)]
+    res = cache[(node1, node2)]
+
+    return res
 
 
 def get_vhg_cdn_mapping(vhgs, cdns):
@@ -205,6 +207,9 @@ def get_node_clusters(nodes, class_count, substrate):
     :return: a dict with where keys are nodes and values are their respective class
     '''
     #logging.debug("get_node_clusters %s %d" % (nodes, class_count))
+
+    nodes=sorted(nodes)
+
     data = defaultdict(list)
     for i in powerset(nodes):
         if len(i) > 0:
@@ -233,6 +238,7 @@ def get_node_clusters(nodes, class_count, substrate):
         for x in candidate:
             for y in x:
                 res[y] = i
+
             i += 1
 
     return res

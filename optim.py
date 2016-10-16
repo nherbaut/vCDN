@@ -85,7 +85,7 @@ else:
 
 
 
-    service = clean_and_create_experiment_and_optimize(args.start, args.cdn, args.sourcebw, args.topo, 0,
+    service, count_embedding = clean_and_create_experiment_and_optimize(args.start, args.cdn, args.sourcebw, args.topo, 0,
                                                        vhg_count=args.vhg,
                                                        vcdn_count=args.vcdn,
                                                        automatic=args.auto, use_heuristic=not args.disable_heuristic)
@@ -97,7 +97,7 @@ else:
             plotsol_from_db(service_link_linewidth=5, net=False, service=service,
                             dest_folder=dest_folder)
 
-        print("Successfull mapping w price: \t %lf"% service.mapping.objective_function)
+        print("Successfull mapping w price: \t %lf in \t %d embedding"% (service.mapping.objective_function,count_embedding))
         subprocess.Popen(
             ["neato", os.path.join(dest_folder, "./substrate.dot"), "-Tsvg", "-o",
              os.path.join(args.dest_folder, "topo.svg")]).wait()

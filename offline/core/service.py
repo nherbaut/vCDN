@@ -87,7 +87,7 @@ class Service(Base):
             raise AttributeError("no mapping found")
 
         # get the new merged sla
-        merged_new = self.__get_merged_sla(self.slas)
+        merged_new = self.get_merged_sla(self.slas)
 
         # create the service topology from the new merged sla
         self.topo = ServiceTopoHeuristic(sla=merged_new, vhg_count=self.vhg_count,
@@ -154,13 +154,14 @@ class Service(Base):
 
         return service_specs
 
-    def __get_merged_sla(self, slas):
+    @classmethod
+    def get_merged_sla(cls, slas):
         session = Session()
         # create a dict that can accumulate
         merge_sla = Counter()
         # for every SLA
         min_delay = sys.float_info.max
-        for sla in self.slas:
+        for sla in slas:
             # accumulate in the dict
             merge_sla += Counter({node.toponode_id: node.attributes["bandwidth"] for node in sla.get_start_nodes()})
             min_delay = min(sla.delay, min_delay)
@@ -242,7 +243,7 @@ class Service(Base):
         self.slas = session.query(Sla).filter(Sla.id.in_(slasIDS)).all()
         self.vhg_count = vhg_count
         self.vcdn_count = vcdn_count
-        self.merged_sla = self.__get_merged_sla(self.slas)
+        self.merged_sla = self.get_merged_sla(self.slas)
         self.serviceSpecFactory = serviceSpecFactory
         self.topo = topo_instance
 
