@@ -1,5 +1,4 @@
 import copy
-import sys
 
 import networkx as nx
 
@@ -42,10 +41,10 @@ def get_nodes_by_type(type, graph):
     :param graph:
     :return: ["VHG1","VHG2"]
     '''
-    return [n[0] for n in graph.nodes(data=True) if n[1].get("type") == type]
+    return sorted([n[0] for n in graph.nodes(data=True) if n[1].get("type") == type])
 
 
-def get_all_possible_edge_for_2_lists(left, right):
+def get_all_possible_edge_for_2_lists(left, right, all_rights_are_mandatory=True):
     res = [[]]
     for l in left:
         rres = []
@@ -58,12 +57,12 @@ def get_all_possible_edge_for_2_lists(left, right):
         res = rres
 
     # remove cases where a server is not used, if possible.
-    if len(left) >= len(right):
+    if all_rights_are_mandatory and (len(left) >= len(right)):
         res = [o for o in res if len(set([x for t in o for x in t])) == len(left) + len(right)]
     return res
 
 
-def get_all_possible_edges(thelist):
+def get_all_possible_edges(thelist, all_rights_are_mandatory=True):
     '''
 
     :param thelist: a list of list of items (layers)
@@ -74,7 +73,7 @@ def get_all_possible_edges(thelist):
     res = [[]]
     while True:
         rres = []
-        new = get_all_possible_edge_for_2_lists(l, r)
+        new = get_all_possible_edge_for_2_lists(l, r, all_rights_are_mandatory)
 
         for elt in res:
             for new_elt in new:
@@ -101,7 +100,6 @@ class ServiceTopoFull(AbstractServiceTopo):
         vcdn_count = min(vcdn_count, vhg_count)
 
         service = nx.DiGraph()
-
 
         for i in range(1, vhg_count + 1):
             service.add_node("VHG%d" % i, type="VHG")

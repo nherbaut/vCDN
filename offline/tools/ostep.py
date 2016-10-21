@@ -112,7 +112,7 @@ def optimize_sla(sla,vhg_count=None, vcdn_count=None,
                 for topo in topoContainer.getTopos():
                     candidates_param.append((topo, [merged_sla .id], vhg_count, vcdn_count, use_heuristic))
 
-    logging.debug("service to embed :%d" % len(candidates_param))
+    print ("service to embed :%d" % len(candidates_param))
 
     pool = ThreadPool(multiprocessing.cpu_count() - 1)
     services = pool.map(embbed_service, candidates_param)

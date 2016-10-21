@@ -45,7 +45,7 @@ class ServiceTopoFullGenerator(AbstractServiceTopo):
                                         get_nodes_by_type("VCDN", service_graph)])
 
         last = get_all_possible_edges([get_nodes_by_type("VHG", service_graph),
-                                       get_nodes_by_type("CDN", service_graph)])
+                                       get_nodes_by_type("CDN", service_graph)],all_rights_are_mandatory=False)
 
         vmg_calc = get_vmg_calculator()
         vcdn_calc = get_vcdn_calculator()
@@ -69,6 +69,7 @@ class ServiceTopoFullGenerator(AbstractServiceTopo):
                     if nx.is_isomorphic(s, serviceT, equal_nodes):
                         # print("removed an isomorph yay")
                         raise IsomorphicServiceException()
+
 
                 services.insert(0, serviceT)
 
@@ -108,7 +109,7 @@ def equal_nodes(node1, node2):
     :return: True is nodes can be considered equal for isomorphic transformation
     '''
     if (node1["name"] == node2["name"]) or ((node1["type"] == node2["type"]) and (
-                    node1["type"] == "VHG" or node1["type"] == "VCDN")):
+                    node1["type"] == "VHG" or node1["type"] == "VCDN")) :
         logging.debug("%s is equal to %s" % (node1["name"], node2["name"]))
         return True
     else:
