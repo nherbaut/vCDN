@@ -345,14 +345,14 @@ class Service(Base):
             for sla in slas:
                 postfix = "%d_%d" % (self.id, sla.id)
                 for start, end, bw in self.topo.dump_edges():
-                    f.write("%s_%s %s_%s %lf\n" % (start, postfix, end, postfix, bw))
+                    f.write("%s\t\t%s_%s\t\t%lf\n" % (("%s_%s"%(start, postfix)).ljust(20), end, postfix, bw))
 
         with open(os.path.join(RESULTS_FOLDER, path, "service.nodes.data"), mode) as f:
             for sla in slas:
                 postfix = "%d_%d" % (self.id, sla.id)
 
                 for snode_id, cpu, bw in self.topo.getServiceNodes():
-                    f.write("%s_%s %lf %lf\n" % (snode_id, postfix, cpu, bw))
+                    f.write("%s\t\t%lf\t\t%lf\n" % (("%s_%s"%(snode_id, postfix)).ljust(20), cpu, bw))
                     # sys.stdout.write("%s_%s %lf\n" % (snode_id, postfix, cpu))
 
 

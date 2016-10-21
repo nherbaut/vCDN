@@ -7,7 +7,7 @@ from networkx import shortest_path
 
 from offline.core.service_topo import AbstractServiceTopo, get_all_possible_edges, get_nodes_by_type
 from offline.core.topo_instance import TopoInstance
-from offline.pricing.generator import get_vmg_calculator
+from offline.pricing.generator import get_vmg_calculator, get_vcdn_calculator
 
 
 class IsomorphicServiceException(BaseException):
@@ -25,21 +25,21 @@ class ServiceTopoFullGenerator(AbstractServiceTopo):
         vcdn_count = min(vcdn_count, vhg_count)
 
         service_graph = nx.DiGraph()
-        service_graph.add_node("S0", cpu=0, type="S0", name="S0")
+
 
         # add nodes
         for key, slaNodeSpec in enumerate(mapped_start_nodes, start=1):
             service_graph.add_node("S%d" % key, cpu=0, type="S", mapping=slaNodeSpec.topoNode.name,
-                                   bandwidth=slaNodeSpec.attributes["bandwidth"], name="S%d" % key)
+                                   bandwidth=slaNodeSpec.attributes["bandwidth"], name="S%d" % key, ratio=1)
 
         for i in range(1, vhg_count + 1):
-            service_graph.add_node("VHG%d" % i, type="VHG", ratio=1, name="VHG%d" % i)
+            service_graph.add_node("VHG%d" % i, type="VHG", ratio=1, name="VHG%d" % i, bandwidth=0)
 
         for i in range(1, vcdn_count + 1):
-            service_graph.add_node("VCDN%d" % i, type="VCDN", cpu=0, delay=delay, ratio=0.35, name="VCDN%d" % i)
+            service_graph.add_node("VCDN%d" % i, type="VCDN", cpu=105, delay=delay, ratio=0.35, name="VCDN%d" % i, bandwidth=0)
 
         for index, cdn in enumerate(mapped_cdn_nodes, start=1):
-            service_graph.add_node("CDN%d" % index, type="CDN", cpu=0, ratio=0.65, name="CDN%d" % index)
+            service_graph.add_node("CDN%d" % index, type="CDN", cpu=0, ratio=0.65, name="CDN%d" % index,bandwidth=0)
 
         first = get_all_possible_edges([get_nodes_by_type("S", service_graph), get_nodes_by_type("VHG", service_graph),
                                         get_nodes_by_type("VCDN", service_graph)])
@@ -48,6 +48,7 @@ class ServiceTopoFullGenerator(AbstractServiceTopo):
                                        get_nodes_by_type("CDN", service_graph)])
 
         vmg_calc = get_vmg_calculator()
+        vcdn_calc = get_vcdn_calculator()
         # add edges
         edges_sets = []
         for elt in first:
@@ -70,24 +71,15 @@ class ServiceTopoFullGenerator(AbstractServiceTopo):
                         raise IsomorphicServiceException()
 
                 services.insert(0, serviceT)
-                workin_nodes = []
-                for index, sla_node_spec in enumerate(mapped_start_nodes, start=1):
-                    serviceT.node["S%d" % index]["bandwidth"] = sla_node_spec.attributes["bandwidth"]
-                    workin_nodes.append("S%d" % index)
 
-                while len(workin_nodes) > 0:
-                    node = workin_nodes.pop()
-                    bandwidth = serviceT.node[node].get("bandwidth", 0.0)
-                    children = serviceT[node].items()
-                    for subnode, data in children:
-                        workin_nodes.append(subnode)
-                        edge_bw = bandwidth / float(len(children)) * serviceT.node[subnode].get("ratio", 1.0)
-                        serviceT[node][subnode]["bandwidth"] = edge_bw
-                        serviceT.node[subnode]["bandwidth"] = serviceT.node[subnode].get("bandwidth", 0.0) + edge_bw
+                self.propagate_bandwidth(serviceT, mapped_start_nodes=mapped_start_nodes)
 
                 # assign CPU according to Bandwidth
                 for vhg in get_nodes_by_type("VHG", serviceT):
                     serviceT.node[vhg]["cpu"] = vmg_calc(serviceT.node[vhg]["bandwidth"])
+
+                for vhg in get_nodes_by_type("VCDN", serviceT):
+                    serviceT.node[vhg]["cpu"] = vcdn_calc(serviceT.node[vhg]["bandwidth"])
 
                 delay_path = {}
                 delay_route = collections.defaultdict(lambda: [])
@@ -115,8 +107,8 @@ def equal_nodes(node1, node2):
     :param node2: a node from a vcdn service graph
     :return: True is nodes can be considered equal for isomorphic transformation
     '''
-    if (node1["name"] == node2["name"]) or (node1["type"] == node2["type"]) and (
-                    node1["type"] == "VHG" or node1["type"] == "VCDN"):
+    if (node1["name"] == node2["name"]) or ((node1["type"] == node2["type"]) and (
+                    node1["type"] == "VHG" or node1["type"] == "VCDN")):
         logging.debug("%s is equal to %s" % (node1["name"], node2["name"]))
         return True
     else:

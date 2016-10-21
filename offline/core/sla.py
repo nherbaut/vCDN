@@ -5,9 +5,22 @@ from sqlalchemy import Column, Integer, DateTime, Float, ForeignKey, String, Pic
 from sqlalchemy.orm import relationship
 
 from ..time.persistence import Session, Base, service_to_sla
-
+from random import random
+from bisect import bisect_right
+from ..time.persistence import Node, Edge
+import numpy as np
 tcp_win = 65535.0
 
+#http://nicky.vanforeest.com/probability/weightedRandomShuffling/weighted.html
+def weighted_shuffle(a,w,rs):
+    r = np.empty_like(a)
+    cumWeights = np.cumsum(w)
+    for i in range(len(a)):
+         rnd = rs.uniform() * cumWeights[-1]
+         j = bisect_right(cumWeights,rnd)
+         r[i]=a[j]
+         cumWeights[j:] -= w[j]
+    return r
 
 def concurrentUsers(t, m, sigma, duration):
     return integrate.quad(
@@ -80,7 +93,7 @@ def write_sla(sla, seed=None):
         f.write("%s \n" % sla.start)
 
 
-def generate_random_slas(rs, substrate, count=1000, start_count=0, end_count=0, tenant=None):
+def generate_random_slas(rs, substrate, count=1000, max_start_count=0, max_end_count=0, tenant=None):
     session = Session()
     res = []
     for i in range(0, count):
@@ -94,20 +107,21 @@ def generate_random_slas(rs, substrate, count=1000, start_count=0, end_count=0, 
         delay = tcp_win / bitrate * 1000.0
         bandwidth = count * bitrate * movie_duration / time_span
 
-        if not (start_count > 0 and end_count > 0):
-            start_count = rs.randint(low=1, high=5)
-            end_count = rs.randint(low=1, high=start_count)
+        # get the nodes and their total bw
+        nodes_by_degree = substrate.get_nodes_by_degree()
+        nodes_by_bw = substrate.get_nodes_by_bw()
 
-        random_nodes = rs.choice(substrate.nodes, size=start_count + end_count, replace=False)
-
-        start_nodes = random_nodes[:start_count]
-        nodespecs = []
+        cdn_nodes = weighted_shuffle(nodes_by_degree.keys(), nodes_by_degree.values(), rs)[:rs.randint(1,max_end_count+1)]
+        start_nodes = weighted_shuffle(nodes_by_bw.keys(), nodes_by_bw.values(), rs)[-rs.randint(1,max_start_count+1):]
+        nodespecs=[]
         for sn in start_nodes:
+            sn = session.query(Node).filter(Node.name==sn).one()
             nodespecs.append(
                 SlaNodeSpec(type="start", topoNode=sn, attributes={"bandwidth": bandwidth / (1.0 * len(start_nodes))}))
 
-        cdn_nodes = random_nodes[start_count:]
-        for cdnn in cdn_nodes:
+
+        for sn in cdn_nodes:
+            sn = session.query(Node).filter(Node.name == sn).one()
             nodespecs.append(
                 SlaNodeSpec(type="cdn", topoNode=sn, attributes={"bandwidth": bandwidth / (1.0 * len(start_nodes))}))
 

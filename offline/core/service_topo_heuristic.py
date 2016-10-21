@@ -6,11 +6,10 @@ import traceback
 import networkx as nx
 from networkx import shortest_path
 
-from offline.time.persistence import Session
 from offline.core.combinatorial import get_node_clusters, get_vhg_cdn_mapping
 from offline.core.service_topo import AbstractServiceTopo, get_nodes_by_type
-from offline.pricing.generator import get_vmg_calculator, get_vcdn_calculator
 from offline.core.topo_instance import TopoInstance
+from offline.pricing.generator import get_vmg_calculator, get_vcdn_calculator
 
 
 class ServiceTopoHeuristic(AbstractServiceTopo):
@@ -26,20 +25,18 @@ class ServiceTopoHeuristic(AbstractServiceTopo):
         vmg_calc = get_vmg_calculator()
         vcdn_calc = get_vcdn_calculator()
         service = nx.DiGraph()
-        service.add_node("S0", cpu=0)
 
         for i in range(1, vhg_count + 1):
-            service.add_node("VHG%d" % i, type="VHG")
+            service.add_node("VHG%d" % i, type="VHG", ratio=1, bandwidth=0)
 
         for i in range(1, vcdn_count + 1):
-            service.add_node("VCDN%d" % i, type="VCDN", cpu=105, delay=delay, ratio=0.35)
+            service.add_node("VCDN%d" % i, type="VCDN", cpu=0, delay=delay, ratio=0.35, bandwidth=0)
 
         for index, cdn in enumerate(mapped_cdn_nodes, start=1):
-            service.add_node("CDN%d" % index, type="CDN", cpu=0, ratio=0.65)
+            service.add_node("CDN%d" % index, type="CDN", cpu=0, ratio=0.65, bandwidth=0)
 
         for key, slaNodeSpec in enumerate(mapped_start_nodes, start=1):
-            service.add_node("S%d" % key, cpu=0, type="S", mapping=slaNodeSpec.topoNode.name)
-            service.add_edge("S0", "S%d" % key, delay=sys.maxint, bandwidth=0)
+            service.add_node("S%d" % key, cpu=0, type="S", mapping=slaNodeSpec.topoNode.name, bandwidth=0)
 
         # create s<-> vhg edges
         for toponode_name, vmg_id in get_node_clusters(map(lambda x: x.topoNode.name, mapped_start_nodes), vhg_count,
@@ -75,26 +72,6 @@ class ServiceTopoHeuristic(AbstractServiceTopo):
             else:
                 service.add_edge(vhg, winners[0], bandwidth=0)
 
-        # assign bandwidth
-        workin_nodes = []
-        for index, sla_node_spec in enumerate(mapped_start_nodes, start=1):
-            service.node["S%d" % index]["bandwidth"] = sla_node_spec.attributes["bandwidth"]
-            workin_nodes.append("S%d" % index)
-
-        while len(workin_nodes) > 0:
-            node = workin_nodes.pop()
-            bandwidth = service.node[node].get("bandwidth", 0.0)
-            children = service[node].items()
-            for subnode, data in children:
-                workin_nodes.append(subnode)
-                edge_bw = bandwidth / float(len(children)) * service.node[subnode].get("ratio", 1.0)
-                service[node][subnode]["bandwidth"] = edge_bw
-                service.node[subnode]["bandwidth"] = service.node[subnode].get("bandwidth", 0.0) + edge_bw
-
-        # assign CPU according to Bandwidth
-        for vhg in get_nodes_by_type("VHG", service):
-            service.node[vhg]["cpu"] = vmg_calc(service.node[vhg]["bandwidth"])
-
         # delay path
         delay_path = {}
         delay_route = collections.defaultdict(lambda: [])
@@ -119,9 +96,21 @@ class ServiceTopoHeuristic(AbstractServiceTopo):
                                enumerate(mapped_cdn_nodes, start=1)]
                 for vhg, cdn in get_vhg_cdn_mapping(vhg_mapping, cdn_mapping).items():
                     if vhg in service.node:
-                        service.add_edge(vhg, cdn, bandwidth=service.node[vhg]["bandwidth"])
+                        service.add_edge(vhg, cdn, bandwidth=0,)
 
         except:
             traceback.print_exc()
-        ti=TopoInstance(service, delay_path, delay_route, delay)
+            exit(-1)
+
+        self.propagate_bandwidth(service, mapped_start_nodes)
+
+        # assign CPU according to Bandwidth
+        for vhg in get_nodes_by_type("VHG", service):
+            service.node[vhg]["cpu"] = vmg_calc(service.node[vhg]["bandwidth"])
+
+        for vhg in get_nodes_by_type("VCDN", service):
+            service.node[vhg]["cpu"] = vcdn_calc(service.node[vhg]["bandwidth"])
+
+
+        ti = TopoInstance(service, delay_path, delay_route, delay)
         yield ti

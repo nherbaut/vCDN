@@ -17,6 +17,23 @@ class AbstractServiceTopo(object):
     def getTopos(self):
         return self.topoinfos
 
+    def propagate_bandwidth(self, service, mapped_start_nodes):
+        # assign bandwidth
+        workin_nodes = []
+        for index, sla_node_spec in enumerate(mapped_start_nodes, start=1):
+            service.node["S%d" % index]["bandwidth"] = sla_node_spec.attributes["bandwidth"]
+            workin_nodes.append("S%d" % index)
+
+        while len(workin_nodes) > 0:
+            node = workin_nodes.pop()
+            bandwidth = service.node[node].get("bandwidth", 0.0)
+            children = service[node].items()
+            for subnode, data in children:
+                workin_nodes.append(subnode)
+                edge_bw = bandwidth * service.node[subnode]["ratio"]
+                service[node][subnode]["bandwidth"] = edge_bw
+                service.node[subnode]["bandwidth"] = service.node[subnode]["bandwidth"] + edge_bw
+
 
 def get_nodes_by_type(type, graph):
     '''
@@ -84,7 +101,7 @@ class ServiceTopoFull(AbstractServiceTopo):
         vcdn_count = min(vcdn_count, vhg_count)
 
         service = nx.DiGraph()
-        service.add_node("S0", cpu=0)
+
 
         for i in range(1, vhg_count + 1):
             service.add_node("VHG%d" % i, type="VHG")
@@ -98,7 +115,7 @@ class ServiceTopoFull(AbstractServiceTopo):
         for key, slaNodeSpec in enumerate(mapped_start_nodes, start=1):
             service.add_node("S%d" % key, cpu=0, type="S", mapping=slaNodeSpec.topoNode.name,
                              bandwidth=slaNodeSpec.attributes["bandwidth"])
-            service.add_edge("S0", "S%d" % key, delay=sys.maxint, bandwidth=0)
+
             for i in range(1, vhg_count + 1):
                 service.add_edge("S%d" % key, "VHG%d" % i)
 
@@ -109,6 +126,3 @@ class ServiceTopoFull(AbstractServiceTopo):
                 service.add_edge("VHG%d" % vhg, "CDN%d" % index)
 
         return service, [], {}
-
-
-

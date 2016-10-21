@@ -1,23 +1,12 @@
 #!/usr/bin/env python
-from random import random
-from bisect import bisect_right
-import numpy as np
+
 import argparse
 import logging
 import os
+from offline.core.sla import generate_random_slas
+from offline.tools.ostep import create_sla, clean_and_create_experiment
+from offline.time.persistence import Tenant, Session
 
-from offline.tools.ostep import clean_and_create_experiment_and_optimize, clean_and_create_experiment
-
-#http://nicky.vanforeest.com/probability/weightedRandomShuffling/weighted.html
-def weighted_shuffle(a,w,rs):
-    r = np.empty_like(a)
-    cumWeights = np.cumsum(w)
-    for i in range(len(a)):
-         rnd = rs.uniform() * cumWeights[-1]
-         j = bisect_right(cumWeights,rnd)
-         r[i]=a[j]
-         cumWeights[j:] -= w[j]
-    return r
 
 def unpack(first, *rest):
     return first, rest
@@ -54,22 +43,17 @@ args = parser.parse_args()
 
 #create the topology
 rs, su = clean_and_create_experiment(args.topo, args.seed)
+session=Session()
+tenant=Tenant(name="default")
+session.add(tenant)
+session.flush()
+slas = generate_random_slas(rs,su,10,args.max_start,args.max_cdn,tenant)
 
-#get the nodes and their total bw
-nodes_by_degree = su.get_nodes_by_degree()
-nodes_by_bw = su.get_nodes_by_bw()
 
-cdns=[]
-starts=[]
-cdns=weighted_shuffle(nodes_by_degree.keys(),nodes_by_degree.values(),rs)[:args.max_cdn]
-starts=weighted_shuffle(nodes_by_bw .keys(),nodes_by_bw .values(),rs)[-args.max_start:]
-
-print cdns
-print starts
 
 
 '''
-service, count_embedding = clean_and_create_experiment_and_optimize(args.start, args.cdn, args.sourcebw, args.topo, 0,
+service, count_embedding = create_sla(args.start, args.cdn, args.sourcebw, args.topo, 0,
                                                                     vhg_count=args.vhg, vcdn_count=args.vcdn,
                                                                     automatic=args.auto,
                                                                     use_heuristic=not args.disable_heuristic)

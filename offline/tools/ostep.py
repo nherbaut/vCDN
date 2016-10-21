@@ -103,7 +103,7 @@ def optimize_sla(sla,vhg_count=None, vcdn_count=None,
         merged_sla = Service.get_merged_sla([sla])
 
         for vhg_count in range(1, len(merged_sla.get_start_nodes()) + 1):
-            for vcdn_count in range(1, min(len(merged_sla.get_cdn_nodes()), vhg_count) + 1):
+            for vcdn_count in range(1, vhg_count + 1):
                 if use_heuristic:
                     topoContainer = ServiceTopoHeuristic(sla=merged_sla , vhg_count=vhg_count, vcdn_count=vcdn_count)
                 else:
@@ -117,9 +117,12 @@ def optimize_sla(sla,vhg_count=None, vcdn_count=None,
     pool = ThreadPool(multiprocessing.cpu_count() - 1)
     services = pool.map(embbed_service, candidates_param)
 
+    services=filter(lambda x: x.mapping is not None, services)
+    services=sorted(services, key=lambda x: x.mapping.objective_function, )
 
-    filter(lambda x: x.mapping is not None, services)
-    sorted(services, key=lambda x: x.mapping, )
+
+    for service in services:
+        print "%d %lf %d %d" % (service.id,service.mapping.objective_function,service.vhg_count,service.vcdn_count)
 
     if len(services) > 0:
         winner = services[0]

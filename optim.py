@@ -6,12 +6,9 @@ import os
 import subprocess
 from argparse import RawTextHelpFormatter
 
-from offline.core.topo_instance import TopoInstance
-from offline.core.service_topo_heuristic import ServiceTopoHeuristic
-from offline.core.service_topo_generator import ServiceTopoFullGenerator
 from offline.time.plottingDB import plotsol_from_db
-from offline.tools.ostep import clean_and_create_experiment_and_optimize, clean_and_create_experiment
-
+from offline.tools.ostep import create_sla, clean_and_create_experiment, optimize_sla
+import shutil
 
 def unpack(first, *rest):
     return first, rest
@@ -53,8 +50,8 @@ parser.add_argument('--auto', dest='auto', action='store_true', help='automatic 
 
 parser.add_argument('--vcdnratio', help="the share of source traffic toward vcdn (default 0.35)", default=0.35,
                     type=float)
-parser.add_argument('--sourcebw', help="cumulated source bw from every source (default 100 bits) ", default=100,
-                    type=int)
+parser.add_argument('--sourcebw', help="cumulated source bw from every source (default 100 bits) ", default=10000,
+                    type=float)
 parser.add_argument('--topo', help="specify topo to use", default=('grid', ["5", "5", "100000000", "10", "200"]),
                     type=valid_topo)
 
@@ -81,25 +78,26 @@ else:
     elif args.auto is True and (args.vhg is not None or args.vcdn is not None):
         parser.error("can't specify vhg count of vcdn count in --auto mode")
 
+    sla = create_sla(args.start, args.cdn, args.sourcebw, args.topo, 0)
+    service, count_embedding = optimize_sla(sla,vhg_count=args.vhg,
+                                            vcdn_count=args.vcdn,
+                                            automatic=args.auto, use_heuristic=not args.disable_heuristic)
 
-
-
-
-    service, count_embedding = clean_and_create_experiment_and_optimize(args.start, args.cdn, args.sourcebw, args.topo, 0,
-                                                       vhg_count=args.vhg,
-                                                       vcdn_count=args.vcdn,
-                                                       automatic=args.auto, use_heuristic=not args.disable_heuristic)
+    if os.path.exists("winner"):
+        shutil.rmtree("winner")
+    shutil.copytree(os.path.join(RESULTS_FOLDER,str(service.id)),"winner")
 
     if service.mapping is not None:
-        with open(os.path.join(args.dest_folder, "price.data"), "w") as f:
-            f.write("%lf" % service.mapping.objective_function)
+        with     open(os.path.join(args.dest_folder, "price.data"), "w") as f:
+            f.write("%lf\n" % service.mapping.objective_function)
+            f.write("%d,%d\n" % (service.vhg_count,service.vcdn_count))
             dest_folder = os.path.join(RESULTS_FOLDER, str(service.id))
             plotsol_from_db(service_link_linewidth=5, net=False, service=service,
-                            dest_folder=dest_folder)
+            dest_folder = dest_folder)
 
-        print("Successfull mapping w price: \t %lf in \t %d embedding"% (service.mapping.objective_function,count_embedding))
-        subprocess.Popen(
-            ["neato", os.path.join(dest_folder, "./substrate.dot"), "-Tsvg", "-o",
-             os.path.join(args.dest_folder, "topo.svg")]).wait()
+            print("Successfull mapping w price: \t %lf in \t %d embedding \t winner is %d" % (service.mapping.objective_function, count_embedding,service.id))
+            subprocess.Popen(
+        ["neato", os.path.join(dest_folder, "./substrate.dot"), "-Tsvg", "-o",
+         os.path.join(args.dest_folder, "topo.svg")]).wait()
     else:
         print("failed to compute mapping")

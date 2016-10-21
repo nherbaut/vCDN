@@ -37,12 +37,10 @@ def get_vcdn_calculator(file_path=os.path.join(PRICING_FOLDER, "cdn/azure_cdn_pr
     :param file_path: specs for cdn pricing
     :return: return a function used to compute cdn price according to porperties file
     '''
-    threshold_prices = {}
+    sys_specs = None
     with open(file_path, "r") as f:
-        for key, value in csv.reader(filter(lambda row: row[0] != '#', f), delimiter=","):
-            threshold_prices[key] = value
-
-    return partial(vcdn_calculator, threshold_prices=threshold_prices)
+        for key in csv.reader(filter(lambda row: row[0] != '#', f)):
+            return eval(key[0])
 
 
 def vmg_calculator(bandwidth_bps, sys_spec, net_spec):
