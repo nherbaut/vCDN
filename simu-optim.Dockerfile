@@ -13,8 +13,6 @@ RUN make install INSTALLDIR=/usr/local
 ENV PATH /home/scip/scipoptsuite-3.2.1/scip-3.2.1/bin/:$PATH
 
 
-
-
 RUN echo "mysql-server mysql-server/root_password password root" | debconf-set-selections
 RUN echo "mysql-server mysql-server/root_password_again password root" | debconf-set-selections
 
@@ -36,12 +34,11 @@ RUN R -q -e "install.packages('optparse', repos='http://cran.rstudio.com/')"
 RUN R -q -e "install.packages('rPython', repos='http://cran.rstudio.com/')"
 
 WORKDIR /opt/simuservice/
+RUN mkdir -p /opt/girafe/results
 COPY ./offline /opt/simuservice/offline
 
-RUN echo "/etc/init.d/mysql start && mysql -u root -proot -h localhost -e 'CREATE database paper4;'"> bootstrap.sh
-
-COPY ./start.py /opt/simuservice
-RUN chmod +x ./bootstrap.sh
-RUN mkdir /opt/simuservice/out/
-
-CMD ./bootstrap.sh && ./start.py -i $I -d $D -t $T|tee -a /opt/simuservice/out/res.txt
+#RUN echo "/etc/init.d/mysql start && mysql -u root -proot -h localhost -e 'CREATE database IF NOT EXISTS paper4;'"> bootstrap.sh
+COPY ./simu_optim.py /opt/simuservice
+#RUN chmod +x ./bootstrap.sh
+VOLUME ["/opt/girafe/results"]
+ENTRYPOINT ["/opt/simuservice/simu_optim.py","--dest_folder=/opt/girafe/results"]

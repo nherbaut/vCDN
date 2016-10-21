@@ -61,10 +61,10 @@ class Substrate(Base):
         return sum([x.cpu for x in self.nodes.items()])
 
     def get_nodes_by_bw(self):
-        return self.g.degree(weight="bandwidth")
+        return self.__get_graph().degree(weight="bandwidth")
 
     def get_nodes_by_degree(self):
-        return self.g.degree()
+        return self.__get_graph().degree()
 
     def shortest_path(self, node1, node2):
         return nx.shortest_path(self.__get_graph(), node1, node2, weight="delay")
