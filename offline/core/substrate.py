@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from itertools import tee, izip
+
 import networkx as nx
 import numpy.random
 from haversine import haversine
@@ -35,6 +37,13 @@ def isOK(node1, node2):
     return True
 
 
+def pairwise(iterable):
+    "s -> (s0,s1), (s1,s2), (s2, s3), ..."
+    a, b = tee(iterable)
+    next(b, None)
+    return izip(a, b)
+
+
 class Substrate(Base):
     __tablename__ = "Substrate"
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -57,6 +66,24 @@ class Substrate(Base):
     def get_nodes_by_degree(self):
         return self.g.degree()
 
+    def shortest_path(self, node1, node2):
+        return nx.shortest_path(self.__get_graph(), node1, node2, weight="delay")
+
+    def compute_delay(self, alist):
+        return sum([self.__get_graph().get_edge_data(node1, node2)["delay"] for node1, node2 in pairwise(alist)])
+
+    def __get_graph(self):
+        if not hasattr(self, 'g'):
+            self.g = nx.Graph()
+            # it's silly to do that, as most of the underlying graph are nx.Graph objects...
+            for node in self.nodes:
+                self.g.add_node(node.name)
+
+            for edge in self.edges:
+                self.g.add_edge(edge.node_1.name, edge.node_2.name, bandwidth=edge.bandwidth, delay=edge.delay)
+
+        return self.g
+
     def __init__(self, edges, nodes):
         '''
 
@@ -69,14 +96,6 @@ class Substrate(Base):
         self.edges = edges
         self.nodes = nodes
         self.edges_init = sorted(edges, key=lambda x: "%s%s" % (str(x.node_1), str(x.node_2)))
-
-        self.g = nx.Graph()
-        # it's silly to do that, as most of the underlying graph are nx.Graph objects...
-        for node in self.nodes:
-            self.g.add_node(node.name)
-
-        for edge in self.edges:
-            self.g.add_edge(edge.node_1.name, edge.node_2.name, bandwidth=edge.bandwidth, delay=edge.delay)
 
     def write(self, path="."):
 

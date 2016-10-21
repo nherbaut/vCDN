@@ -25,6 +25,10 @@ class TopoInstance:
         return [(s, self.servicetopo.node[s]["mapping"], self.servicetopo.node[s]["bandwidth"]) for s in
                 get_nodes_by_type("S", self.servicetopo)]
 
+    def get_CDN(self):
+        return [(s, self.servicetopo.node[s]["mapping"], self.servicetopo.node[s]["bandwidth"]) for s in
+                get_nodes_by_type("CDN", self.servicetopo)]
+
     def getServiceNodes(self):
         for node in self.servicetopo.nodes(data=True):
             yield node[0], node[1].get("cpu", 0), node[1].get("bandwidth", 0)

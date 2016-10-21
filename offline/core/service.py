@@ -345,14 +345,14 @@ class Service(Base):
             for sla in slas:
                 postfix = "%d_%d" % (self.id, sla.id)
                 for start, end, bw in self.topo.dump_edges():
-                    f.write("%s\t\t%s_%s\t\t%lf\n" % (("%s_%s"%(start, postfix)).ljust(20), end, postfix, bw))
+                    f.write("%s\t\t%s_%s\t\t%lf\n" % (("%s_%s" % (start, postfix)).ljust(20), end, postfix, bw))
 
         with open(os.path.join(RESULTS_FOLDER, path, "service.nodes.data"), mode) as f:
             for sla in slas:
                 postfix = "%d_%d" % (self.id, sla.id)
 
                 for snode_id, cpu, bw in self.topo.getServiceNodes():
-                    f.write("%s\t\t%lf\t\t%lf\n" % (("%s_%s"%(snode_id, postfix)).ljust(20), cpu, bw))
+                    f.write("%s\t\t%lf\t\t%lf\n" % (("%s_%s" % (snode_id, postfix)).ljust(20), cpu, bw))
                     # sys.stdout.write("%s_%s %lf\n" % (snode_id, postfix, cpu))
 
 
@@ -360,8 +360,9 @@ class Service(Base):
         with open(os.path.join(RESULTS_FOLDER, path, "CDN.nodes.data"), mode) as f:
             for sla in slas:
                 postfix = "%d_%d" % (self.id, sla.id)
-                for index, value in enumerate(sla.get_cdn_nodes(), start=1):
-                    f.write("CDN%d_%s %s\n" % (index, postfix, value.topoNode.name))
+                self.merged_sla.get_cdn_nodes()
+                for node, mapping, bw in self.topo.get_CDN():
+                    f.write("%s_%s %s\n" % (node, postfix,mapping))
 
         # write constraints on starter placement
         with open(os.path.join(RESULTS_FOLDER, path, "starters.nodes.data"), mode) as f:

@@ -3,9 +3,11 @@
 import argparse
 import logging
 import os
+
 from offline.core.sla import generate_random_slas
-from offline.tools.ostep import create_sla, clean_and_create_experiment
 from offline.time.persistence import Tenant, Session
+from offline.tools.ostep import clean_and_create_experiment
+from offline.tools.ostep import optimize_sla
 
 
 def unpack(first, *rest):
@@ -22,7 +24,8 @@ RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'offl
 logging.basicConfig(filename='simu.log', level="DEBUG", )
 
 parser = argparse.ArgumentParser(description='run simu with solver')
-
+parser.add_argument('--sla_count', type=int, help='number of sla to generate',
+                    default=5)
 parser.add_argument('--seed', type=int, help='seed for random state generation',
                     default=0)
 parser.add_argument('--sla_delay', help="delay toward vCDN, float in ms", default=30.0, type=float)
@@ -32,7 +35,7 @@ parser.add_argument('--max_cdn', type=int, help='maximum number of CDNs',
                     default=5)
 parser.add_argument('--vcdnratio', help="the share of source traffic toward vcdn (default 0.35)", default=0.35,
                     type=float)
-parser.add_argument('--sourcebw', help="cumulated source bw from every source (default 100 bits) ", default=100,
+parser.add_argument('--sourcebw', help="cumulated source bw from every source (default 100 bits) ", default=100000000,
                     type=int)
 parser.add_argument('--topo', help="specify topo to use", default=('grid', ["5", "5", "100000000", "10", "200"]),
                     type=valid_topo)
@@ -41,16 +44,21 @@ parser.add_argument('--dest_folder', help="destination folder for restults", def
 
 args = parser.parse_args()
 
-#create the topology
+# create the topology
 rs, su = clean_and_create_experiment(args.topo, args.seed)
-session=Session()
-tenant=Tenant(name="default")
+session = Session()
+tenant = Tenant(name="default")
 session.add(tenant)
 session.flush()
-slas = generate_random_slas(rs,su,10,args.max_start,args.max_cdn,tenant)
+slas = generate_random_slas(rs, su, count=args.sla_count, user_count=1000, max_start_count=args.max_start, max_end_count=args.max_cdn, tenant=tenant)
 
+for sla in slas:
+    service, count_embedding = optimize_sla(sla,
+                                            automatic=True, use_heuristic=not args.disable_heuristic)
 
-
+    # print ( "winner : %s" % str(service.id))
+    su.consume_service(service)
+    print "%s\t%lf" % (su, service.mapping.objective_function)
 
 '''
 service, count_embedding = create_sla(args.start, args.cdn, args.sourcebw, args.topo, 0,

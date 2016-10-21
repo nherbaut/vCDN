@@ -39,7 +39,7 @@ class ServiceTopoFullGenerator(AbstractServiceTopo):
             service_graph.add_node("VCDN%d" % i, type="VCDN", cpu=105, delay=delay, ratio=0.35, name="VCDN%d" % i, bandwidth=0)
 
         for index, cdn in enumerate(mapped_cdn_nodes, start=1):
-            service_graph.add_node("CDN%d" % index, type="CDN", cpu=0, ratio=0.65, name="CDN%d" % index,bandwidth=0)
+            service_graph.add_node("CDN%d" % index, type="CDN", cpu=0, ratio=0.65, name="CDN%d" % index,bandwidth=0, mapping=cdn.topoNode.name)
 
         first = get_all_possible_edges([get_nodes_by_type("S", service_graph), get_nodes_by_type("VHG", service_graph),
                                         get_nodes_by_type("VCDN", service_graph)])
@@ -59,16 +59,25 @@ class ServiceTopoFullGenerator(AbstractServiceTopo):
 
         services = []
 
+
+
         for t in edges_sets:
             try:
                 serviceT = copy.deepcopy(service_graph)
                 for edge in t:
                     serviceT.add_edge(edge[0], edge[1])
 
+
+                for node, degree in serviceT.degree().items():
+                    if degree == 0:
+                        serviceT.remove_node(node)
+
+                str_rep="-".join(sorted(["%s_%s" % (t[0],t[1].get("mapping","NA")) for t in serviceT.nodes(data=True)]))
+                #print str_rep
                 for s in services:
-                    if nx.is_isomorphic(s, serviceT, equal_nodes):
-                        # print("removed an isomorph yay")
-                        raise IsomorphicServiceException()
+                    if "-".join(sorted(["%s_%s" % (t[0],t[1].get("mapping","NA")) for t in s.nodes(data=True)])) == str_rep:
+                        if nx.is_isomorphic(s, serviceT, equal_nodes):
+                            raise IsomorphicServiceException()
 
 
                 services.insert(0, serviceT)
@@ -110,8 +119,8 @@ def equal_nodes(node1, node2):
     '''
     if (node1["name"] == node2["name"]) or ((node1["type"] == node2["type"]) and (
                     node1["type"] == "VHG" or node1["type"] == "VCDN")) :
-        logging.debug("%s is equal to %s" % (node1["name"], node2["name"]))
+        #logging.trace("%s is equal to %s" % (node1["name"], node2["name"]))
         return True
     else:
-        logging.debug("%s is NOT equal to %s" % (node1["name"], node2["name"]))
+        #logging.debug("%s is NOT equal to %s" % (node1["name"], node2["name"]))
         return False

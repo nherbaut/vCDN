@@ -32,8 +32,10 @@ class ServiceTopoHeuristic(AbstractServiceTopo):
         for i in range(1, vcdn_count + 1):
             service.add_node("VCDN%d" % i, type="VCDN", cpu=0, delay=delay, ratio=0.35, bandwidth=0)
 
+
         for index, cdn in enumerate(mapped_cdn_nodes, start=1):
-            service.add_node("CDN%d" % index, type="CDN", cpu=0, ratio=0.65, bandwidth=0)
+            service.add_node("CDN%d" % index, type="CDN", cpu=0, ratio=0.65, name="CDN%d" % index, bandwidth=0,
+                                   mapping=cdn.topoNode.name)
 
         for key, slaNodeSpec in enumerate(mapped_start_nodes, start=1):
             service.add_node("S%d" % key, cpu=0, type="S", mapping=slaNodeSpec.topoNode.name, bandwidth=0)
@@ -94,7 +96,7 @@ class ServiceTopoHeuristic(AbstractServiceTopo):
                                "VHG" in nmapping.service_node.name]
                 cdn_mapping = [(nm.topoNode.name, "CDN%d" % index) for index, nm in
                                enumerate(mapped_cdn_nodes, start=1)]
-                for vhg, cdn in get_vhg_cdn_mapping(vhg_mapping, cdn_mapping).items():
+                for vhg, cdn in get_vhg_cdn_mapping(vhg_mapping, cdn_mapping,substrate).items():
                     if vhg in service.node:
                         service.add_edge(vhg, cdn, bandwidth=0,)
 

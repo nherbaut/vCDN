@@ -112,17 +112,19 @@ def optimize_sla(sla,vhg_count=None, vcdn_count=None,
                 for topo in topoContainer.getTopos():
                     candidates_param.append((topo, [merged_sla .id], vhg_count, vcdn_count, use_heuristic))
 
-    print ("service to embed :%d" % len(candidates_param))
+    #print ("service to embed :%d" % len(candidates_param))
 
-    pool = ThreadPool(multiprocessing.cpu_count() - 1)
-    services = pool.map(embbed_service, candidates_param)
+    #pool = ThreadPool(multiprocessing.cpu_count() - 1)
+    #pool = ThreadPool(4)
+    #services = pool.map(embbed_service, candidates_param)
+    services = [embbed_service(param) for param in candidates_param]
 
     services=filter(lambda x: x.mapping is not None, services)
     services=sorted(services, key=lambda x: x.mapping.objective_function, )
 
 
     for service in services:
-        print "%d %lf %d %d" % (service.id,service.mapping.objective_function,service.vhg_count,service.vcdn_count)
+        logging.debug("%d %lf %d %d" % (service.id,service.mapping.objective_function,service.vhg_count,service.vcdn_count))
 
     if len(services) > 0:
         winner = services[0]
