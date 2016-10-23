@@ -37,8 +37,8 @@ WORKDIR /opt/simuservice/
 RUN mkdir -p /opt/girafe/results
 COPY ./offline /opt/simuservice/offline
 
-#RUN echo "/etc/init.d/mysql start && mysql -u root -proot -h localhost -e 'CREATE database IF NOT EXISTS paper4;'"> bootstrap.sh
+RUN echo "#!/usr/bin/env bash \n /etc/init.d/mysql start && mysql -u root -proot -h localhost -e 'CREATE database IF NOT EXISTS paper4;' && /opt/simuservice/optim.py --dest_folder=/opt/girafe/results \"\$@\" "> /opt/simuservice/bootstrap.sh
 COPY ./optim.py /opt/simuservice
-#RUN chmod +x ./bootstrap.sh
+RUN chmod +x ./bootstrap.sh
 VOLUME ["/opt/girafe/results"]
-ENTRYPOINT ["/opt/simuservice/optim.py","--dest_folder=/opt/girafe/results"]
+ENTRYPOINT [ "/opt/simuservice/bootstrap.sh" ]
