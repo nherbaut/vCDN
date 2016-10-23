@@ -45,9 +45,11 @@ def embbed_service(x):
     return service
 
 
-def create_sla(starts, cdns, sourcebw, topo, seed):
+def create_sla(starts, cdns, sourcebw, topo=None, su=None, rs=None, seed=0):
 
-    rs, su = clean_and_create_experiment(topo, seed)
+    if su is None:
+        rs, su = clean_and_create_experiment(topo, seed)
+        
     nodes_names = [n.name for n in su.nodes]
     session = Session()
 
@@ -90,7 +92,7 @@ def optimize_sla(sla,vhg_count=None, vcdn_count=None,
 
 
     candidates_param = []
-
+    print("computing optimization params")
     if not automatic:
         if use_heuristic:
             topoContainer = ServiceTopoHeuristic(sla=sla, vhg_count=vhg_count, vcdn_count=vcdn_count)
@@ -111,13 +113,14 @@ def optimize_sla(sla,vhg_count=None, vcdn_count=None,
 
                 for topo in topoContainer.getTopos():
                     candidates_param.append((topo, [merged_sla .id], vhg_count, vcdn_count, use_heuristic))
-
+                print("%d param so far "%len(candidates_param))
     #print ("service to embed :%d" % len(candidates_param))
 
     #pool = ThreadPool(multiprocessing.cpu_count() - 1)
-    #pool = ThreadPool(4)
-    #services = pool.map(embbed_service, candidates_param)
-    services = [embbed_service(param) for param in candidates_param]
+    print("%d param to optimize" % len(candidates_param))
+    pool = ThreadPool(4)
+    services = pool.map(embbed_service, candidates_param)
+    #services = [embbed_service(param) for param in candidates_param]
 
     services=filter(lambda x: x.mapping is not None, services)
     services=sorted(services, key=lambda x: x.mapping.objective_function, )

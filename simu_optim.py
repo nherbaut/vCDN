@@ -46,11 +46,8 @@ args = parser.parse_args()
 
 # create the topology
 rs, su = clean_and_create_experiment(args.topo, args.seed)
-session = Session()
-tenant = Tenant(name="default")
-session.add(tenant)
-session.flush()
-slas = generate_random_slas(rs, su, count=args.sla_count, user_count=1000, max_start_count=args.max_start, max_end_count=args.max_cdn, tenant=tenant)
+
+slas = generate_random_slas(rs, su, count=args.sla_count, user_count=1000, max_start_count=args.max_start, max_end_count=args.max_cdn)
 
 for sla in slas:
     service, count_embedding = optimize_sla(sla,

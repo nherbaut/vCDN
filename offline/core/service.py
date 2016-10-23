@@ -266,6 +266,8 @@ class Service(Base):
             self.serviceEdges.append(sedge)
         session.flush()
 
+        session.add(self)
+        session.flush()
         if use_heuristic:
             # create temp mapping for vhg<->vcdn hints
             assert self.id is not None

@@ -95,7 +95,7 @@ def write_sla(sla, seed=None):
         f.write("%s \n" % sla.start)
 
 
-def generate_random_slas(rs, substrate, count=1000, user_count=1000, max_start_count=0, max_end_count=0, tenant=None):
+def generate_random_slas(rs, substrate, count=1000, user_count=1000, max_start_count=0, max_end_count=0):
     session = Session()
     res = []
     for i in range(0, count):

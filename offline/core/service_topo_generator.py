@@ -104,7 +104,7 @@ class ServiceTopoFullGenerator(AbstractServiceTopo):
 
                         except:
                             continue
-                logging.debug("so far, %d services" % len(services))
+                #logging.debug("so far, %d services" % len(services))
                 yield TopoInstance(serviceT, delay_path, delay_route, delay)
             except IsomorphicServiceException as e:
                 pass
