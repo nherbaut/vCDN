@@ -126,7 +126,7 @@ def generate_random_slas(rs, substrate, count=1000, user_count=1000, max_start_c
         for sn in cdn_nodes:
             sn = session.query(Node).filter(Node.name == sn).one()
             nodespecs.append(
-                SlaNodeSpec(type="cdn", topoNode=sn, attributes={"bandwidth": bandwidth / (1.0 * len(start_nodes))}))
+                SlaNodeSpec(type="cdn", topoNode=sn, attributes={"bandwidth": 0}))
 
         sla = Sla(start_date=None, end_date=None,
                   bandwidth=bandwidth,

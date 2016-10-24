@@ -15,12 +15,12 @@ PRICING_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../p
 
 env = Environment(loader=PackageLoader("offline", 'optim'))
 template_optim = env.get_template('optim.zpl.tpl')
-#template_optim_slow = env.get_template('optim-slow.zpl.tpl')
+# template_optim_slow = env.get_template('optim-slow.zpl.tpl')
 template_optim_slow = env.get_template('optim.zpl.tpl')
 template_optim_debug = env.get_template('batch-debug.sh')
 
 
-def solve_inplace(allow_violations=False, preassign_vhg=False, path=".", use_heuristic=True):
+def solve_inplace(allow_violations=False, path=".", use_heuristic=True, reopt=False):
     '''
     __solve without rewriting intermedia files
     :return: a mapping
@@ -45,15 +45,17 @@ def solve_inplace(allow_violations=False, preassign_vhg=False, path=".", use_heu
 
     violations = []
     if not allow_violations:
-        if not preassign_vhg:  # run the optim without CDNs
+        if not reopt:  # run the optim without CDNs
+            #print "optimize"
             subprocess.call(
                 ["scip", "-c", "read %s" % os.path.join(RESULTS_FOLDER, path, "optim.zpl"), "-c", "optimize ", "-c",
                  "write solution %s" % (os.path.join(RESULTS_FOLDER, path, "solutions.data")), "-c", "q"],
                 stdout=open(os.devnull, 'wb')
             )
         else:  # run the optim with CDN using reoptim
+            #print "re-optimize"
             subprocess.call(["scip", "-c", "read %s" % os.path.join(RESULTS_FOLDER, path, "optim.zpl"), "-c",
-                             "read %s" % os.path.join(RESULTS_FOLDER, path, "initial.sol"), "-c",
+                             "read %s" % os.path.join(RESULTS_FOLDER, path, "solutions.data sol"), "-c",
                              "set reoptimization enable true", "-c", "optimize ", "-c",
                              "write solution %s" % (os.path.join(RESULTS_FOLDER, path, "solutions.data")), "-c", "q"],
                             stdout=open(os.devnull, 'wb')
@@ -106,7 +108,6 @@ def solve_inplace(allow_violations=False, preassign_vhg=False, path=".", use_heu
                 node_1 = session.query(Node).filter(Node.name == node_1).one()
                 node_2 = session.query(Node).filter(Node.name == node_2).one()
 
-
                 edge = session.query(Edge).filter(or_(and_(Edge.node_1 == node_1, Edge.node_2 == node_2),
                                                       and_(Edge.node_1 == node_2, Edge.node_2 == node_1))).one()
                 snode_1 = session.query(ServiceNode).filter(
@@ -136,12 +137,12 @@ def solve_inplace(allow_violations=False, preassign_vhg=False, path=".", use_heu
         return mapping
 
 
-def solve(service, substrate, path, use_heuristic=True):
+def solve(service, substrate, path, use_heuristic=True, reopt=False):
     session = Session()
     service.write(path)
     substrate.write(path)
     session.flush()
-    mapping = solve_inplace(path=path, use_heuristic=use_heuristic)
+    mapping = solve_inplace(path=path, use_heuristic=use_heuristic, reopt=reopt)
 
     service.mapping = mapping
     if mapping is not None:

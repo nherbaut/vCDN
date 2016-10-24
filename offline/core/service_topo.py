@@ -24,14 +24,16 @@ class AbstractServiceTopo(object):
             workin_nodes.append("S%d" % index)
 
         while len(workin_nodes) > 0:
-            node = workin_nodes.pop()
+            node = workin_nodes.pop(0)
             bandwidth = service.node[node].get("bandwidth", 0.0)
             children = service[node].items()
             for subnode, data in children:
-                workin_nodes.append(subnode)
+                if subnode not in workin_nodes:
+                    workin_nodes.append(subnode)
                 edge_bw = bandwidth * service.node[subnode]["ratio"]
                 service[node][subnode]["bandwidth"] = edge_bw
                 service.node[subnode]["bandwidth"] = service.node[subnode]["bandwidth"] + edge_bw
+                #print "\n\n"+"\n".join([str(n[0])+"->"+str(n[1]["bandwidth"]) for n in sorted(service.nodes(data=True),key=lambda x:x[0])])
 
 
 def get_nodes_by_type(type, graph):

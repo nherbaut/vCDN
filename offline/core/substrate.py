@@ -109,11 +109,11 @@ class Substrate(Base):
         edges = self.edges
         nodesdict = self.nodes
         with open(edges_file, 'w') as f:
-            for edge in self.edges:
+            for edge in sorted(self.edges,key=lambda x:x.node_1.name):
                 f.write("%s\n" % edge)
 
         with open(nodes_file, 'w') as f:
-            for node in self.nodes:
+            for node in sorted(self.nodes,key=lambda x:x.name):
                 f.write("%s\n" % node)
 
     @classmethod

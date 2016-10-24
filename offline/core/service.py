@@ -271,7 +271,7 @@ class Service(Base):
         if use_heuristic:
             # create temp mapping for vhg<->vcdn hints
             assert self.id is not None
-            self.__solve(path=str(self.id))
+            self.__solve(path=str(self.id), reopt=False)
             session.flush()
 
             if self.mapping is not None:
@@ -298,18 +298,20 @@ class Service(Base):
                 session.delete(self.mapping)
                 session.flush()
 
-        self.__solve(path=str(self.id), use_heuristic=use_heuristic)
+                self.__solve(path=str(self.id), use_heuristic=use_heuristic, reopt=True)
+        else:
+            self.__solve(path=str(self.id), use_heuristic=use_heuristic, reopt=False)
 
         session.flush()
 
-    def __solve(self, path=".", use_heuristic=True):
+    def __solve(self, path=".", use_heuristic=True,reopt=False):
         """
         Solve the service according to specs
         :return: nothing, service.mapping may be initialized with an actual possible mapping
         """
         session = Session()
         if len(self.slas) > 0:
-            solve(self, self.slas[0].substrate, path, use_heuristic)
+            solve(self, self.slas[0].substrate, path, use_heuristic,reopt)
             if self.mapping is not None:
                 session.add(self.mapping)
 
@@ -364,7 +366,7 @@ class Service(Base):
                 postfix = "%d_%d" % (self.id, sla.id)
                 self.merged_sla.get_cdn_nodes()
                 for node, mapping, bw in self.topo.get_CDN():
-                    f.write("%s_%s %s\n" % (node, postfix,mapping))
+                    f.write("%s_%s %s\n" % (node, postfix, mapping))
 
         # write constraints on starter placement
         with open(os.path.join(RESULTS_FOLDER, path, "starters.nodes.data"), mode) as f:

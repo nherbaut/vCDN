@@ -123,12 +123,18 @@ else:
         with open(os.path.join(args.dest_folder, "price.data"), "w") as f:
             f.write("%lf\n" % service.mapping.objective_function)
             f.write("%d,%d\n" % (service.vhg_count, service.vcdn_count))
+
+        print("Successfull mapping w price: \t %lf in \t %d embedding \t winner is %d (%d,%d)" % (
+            service.mapping.objective_function, count_embedding, service.id,service.vhg_count,service.vcdn_count))
+        #print'%s'%(" ".join([str(nm) for nm in service.mapping.dump_node_mapping()]))
+        #print'%s' % (" ".join([str(nm) for nm in service.mapping.dump_edge_mapping()]))
+
+
+
+        if args.plot:
             dest_folder = os.path.join(RESULTS_FOLDER, str(service.id))
             plotsol_from_db(service_link_linewidth=5, net=False, service=service,
                             dest_folder=dest_folder)
-
-            print("Successfull mapping w price: \t %lf in \t %d embedding \t winner is %d" % (
-                service.mapping.objective_function, count_embedding, service.id))
             subprocess.Popen(
                 ["neato", os.path.join(dest_folder, "./substrate.dot"), "-Tsvg", "-o",
                  os.path.join(args.dest_folder, "topo.svg")]).wait()
