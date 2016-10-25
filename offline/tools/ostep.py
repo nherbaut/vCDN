@@ -3,6 +3,7 @@
 import logging
 import multiprocessing
 import os
+import sys
 from multiprocessing.pool import ThreadPool
 
 from numpy.random import RandomState
@@ -42,6 +43,8 @@ def embbed_service(x):
                       vcdn_count=vcdn_count, use_heuristic=use_heuristic)
     session.add(service)
     session.flush()
+    sys.stdout.write(".")
+    sys.stdout.flush()
     return service
 
 
@@ -92,7 +95,7 @@ def optimize_sla(sla,vhg_count=None, vcdn_count=None,
 
 
     candidates_param = []
-    print("computing optimization params")
+    sys.stdout.write("Service Topology Computation\n")
     if not automatic:
         if use_heuristic:
             topoContainer = ServiceTopoHeuristic(sla=sla, vhg_count=vhg_count, vcdn_count=vcdn_count)
@@ -113,14 +116,17 @@ def optimize_sla(sla,vhg_count=None, vcdn_count=None,
 
                 for topo in topoContainer.getTopos():
                     candidates_param.append((topo, [merged_sla .id], vhg_count, vcdn_count, use_heuristic))
-                print("%d param so far "%len(candidates_param))
-    #print ("service to embed :%d" % len(candidates_param))
 
-    #pool = ThreadPool(multiprocessing.cpu_count() - 1)
-    print("%d param to optimize" % len(candidates_param))
-    pool = ThreadPool(4)
+
+    sys.stdout.write("\n\t Service to embed :%d\n" % len(candidates_param))
+
+
+    #print("%d param to optimize" % len(candidates_param))
+    pool = ThreadPool(multiprocessing.cpu_count() - 1)
+    sys.stdout.write("\n\t Embedding services:%d\n" % len(candidates_param))
     services = pool.map(embbed_service, candidates_param)
     #services = [embbed_service(param) for param in candidates_param]
+    sys.stdout.write(" done!\n")
 
     services=filter(lambda x: x.mapping is not None, services)
     services=sorted(services, key=lambda x: x.mapping.objective_function, )

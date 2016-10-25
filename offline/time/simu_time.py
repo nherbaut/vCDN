@@ -17,34 +17,11 @@ from ..time.namesgenerator import get_random_name
 from ..time.persistence import engine, drop_all, Base, Session, Tenant
 from ..time.slagen import fill_db_with_sla
 from ..tools.candelPlot import candelPlot
+from ..core.utils import printProgress
 
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
 DATA_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../data')
 rs = np.random.RandomState(5)
-
-
-# Print iterations progress
-def printProgress(iteration, total, prefix='', suffix='', decimals=1, barLength=100, file=sys.stderr):
-    """
-    Call in a loop to create terminal progress bar
-    @params:
-        iteration   - Required  : current iteration (Int)
-        total       - Required  : total iterations (Int)
-        prefix      - Optional  : prefix string (Str)
-        suffix      - Optional  : suffix string (Str)
-        decimals    - Optional  : positive number of decimals in percent complete (Int)
-        barLength   - Optional  : character length of bar (Int)
-    """
-    formatStr = "{0:." + str(decimals) + "f}"
-    percents = formatStr.format(100 * (iteration / float(total)))
-    filledLength = int(round(barLength * iteration / float(total)))
-    bar = 'X' * filledLength + '-' * (barLength - filledLength)
-    file.write('\r%s |%s| %s%s %s' % (prefix, bar, percents, '%', suffix)),
-    file.flush()
-    if iteration == total:
-        file.write('\n')
-        file.flush()
-
 
 class bcolors:
     HEADER = '\033[95m'

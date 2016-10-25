@@ -95,21 +95,24 @@ def write_sla(sla, seed=None):
         f.write("%s \n" % sla.start)
 
 
-def generate_random_slas(rs, substrate, count=1000, user_count=1000, max_start_count=0, max_end_count=0):
+def generate_random_slas(rs, substrate, count=1000, user_count=1000, max_start_count=0, max_end_count=0,tenant=None,sourcebw=0):
     session = Session()
     res = []
     for i in range(0, count):
-        bitrate = getRandomBitrate(rs)
-        # bitrate = rs.choice([   400000, 500000, 600000])
-        concurent_users = max(rs.normal(20000, 5000), 1000)
-        # concurent_users = max(rs.normal(20000, 5000), 5000)
-        time_span = max(rs.normal(24 * 60 * 60, 60 * 60), 0)
-        movie_duration = max(rs.normal(60 * 60, 10 * 60), 0)
+        if sourcebw==0:
+            bitrate = getRandomBitrate(rs)
+            # bitrate = rs.choice([   400000, 500000, 600000])
+            concurent_users = max(rs.normal(20000, 5000), 1000)
+            # concurent_users = max(rs.normal(20000, 5000), 5000)
+            time_span = max(rs.normal(24 * 60 * 60, 60 * 60), 0)
+            movie_duration = max(rs.normal(60 * 60, 10 * 60), 0)
 
-        delay = tcp_win / bitrate * 1000.0
-        bandwidth = user_count * bitrate * movie_duration / time_span
+            delay = tcp_win / bitrate * 1000.0
+            bandwidth = user_count * bitrate * movie_duration / time_span
+        else:
+            bandwidth=sourcebw
 
-        # get the nodes and their total bw
+            # get the nodes and their total bw
         nodes_by_degree = substrate.get_nodes_by_degree()
         nodes_by_bw = substrate.get_nodes_by_bw()
 

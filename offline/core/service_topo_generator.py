@@ -1,6 +1,6 @@
 import collections
 import copy
-import logging
+import sys
 
 import networkx as nx
 from networkx import shortest_path
@@ -21,11 +21,11 @@ class ServiceTopoFullGenerator(AbstractServiceTopo):
     def compute_service_topo(self, substrate, mapped_start_nodes, mapped_cdn_nodes, vhg_count, vcdn_count, delay,
                              hint_node_mappings=None):
 
+        res=[]
         vhg_count = min(len(mapped_start_nodes), vhg_count)
         vcdn_count = min(vcdn_count, vhg_count)
 
         service_graph = nx.DiGraph()
-
 
         # add nodes
         for key, slaNodeSpec in enumerate(mapped_start_nodes, start=1):
@@ -36,16 +36,18 @@ class ServiceTopoFullGenerator(AbstractServiceTopo):
             service_graph.add_node("VHG%d" % i, type="VHG", ratio=1, name="VHG%d" % i, bandwidth=0)
 
         for i in range(1, vcdn_count + 1):
-            service_graph.add_node("VCDN%d" % i, type="VCDN", cpu=105, delay=delay, ratio=0.35, name="VCDN%d" % i, bandwidth=0)
+            service_graph.add_node("VCDN%d" % i, type="VCDN", cpu=105, delay=delay, ratio=0.35, name="VCDN%d" % i,
+                                   bandwidth=0)
 
         for index, cdn in enumerate(mapped_cdn_nodes, start=1):
-            service_graph.add_node("CDN%d" % index, type="CDN", cpu=0, ratio=0.65, name="CDN%d" % index,bandwidth=0, mapping=cdn.topoNode.name)
+            service_graph.add_node("CDN%d" % index, type="CDN", cpu=0, ratio=0.65, name="CDN%d" % index, bandwidth=0,
+                                   mapping=cdn.topoNode.name)
 
         first = get_all_possible_edges([get_nodes_by_type("S", service_graph), get_nodes_by_type("VHG", service_graph),
                                         get_nodes_by_type("VCDN", service_graph)])
 
         last = get_all_possible_edges([get_nodes_by_type("VHG", service_graph),
-                                       get_nodes_by_type("CDN", service_graph)],all_rights_are_mandatory=False)
+                                       get_nodes_by_type("CDN", service_graph)], all_rights_are_mandatory=False)
 
         vmg_calc = get_vmg_calculator()
         vcdn_calc = get_vcdn_calculator()
@@ -67,18 +69,25 @@ class ServiceTopoFullGenerator(AbstractServiceTopo):
                 for edge in t:
                     serviceT.add_edge(edge[0], edge[1])
 
-
                 for node, degree in serviceT.degree().items():
                     if degree == 0:
                         serviceT.remove_node(node)
 
-                str_rep="-".join(sorted(["%s_%s" % (t[0],t[1].get("mapping","NA")) for t in serviceT.nodes(data=True)]))
-                #print str_rep
+                str_rep = "-".join(
+                    sorted(["%s_%s" % (t[0], t[1].get("mapping", "NA")) for t in serviceT.nodes(data=True)]))
+                # print str_rep
+                sys.stdout.write("o")
+                sys.stdout.flush()
                 for s in services:
-                    if "-".join(sorted(["%s_%s" % (t[0],t[1].get("mapping","NA")) for t in s.nodes(data=True)])) == str_rep:
+                    if "-".join(sorted(
+                            ["%s_%s" % (t[0], t[1].get("mapping", "NA")) for t in s.nodes(data=True)])) == str_rep:
                         if nx.is_isomorphic(s, serviceT, equal_nodes):
+                            sys.stdout.write("\b")
+                            sys.stdout.flush()
                             raise IsomorphicServiceException()
 
+                sys.stdout.write("\bO")
+                sys.stdout.flush()
 
                 services.insert(0, serviceT)
 
@@ -104,10 +113,15 @@ class ServiceTopoFullGenerator(AbstractServiceTopo):
 
                         except:
                             continue
-                #logging.debug("so far, %d services" % len(services))
-                yield TopoInstance(serviceT, delay_path, delay_route, delay)
+                # logging.debug("so far, %d services" % len(services))
+                res.append( TopoInstance(serviceT, delay_path, delay_route, delay))
             except IsomorphicServiceException as e:
                 pass
+
+        sys.stdout.write("\n%d/%d possible services for vhg=%d, vcdn=%d, s=%d, cdn=%d\n" % (
+            len(res),len(edges_sets),vhg_count, vcdn_count, len(mapped_start_nodes), len(mapped_cdn_nodes)))
+
+        return res
 
 
 def equal_nodes(node1, node2):
@@ -118,9 +132,9 @@ def equal_nodes(node1, node2):
     :return: True is nodes can be considered equal for isomorphic transformation
     '''
     if (node1["name"] == node2["name"]) or ((node1["type"] == node2["type"]) and (
-                    node1["type"] == "VHG" or node1["type"] == "VCDN")) :
-        #logging.trace("%s is equal to %s" % (node1["name"], node2["name"]))
+                    node1["type"] == "VHG" or node1["type"] == "VCDN")):
+        # logging.trace("%s is equal to %s" % (node1["name"], node2["name"]))
         return True
     else:
-        #logging.debug("%s is NOT equal to %s" % (node1["name"], node2["name"]))
+        # logging.debug("%s is NOT equal to %s" % (node1["name"], node2["name"]))
         return False

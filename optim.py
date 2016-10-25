@@ -4,6 +4,7 @@ import argparse
 import logging
 import os
 import re
+import sys
 import shutil
 import subprocess
 from argparse import RawTextHelpFormatter
@@ -13,6 +14,14 @@ from offline.core.sla import generate_random_slas
 from offline.time.plottingDB import plotsol_from_db
 from offline.tools.ostep import clean_and_create_experiment, optimize_sla, create_sla
 
+root = logging.getLogger()
+root.setLevel(logging.DEBUG)
+
+ch = logging.StreamHandler(sys.stdout)
+ch.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+ch.setFormatter(formatter)
+root.addHandler(ch)
 
 def unpack(first, *rest):
     return first, rest
@@ -65,6 +74,7 @@ parser.add_argument('--disable-heuristic', dest="disable_heuristic", action="sto
 parser.add_argument('--dest_folder', help="destination folder for restults", default=RESULTS_FOLDER)
 
 args = parser.parse_args()
+print("Welcome")
 
 if args.disable_embedding:
     rs, su = clean_and_create_experiment(args.topo, args.seed)
