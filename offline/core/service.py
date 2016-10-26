@@ -275,8 +275,8 @@ class Service(Base):
             session.flush()
 
             if self.mapping is not None:
-                self.topo = ServiceTopoHeuristic(sla=self.merged_sla, vhg_count=vhg_count, vcdn_count=vcdn_count,
-                                                 hint_node_mappings=self.mapping.node_mappings).getTopos()[0]
+                self.topo = list(ServiceTopoHeuristic(sla=self.merged_sla, vhg_count=vhg_count, vcdn_count=vcdn_count,
+                                                 hint_node_mappings=self.mapping.node_mappings).getTopos())[0]
 
                 # add the CDN Edges to the graph
                 for sla in [self.merged_sla]:

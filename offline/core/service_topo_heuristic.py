@@ -113,6 +113,4 @@ class ServiceTopoHeuristic(AbstractServiceTopo):
         for vhg in get_nodes_by_type("VCDN", service):
             service.node[vhg]["cpu"] = vcdn_calc(service.node[vhg]["bandwidth"])
 
-
-        ti = TopoInstance(service, delay_path, delay_route, delay)
-        yield ti
+        yield TopoInstance(service, delay_path, delay_route, delay)

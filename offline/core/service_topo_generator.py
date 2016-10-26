@@ -15,13 +15,15 @@ class IsomorphicServiceException(BaseException):
 
 
 class ServiceTopoFullGenerator(AbstractServiceTopo):
-    def __init__(self, sla, vhg_count, vcdn_count, hint_node_mappings=None):
+    def __init__(self, sla, vhg_count, vcdn_count, hint_node_mappings=None,disable_isomorph_check=False):
+        self.disable_isomorph_check = disable_isomorph_check
         super(ServiceTopoFullGenerator, self).__init__(sla, vhg_count, vcdn_count, hint_node_mappings)
+
 
     def compute_service_topo(self, substrate, mapped_start_nodes, mapped_cdn_nodes, vhg_count, vcdn_count, delay,
                              hint_node_mappings=None):
 
-        res=[]
+
         vhg_count = min(len(mapped_start_nodes), vhg_count)
         vcdn_count = min(vcdn_count, vhg_count)
 
@@ -76,18 +78,19 @@ class ServiceTopoFullGenerator(AbstractServiceTopo):
                 str_rep = "-".join(
                     sorted(["%s_%s" % (t[0], t[1].get("mapping", "NA")) for t in serviceT.nodes(data=True)]))
                 # print str_rep
-                sys.stdout.write("o")
-                sys.stdout.flush()
-                for s in services:
-                    if "-".join(sorted(
-                            ["%s_%s" % (t[0], t[1].get("mapping", "NA")) for t in s.nodes(data=True)])) == str_rep:
-                        if nx.is_isomorphic(s, serviceT, equal_nodes):
-                            sys.stdout.write("\b")
-                            sys.stdout.flush()
-                            raise IsomorphicServiceException()
+                #sys.stdout.write("o")
+                #sys.stdout.flush()
+                if not self.disable_isomorph_check:
+                    for s in services:
+                        if "-".join(sorted(
+                                ["%s_%s" % (t[0], t[1].get("mapping", "NA")) for t in s.nodes(data=True)])) == str_rep:
+                            if nx.is_isomorphic(s, serviceT, equal_nodes):
+                                #sys.stdout.write("\b")
+                                #sys.stdout.flush()
+                                raise IsomorphicServiceException()
 
-                sys.stdout.write("\bO")
-                sys.stdout.flush()
+                #sys.stdout.write("\bO")
+                #sys.stdout.flush()
 
                 services.insert(0, serviceT)
 
@@ -114,14 +117,13 @@ class ServiceTopoFullGenerator(AbstractServiceTopo):
                         except:
                             continue
                 # logging.debug("so far, %d services" % len(services))
-                res.append( TopoInstance(serviceT, delay_path, delay_route, delay))
+                yield TopoInstance(serviceT, delay_path, delay_route, delay)
             except IsomorphicServiceException as e:
                 pass
 
-        sys.stdout.write("\n%d/%d possible services for vhg=%d, vcdn=%d, s=%d, cdn=%d\n" % (
-            len(res),len(edges_sets),vhg_count, vcdn_count, len(mapped_start_nodes), len(mapped_cdn_nodes)))
+        #sys.stdout.write("\n%d/%d possible services for vhg=%d, vcdn=%d, s=%d, cdn=%d\n" % (            len(res),len(edges_sets),vhg_count, vcdn_count, len(mapped_start_nodes), len(mapped_cdn_nodes)))
 
-        return res
+
 
 
 def equal_nodes(node1, node2):

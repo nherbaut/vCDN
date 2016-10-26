@@ -18,6 +18,7 @@ from ..time.persistence import Session, Base, engine, drop_all, Tenant, Node
 GEANT_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../data/Geant2012.graphml')
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
 
+candidate_count=0
 
 def clean_and_create_experiment(topo, seed):
     '''
@@ -38,21 +39,23 @@ def clean_and_create_experiment(topo, seed):
 
 def embbed_service(x):
     session = Session()
+
+
     topology, slasIDS, vhg_count, vcdn_count, use_heuristic = x
     service = Service(topo_instance=topology, slasIDS=slasIDS, vhg_count=vhg_count,
                       vcdn_count=vcdn_count, use_heuristic=use_heuristic)
     session.add(service)
     session.flush()
-    sys.stdout.write(".")
-    sys.stdout.flush()
+    global candidate_count
+    candidate_count+=1
+
     return service
 
 
 def create_sla(starts, cdns, sourcebw, topo=None, su=None, rs=None, seed=0):
-
     if su is None:
         rs, su = clean_and_create_experiment(topo, seed)
-        
+
     nodes_names = [n.name for n in su.nodes]
     session = Session()
 
@@ -90,53 +93,57 @@ def create_sla(starts, cdns, sourcebw, topo=None, su=None, rs=None, seed=0):
 
     return sla
 
-def optimize_sla(sla,vhg_count=None, vcdn_count=None,
-                                             automatic=True, use_heuristic=True):
 
-
-    candidates_param = []
-    sys.stdout.write("Service Topology Computation\n")
+def generate_candidates_param(sla, vhg_count=None, vcdn_count=None,
+                              automatic=True, use_heuristic=True, disable_isomorph_check=False):
     if not automatic:
         if use_heuristic:
             topoContainer = ServiceTopoHeuristic(sla=sla, vhg_count=vhg_count, vcdn_count=vcdn_count)
         else:
-            topoContainer = ServiceTopoFullGenerator(sla=sla, vhg_count=vhg_count, vcdn_count=vcdn_count)
+            topoContainer = ServiceTopoFullGenerator(sla=sla, vhg_count=vhg_count, vcdn_count=vcdn_count,
+                                                     disable_isomorph_check=disable_isomorph_check)
 
         for topo in topoContainer.getTopos():
-            candidates_param.append((topo, [sla.id], vhg_count, vcdn_count, use_heuristic))
+            yield (topo, [sla.id], vhg_count, vcdn_count, use_heuristic)
     else:
         merged_sla = Service.get_merged_sla([sla])
 
         for vhg_count in range(1, len(merged_sla.get_start_nodes()) + 1):
             for vcdn_count in range(1, vhg_count + 1):
                 if use_heuristic:
-                    topoContainer = ServiceTopoHeuristic(sla=merged_sla , vhg_count=vhg_count, vcdn_count=vcdn_count)
+                    topoContainer = ServiceTopoHeuristic(sla=merged_sla, vhg_count=vhg_count, vcdn_count=vcdn_count)
                 else:
-                    topoContainer = ServiceTopoFullGenerator(sla=merged_sla , vhg_count=vhg_count, vcdn_count=vcdn_count)
+                    topoContainer = ServiceTopoFullGenerator(sla=merged_sla, vhg_count=vhg_count, vcdn_count=vcdn_count,
+                                                             disable_isomorph_check=disable_isomorph_check)
 
                 for topo in topoContainer.getTopos():
-                    candidates_param.append((topo, [merged_sla .id], vhg_count, vcdn_count, use_heuristic))
+                    yield (topo, [merged_sla.id], vhg_count, vcdn_count, use_heuristic)
 
 
-    sys.stdout.write("\n\t Service to embed :%d\n" % len(candidates_param))
+def optimize_sla(sla, vhg_count=None, vcdn_count=None,
+                 automatic=True, use_heuristic=True):
+    candidates_param = generate_candidates_param(sla, vhg_count=None, vcdn_count=None,
+                                                 automatic=True, use_heuristic=True)
 
+    # sys.stdout.write("\n\t Service to embed :%d\n" % len(candidates_param))
 
-    #print("%d param to optimize" % len(candidates_param))
+    # print("%d param to optimize" % len(candidates_param))
     pool = ThreadPool(multiprocessing.cpu_count() - 1)
-    sys.stdout.write("\n\t Embedding services:%d\n" % len(candidates_param))
+    # sys.stdout.write("\n\t Embedding services:%d\n" % len(candidates_param))
+
     services = pool.map(embbed_service, candidates_param)
     #services = [embbed_service(param) for param in candidates_param]
     sys.stdout.write(" done!\n")
 
-    services=filter(lambda x: x.mapping is not None, services)
-    services=sorted(services, key=lambda x: x.mapping.objective_function, )
-
+    services = filter(lambda x: x.mapping is not None, services)
+    services = sorted(services, key=lambda x: x.mapping.objective_function, )
 
     for service in services:
-        logging.debug("%d %lf %d %d" % (service.id,service.mapping.objective_function,service.vhg_count,service.vcdn_count))
+        logging.debug(
+            "%d %lf %d %d" % (service.id, service.mapping.objective_function, service.vhg_count, service.vcdn_count))
 
     if len(services) > 0:
         winner = services[0]
-        return winner, len(candidates_param)
+        return winner, candidate_count
     else:
         raise ValueError("failed to compute valide mapping")
