@@ -1,21 +1,23 @@
 import copy
 
-import networkx as nx
-
 
 class AbstractServiceTopo(object):
     def __init__(self, sla, vhg_count, vcdn_count, hint_node_mappings=None):
-        mapped_start_nodes = sla.get_start_nodes()
-        mapped_cdn_nodes = sla.get_cdn_nodes()
+        self.mapped_start_nodes = sla.get_start_nodes()
+        self.mapped_cdn_nodes = sla.get_cdn_nodes()
         self.sla_id = sla.id
-        self.topoinfos = self.compute_service_topo(
-            mapped_start_nodes=mapped_start_nodes, mapped_cdn_nodes=mapped_cdn_nodes, vhg_count=vhg_count,
-            vcdn_count=vcdn_count, delay=sla.delay,
-            hint_node_mappings=hint_node_mappings, substrate=sla.substrate, )
-
+        self.sla = sla
+        self.vhg_count = vhg_count
+        self.vcdn_count = vcdn_count
+        self.hint_node_mappings=hint_node_mappings
 
     def getTopos(self):
-        return self.topoinfos
+        res= list(self.compute_service_topo(
+            mapped_start_nodes=self.mapped_start_nodes, mapped_cdn_nodes=self.mapped_cdn_nodes,
+            vhg_count=self.vhg_count,
+            vcdn_count=self.vcdn_count, delay=self.sla.delay,
+            hint_node_mappings=self.hint_node_mappings, substrate=self.sla.substrate, ))
+        return res
 
     def propagate_bandwidth(self, service, mapped_start_nodes):
         # assign bandwidth
@@ -34,7 +36,7 @@ class AbstractServiceTopo(object):
                 edge_bw = bandwidth * service.node[subnode]["ratio"]
                 service[node][subnode]["bandwidth"] = edge_bw
                 service.node[subnode]["bandwidth"] = service.node[subnode]["bandwidth"] + edge_bw
-                #print "\n\n"+"\n".join([str(n[0])+"->"+str(n[1]["bandwidth"]) for n in sorted(service.nodes(data=True),key=lambda x:x[0])])
+                # print "\n\n"+"\n".join([str(n[0])+"->"+str(n[1]["bandwidth"]) for n in sorted(service.nodes(data=True),key=lambda x:x[0])])
 
 
 def get_nodes_by_type(type, graph):
@@ -90,6 +92,3 @@ def get_all_possible_edges(thelist, all_rights_are_mandatory=True):
         else:
             break
     return res
-
-
-

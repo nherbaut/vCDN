@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 
+import itertools
 import logging
 import multiprocessing
 import os
 import sys
+import time
 from multiprocessing.pool import ThreadPool
 
 from numpy.random import RandomState
@@ -18,7 +20,8 @@ from ..time.persistence import Session, Base, engine, drop_all, Tenant, Node
 GEANT_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../data/Geant2012.graphml')
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
 
-candidate_count=0
+candidate_count = 0
+
 
 def clean_and_create_experiment(topo, seed):
     '''
@@ -39,7 +42,7 @@ def clean_and_create_experiment(topo, seed):
 
 def embbed_service(x):
     session = Session()
-
+    # print("%d so far " % candidate_count)
 
     topology, slasIDS, vhg_count, vcdn_count, use_heuristic = x
     service = Service(topo_instance=topology, slasIDS=slasIDS, vhg_count=vhg_count,
@@ -47,7 +50,7 @@ def embbed_service(x):
     session.add(service)
     session.flush()
     global candidate_count
-    candidate_count+=1
+    candidate_count += 1
 
     return service
 
@@ -96,6 +99,9 @@ def create_sla(starts, cdns, sourcebw, topo=None, su=None, rs=None, seed=0):
 
 def generate_candidates_param(sla, vhg_count=None, vcdn_count=None,
                               automatic=True, use_heuristic=True, disable_isomorph_check=False):
+
+
+    topoContainers = []
     if not automatic:
         if use_heuristic:
             topoContainer = ServiceTopoHeuristic(sla=sla, vhg_count=vhg_count, vcdn_count=vcdn_count)
@@ -103,8 +109,8 @@ def generate_candidates_param(sla, vhg_count=None, vcdn_count=None,
             topoContainer = ServiceTopoFullGenerator(sla=sla, vhg_count=vhg_count, vcdn_count=vcdn_count,
                                                      disable_isomorph_check=disable_isomorph_check)
 
-        for topo in topoContainer.getTopos():
-            yield (topo, [sla.id], vhg_count, vcdn_count, use_heuristic)
+        topoContainers.append(topoContainer)
+
     else:
         merged_sla = Service.get_merged_sla([sla])
 
@@ -115,15 +121,18 @@ def generate_candidates_param(sla, vhg_count=None, vcdn_count=None,
                 else:
                     topoContainer = ServiceTopoFullGenerator(sla=merged_sla, vhg_count=vhg_count, vcdn_count=vcdn_count,
                                                              disable_isomorph_check=disable_isomorph_check)
+                topoContainers.append(topoContainer)
 
-                for topo in topoContainer.getTopos():
-                    yield (topo, [merged_sla.id], vhg_count, vcdn_count, use_heuristic)
+
+    res = [ x.getTopos() for x in topoContainers]
+
+    return [item for sublist in res for item in sublist]
 
 
 def optimize_sla(sla, vhg_count=None, vcdn_count=None,
                  automatic=True, use_heuristic=True):
-    candidates_param = generate_candidates_param(sla, vhg_count=None, vcdn_count=None,
-                                                 automatic=True, use_heuristic=True)
+    candidates_param = generate_candidates_param(sla, vhg_count=vhg_count, vcdn_count=vcdn_count,
+                                                 automatic=automatic, use_heuristic=use_heuristic)
 
     # sys.stdout.write("\n\t Service to embed :%d\n" % len(candidates_param))
 
@@ -131,8 +140,11 @@ def optimize_sla(sla, vhg_count=None, vcdn_count=None,
     pool = ThreadPool(multiprocessing.cpu_count() - 1)
     # sys.stdout.write("\n\t Embedding services:%d\n" % len(candidates_param))
 
+
     services = pool.map(embbed_service, candidates_param)
-    #services = [embbed_service(param) for param in candidates_param]
+
+
+    # services = [embbed_service(param) for param in candidates_param]
     sys.stdout.write(" done!\n")
 
     services = filter(lambda x: x.mapping is not None, services)
