@@ -102,4 +102,7 @@ for start in range(1, args.max_start + 1):
 
         res[start - 1, cdn - 1] += len(candidates)
 
+
+np.savetxt( os.path.join(args.dest_folder,"res.txt"),res)
 print res
+print np.sum(res)

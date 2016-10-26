@@ -42,7 +42,7 @@ def clean_and_create_experiment(topo, seed):
 
 def embbed_service(x):
     session = Session()
-    # print("%d so far " % candidate_count)
+    #print("%d so far " % candidate_count)
 
     topology, slasIDS, vhg_count, vcdn_count, use_heuristic = x
     service = Service(topo_instance=topology, slasIDS=slasIDS, vhg_count=vhg_count,
@@ -99,9 +99,9 @@ def create_sla(starts, cdns, sourcebw, topo=None, su=None, rs=None, seed=0):
 
 def generate_candidates_param(sla, vhg_count=None, vcdn_count=None,
                               automatic=True, use_heuristic=True, disable_isomorph_check=False):
+    pool = ThreadPool(multiprocessing.cpu_count() - 1)
 
-
-    topoContainers = []
+    topoContainers=[]
     if not automatic:
         if use_heuristic:
             topoContainer = ServiceTopoHeuristic(sla=sla, vhg_count=vhg_count, vcdn_count=vcdn_count)
@@ -109,8 +109,8 @@ def generate_candidates_param(sla, vhg_count=None, vcdn_count=None,
             topoContainer = ServiceTopoFullGenerator(sla=sla, vhg_count=vhg_count, vcdn_count=vcdn_count,
                                                      disable_isomorph_check=disable_isomorph_check)
 
-        topoContainers.append(topoContainer)
-
+        for topo in topoContainer.getTopos():
+            yield (topo, [sla.id], vhg_count, vcdn_count, use_heuristic)
     else:
         merged_sla = Service.get_merged_sla([sla])
 
@@ -121,12 +121,9 @@ def generate_candidates_param(sla, vhg_count=None, vcdn_count=None,
                 else:
                     topoContainer = ServiceTopoFullGenerator(sla=merged_sla, vhg_count=vhg_count, vcdn_count=vcdn_count,
                                                              disable_isomorph_check=disable_isomorph_check)
-                topoContainers.append(topoContainer)
 
-
-    res = [ x.getTopos() for x in topoContainers]
-
-    return [item for sublist in res for item in sublist]
+                for topo in topoContainer.getTopos():
+                    yield (topo, [merged_sla.id], vhg_count, vcdn_count, use_heuristic)
 
 
 def optimize_sla(sla, vhg_count=None, vcdn_count=None,
@@ -139,10 +136,14 @@ def optimize_sla(sla, vhg_count=None, vcdn_count=None,
     # print("%d param to optimize" % len(candidates_param))
     pool = ThreadPool(multiprocessing.cpu_count() - 1)
     # sys.stdout.write("\n\t Embedding services:%d\n" % len(candidates_param))
-
-
-    services = pool.map(embbed_service, candidates_param)
-
+    services = []
+    while True:
+        services_slice = pool.map(embbed_service, itertools.islice(candidates_param, 10))
+        if services_slice:
+            services.extend(services_slice)
+            time.sleep(0.0005)
+        else:
+            break
 
     # services = [embbed_service(param) for param in candidates_param]
     sys.stdout.write(" done!\n")
