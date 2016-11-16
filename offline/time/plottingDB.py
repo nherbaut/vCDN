@@ -184,15 +184,15 @@ def plotsol_from_db(**kwargs):
                 color = "red1"
             else:
                 color = "black"
-            f.write("%s [shape=box,style=filled,fillcolor=white,color=%s,width=%f,fontsize=15];\n" % (
+            f.write("\"%s\" [shape=box,style=filled,fillcolor=white,color=%s,width=%f,fontsize=15];\n" % (
                 node[0], color, 1,))
 
         for edge in edges:
-            f.write("%s--%s [penwidth=\"%d\",fontsize=15,len=2,label=\" \"];\n " % (edge[0], edge[1], 3))
+            f.write("\"%s\"--\"%s\" [penwidth=\"%d\",fontsize=15,len=2,label=\" \" id=\"%s--%s\"];\n " % (edge[0], edge[1], 3,edge[0], edge[1]))
 
         for node in nodesSol:
             if "S0" not in node[1]:
-                f.write("%s--%s[color=blue,len=1.5,label=\" \"];\n" % node)
+                f.write("\"%s\"--\"%s\" [color=blue,len=1.5,label=\" \"  ];\n" % node)
                 name = node[1]
 
                 if "VHG" in node[1]:
@@ -209,13 +209,13 @@ def plotsol_from_db(**kwargs):
                     color = "red"
                     shape = "doublecircle"
 
-                f.write("%s[shape=%s,fillcolor=%s,style=filled,fontsize=12];\n" % (name, shape, color))
+                f.write("\"%s\" [shape=%s,fillcolor=%s,style=filled,fontsize=12];\n" % (name, shape, color))
         f.write("}")
 
         f.write("\nsubgraph{\n edge[color=chartreuse,weight=0];\n")
         for edge in edgesSol:
             if "S0" not in edge[2]:
-                f.write("%s--%s [ style=dashed,label=\"%s&#8594;%s\",fontcolor=blue3 ,fontsize=12,penwidth=%d];\n " % (
+                f.write("\"%s\"--\"%s\" [ style=dashed,label=\"%s&#8594;%s\",fontcolor=blue3 ,fontsize=12,penwidth=%d];\n " % (
                     edge + (kwargs["service_link_linewidth"],)))
 
         f.write("}\n\n")

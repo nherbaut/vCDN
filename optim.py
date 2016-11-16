@@ -69,6 +69,7 @@ if args.disable_embedding:
     subprocess.Popen(
         ["neato", os.path.join(RESULTS_FOLDER, "./substrate.dot"), "-Tsvg", "-o",
          os.path.join(args.dest_folder, "topo.svg")]).wait()
+    shutil.copy(os.path.join(RESULTS_FOLDER, "./substrate.dot"), os.path.join(args.dest_folder, "substrate.dot"))
 
 
 else:
@@ -99,5 +100,6 @@ else:
             subprocess.Popen(
         ["neato", os.path.join(dest_folder, "./substrate.dot"), "-Tsvg", "-o",
          os.path.join(args.dest_folder, "topo.svg")]).wait()
+            shutil.copy(os.path.join(dest_folder, "./substrate.dot"), os.path.join(args.dest_folder, "substrate.dot"))
     else:
         print("failed to compute mapping")
