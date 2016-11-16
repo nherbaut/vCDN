@@ -184,11 +184,11 @@ def plotsol_from_db(**kwargs):
                 color = "red1"
             else:
                 color = "black"
-            f.write("\"%s\" [shape=box,style=filled,fillcolor=white,color=%s,width=%f,fontsize=15];\n" % (
-                node[0], color, 1,))
+            f.write("\"%s\" [shape=box,style=filled,fillcolor=white,color=%s,width=%f,fontsize=15,cpu=%s];\n" % (
+                node[0], color, 1,node[1]))
 
         for edge in edges:
-            f.write("\"%s\"--\"%s\" [penwidth=\"%d\",fontsize=15,len=2,label=\" \" id=\"%s--%s\"];\n " % (edge[0], edge[1], 3,edge[0], edge[1]))
+            f.write("\"%s\"--\"%s\" [penwidth=\"%d\",fontsize=15,len=2,label=\" \" id=\"%s--%s\",delay=%s,bw=%s];\n " % (edge[0], edge[1], 3,edge[0], edge[1],edge[3],edge[2]))
 
         for node in nodesSol:
             if "S0" not in node[1]:
