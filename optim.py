@@ -4,6 +4,8 @@ import argparse
 import logging
 import os
 import subprocess
+import sys
+import shutil
 from argparse import RawTextHelpFormatter
 
 from offline.time.plottingDB import plotsol_from_db
@@ -17,6 +19,7 @@ ch.setLevel(logging.DEBUG)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 ch.setFormatter(formatter)
 root.addHandler(ch)
+
 
 def unpack(first, *rest):
     return first, rest
@@ -88,27 +91,28 @@ else:
     elif args.auto is True and (args.vhg is not None or args.vcdn is not None):
         parser.error("can't specify vhg count of vcdn count in --auto mode")
 
-    sla = create_sla(args.start, args.cdn, args.sourcebw, args.topo, 0)
-    service, count_embedding = optimize_sla(sla,vhg_count=args.vhg,
+    sla = create_sla(args.start, args.cdn, args.sourcebw, args.topo, su=None,  seed=0)
+    service, count_embedding = optimize_sla(sla, vhg_count=args.vhg,
                                             vcdn_count=args.vcdn,
                                             automatic=args.auto, use_heuristic=not args.disable_heuristic)
 
     if os.path.exists("winner"):
         shutil.rmtree("winner")
-    shutil.copytree(os.path.join(RESULTS_FOLDER,str(service.id)),"winner")
+    shutil.copytree(os.path.join(RESULTS_FOLDER, str(service.id)), "winner")
 
     if service.mapping is not None:
         with     open(os.path.join(args.dest_folder, "price.data"), "w") as f:
             f.write("%lf\n" % service.mapping.objective_function)
-            f.write("%d,%d\n" % (service.vhg_count,service.vcdn_count))
+            f.write("%d,%d\n" % (service.vhg_count, service.vcdn_count))
             dest_folder = os.path.join(RESULTS_FOLDER, str(service.id))
             plotsol_from_db(service_link_linewidth=5, net=False, service=service,
-            dest_folder = dest_folder)
+                            dest_folder=dest_folder)
 
-            print("Successfull mapping w price: \t %lf in \t %d embedding \t winner is %d" % (service.mapping.objective_function, count_embedding,service.id))
+            print("Successfull mapping w price: \t %lf in \t %d embedding \t winner is %d" % (
+            service.mapping.objective_function, count_embedding, service.id))
             subprocess.Popen(
-        ["neato", os.path.join(dest_folder, "./substrate.dot"), "-Tsvg", "-o",
-         os.path.join(args.dest_folder, "topo.svg")]).wait()
+                ["neato", os.path.join(dest_folder, "./substrate.dot"), "-Tsvg", "-o",
+                 os.path.join(args.dest_folder, "topo.svg")]).wait()
             shutil.copy(os.path.join(dest_folder, "./substrate.dot"), os.path.join(args.dest_folder, "substrate.dot"))
     else:
         print("failed to compute mapping")

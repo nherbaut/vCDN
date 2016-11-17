@@ -7,6 +7,11 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.orm import scoped_session
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.schema import Table
+import shutil
+import os
+import sys
+
+
 
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
 
@@ -118,7 +123,10 @@ class EdgeMapping(Base):
                    start_service_node_id=edgeMapping.start_service_node_id,
                    end_service_node_id=edgeMapping.end_service_node_id)
 
-os.makedirs(RESULTS_FOLDER)
+if not os.path.exists(RESULTS_FOLDER):
+    os.makedirs(RESULTS_FOLDER)
+
+
 #engine = create_engine('sqlite:///%s/res.db' % RESULTS_FOLDER, echo=True)
 engine = create_engine('sqlite:///%s/res.db' % RESULTS_FOLDER)
 # engine = create_engine('mysql+mysqldb://root:root@127.0.0.1/paper4', )
