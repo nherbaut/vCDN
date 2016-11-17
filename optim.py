@@ -3,14 +3,9 @@
 import argparse
 import logging
 import os
-import re
-import sys
-import shutil
 import subprocess
 from argparse import RawTextHelpFormatter
 
-import offline.core.sla
-from offline.core.sla import generate_random_slas
 from offline.time.plottingDB import plotsol_from_db
 from offline.tools.ostep import clean_and_create_experiment, optimize_sla, create_sla
 
@@ -74,16 +69,16 @@ parser.add_argument('--disable-heuristic', dest="disable_heuristic", action="sto
 parser.add_argument('--dest_folder', help="destination folder for restults", default=RESULTS_FOLDER)
 
 args = parser.parse_args()
-print("Welcome")
 
 if args.disable_embedding:
-    rs, su = clean_and_create_experiment(args.topo, args.seed)
+    rs, su = clean_and_create_experiment(args.topo, 0)
 
     su.write(RESULTS_FOLDER)
     plotsol_from_db(service_link_linewidth=5, net=True, substrate=su)
     subprocess.Popen(
         ["neato", os.path.join(RESULTS_FOLDER, "./substrate.dot"), "-Tsvg", "-o",
          os.path.join(args.dest_folder, "topo.svg")]).wait()
+    shutil.copy(os.path.join(RESULTS_FOLDER, "./substrate.dot"), os.path.join(args.dest_folder, "substrate.dot"))
 
 
 else:
@@ -93,60 +88,27 @@ else:
     elif args.auto is True and (args.vhg is not None or args.vcdn is not None):
         parser.error("can't specify vhg count of vcdn count in --auto mode")
 
-    rs, su = clean_and_create_experiment(args.topo, args.seed)
-
-    start_nodes = None
-    if len(args.start) == 1:
-        match = re.findall("RAND\(([0-9]+),([0-9]+)\)", args.start[0])
-        if len(match) == 1:
-            nodes_by_bw = su.get_nodes_by_bw()
-            start_nodes = offline.core.sla.weighted_shuffle(nodes_by_bw.keys(), nodes_by_bw.values(), rs)[
-                          -rs.randint(int(match[0][0]), int(match[0][1]) + 1):]
-            print "random start nodes: %s"% " ".join(start_nodes)
-
-    cdn_nodes = None
-    if len(args.cdn) == 1:
-        match = re.findall("RAND\(([0-9]+),([0-9]+)\)", args.cdn[0])
-        if len(match) == 1:
-            nodes_by_degree = su.get_nodes_by_degree()
-
-            cdn_nodes = offline.core.sla.weighted_shuffle(nodes_by_degree.keys(), nodes_by_degree.values(), rs)[
-                        :rs.randint(int(match[0][0]), int(match[0][1]) + 1)]
-            print "random cdn nodes: %s" % " ".join(cdn_nodes )
-
-    if start_nodes is None:
-        start_nodes = args.start
-
-    if cdn_nodes is None:
-        cdn_nodes = args.cdn
-
-    sla=create_sla(start_nodes, cdn_nodes, args.sourcebw, su=su, rs=rs)
-    service, count_embedding = optimize_sla(sla, vhg_count=args.vhg,
+    sla = create_sla(args.start, args.cdn, args.sourcebw, args.topo, 0)
+    service, count_embedding = optimize_sla(sla,vhg_count=args.vhg,
                                             vcdn_count=args.vcdn,
                                             automatic=args.auto, use_heuristic=not args.disable_heuristic)
 
     if os.path.exists("winner"):
         shutil.rmtree("winner")
-    shutil.copytree(os.path.join(RESULTS_FOLDER, str(service.id)), "winner")
+    shutil.copytree(os.path.join(RESULTS_FOLDER,str(service.id)),"winner")
 
     if service.mapping is not None:
-        with open(os.path.join(args.dest_folder, "price.data"), "w") as f:
+        with     open(os.path.join(args.dest_folder, "price.data"), "w") as f:
             f.write("%lf\n" % service.mapping.objective_function)
-            f.write("%d,%d\n" % (service.vhg_count, service.vcdn_count))
-
-        print("Successfull mapping w price: \t %lf in \t %d embedding \t winner is %d (%d,%d)" % (
-            service.mapping.objective_function, count_embedding, service.id,service.vhg_count,service.vcdn_count))
-        #print'%s'%(" ".join([str(nm) for nm in service.mapping.dump_node_mapping()]))
-        #print'%s' % (" ".join([str(nm) for nm in service.mapping.dump_edge_mapping()]))
-
-
-
-        if args.plot:
+            f.write("%d,%d\n" % (service.vhg_count,service.vcdn_count))
             dest_folder = os.path.join(RESULTS_FOLDER, str(service.id))
             plotsol_from_db(service_link_linewidth=5, net=False, service=service,
-                            dest_folder=dest_folder)
+            dest_folder = dest_folder)
+
+            print("Successfull mapping w price: \t %lf in \t %d embedding \t winner is %d" % (service.mapping.objective_function, count_embedding,service.id))
             subprocess.Popen(
-                ["neato", os.path.join(dest_folder, "./substrate.dot"), "-Tsvg", "-o",
-                 os.path.join(args.dest_folder, "topo.svg")]).wait()
+        ["neato", os.path.join(dest_folder, "./substrate.dot"), "-Tsvg", "-o",
+         os.path.join(args.dest_folder, "topo.svg")]).wait()
+            shutil.copy(os.path.join(dest_folder, "./substrate.dot"), os.path.join(args.dest_folder, "substrate.dot"))
     else:
         print("failed to compute mapping")
