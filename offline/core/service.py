@@ -237,7 +237,7 @@ class Service(Base):
         return best_service
 
     def __init__(self, topo_instance, slasIDS, serviceSpecFactory=ServiceSpecFactory, vhg_count=1, vcdn_count=1,
-                 use_heuristic=True):
+                 use_heuristic=True,solve=True):
         session = Session()
 
         self.slas = session.query(Sla).filter(Sla.id.in_(slasIDS)).all()
@@ -297,8 +297,9 @@ class Service(Base):
 
                 session.delete(self.mapping)
                 session.flush()
+                if solve: #to perf measurements purposes, we should alway solve...
+                    self.__solve(path=str(self.id), use_heuristic=use_heuristic, reopt=True)
 
-                self.__solve(path=str(self.id), use_heuristic=use_heuristic, reopt=True)
         else:
             self.__solve(path=str(self.id), use_heuristic=use_heuristic, reopt=False)
 

@@ -41,16 +41,21 @@ class ServiceTopoHeuristic(AbstractServiceTopo):
             service.add_node("S%d" % key, cpu=0, type="S", mapping=slaNodeSpec.topoNode.name, bandwidth=0)
 
         # create s<-> vhg edges
-        for toponode_name, vmg_id in get_node_clusters(map(lambda x: x.topoNode.name, mapped_start_nodes), vhg_count,
-                                                       substrate=substrate).items():
+        score, cluster = get_node_clusters(map(lambda x: x.topoNode.name, mapped_start_nodes), vhg_count,
+                                                       substrate=substrate)
+        for toponode_name, vmg_id in cluster.items():
             s = [n[0] for n in service.nodes(data=True) if n[1].get("mapping", None) == toponode_name][0]
             service.add_edge(s, "VHG%d" % vmg_id, delay=sys.maxint, bandwidth=0)
 
         # create vhg <-> vcdn edges
         # here, each S "votes" for a vCDN and tell its VHG
 
-        for toponode_name, vCDN_id in get_node_clusters(map(lambda x: x.topoNode.name, mapped_start_nodes), vcdn_count,
-                                                        substrate=substrate).items():
+        for i in range(1,5):
+          score, _ = get_node_clusters(map(lambda x: x.topoNode.name, mapped_start_nodes), i, substrate=substrate)
+          #print score
+
+        score, cluster = get_node_clusters(map(lambda x: x.topoNode.name, mapped_start_nodes), vcdn_count,substrate=substrate)
+        for toponode_name, vCDN_id in cluster.items():
             # get the S from the toponode_id
             s = [n[0] for n in service.nodes(data=True) if n[1].get("mapping", None) == toponode_name][0]
 

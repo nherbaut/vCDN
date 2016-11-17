@@ -95,7 +95,8 @@ def write_sla(sla, seed=None):
         f.write("%s \n" % sla.start)
 
 
-def generate_random_slas(rs, substrate, count=1000, user_count=1000, max_start_count=0, max_end_count=0,tenant=None,sourcebw=0):
+def generate_random_slas(rs, substrate, count=1000, user_count=1000, max_start_count=1, max_end_count=1,tenant=None,sourcebw=0,min_start_count=1,
+                            min_end_count=1):
     session = Session()
     res = []
     for i in range(0, count):
@@ -117,9 +118,9 @@ def generate_random_slas(rs, substrate, count=1000, user_count=1000, max_start_c
         nodes_by_bw = substrate.get_nodes_by_bw()
 
         cdn_nodes = weighted_shuffle(nodes_by_degree.keys(), nodes_by_degree.values(), rs)[
-                    :rs.randint(1, max_end_count + 1)]
+                    :rs.randint(min_end_count, max_end_count + 1)]
         start_nodes = weighted_shuffle(nodes_by_bw.keys(), nodes_by_bw.values(), rs)[
-                      -rs.randint(1, max_start_count + 1):]
+                      -rs.randint(min_start_count, max_start_count + 1):]
         nodespecs = []
         for sn in start_nodes:
             sn = session.query(Node).filter(Node.name == sn).one()

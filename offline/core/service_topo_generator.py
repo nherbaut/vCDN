@@ -24,6 +24,9 @@ class ServiceTopoFullGenerator(AbstractServiceTopo):
                              hint_node_mappings=None):
 
 
+        res=[]
+
+
         vhg_count = min(len(mapped_start_nodes), vhg_count)
         vcdn_count = min(vcdn_count, vhg_count)
 
@@ -117,11 +120,16 @@ class ServiceTopoFullGenerator(AbstractServiceTopo):
                         except:
                             continue
                 # logging.debug("so far, %d services" % len(services))
-                yield TopoInstance(serviceT, delay_path, delay_route, delay)
+                res.append(TopoInstance(serviceT, delay_path, delay_route, delay))
+
+
             except IsomorphicServiceException as e:
                 pass
 
         #sys.stdout.write("\n%d/%d possible services for vhg=%d, vcdn=%d, s=%d, cdn=%d\n" % (            len(res),len(edges_sets),vhg_count, vcdn_count, len(mapped_start_nodes), len(mapped_cdn_nodes)))
+        #for line in sorted([",".join(sorted([n for n in serviceT.servicetopo.nodes()])) + "\t" + ",".join(sorted(["%s-%s" % (e[0], e[1]) for e in serviceT.servicetopo.edges()])) for serviceT in res]):
+        #    print line
+        return res
 
 
 
@@ -133,10 +141,11 @@ def equal_nodes(node1, node2):
     :param node2: a node from a vcdn service graph
     :return: True is nodes can be considered equal for isomorphic transformation
     '''
+
     if (node1["name"] == node2["name"]) or ((node1["type"] == node2["type"]) and (
                     node1["type"] == "VHG" or node1["type"] == "VCDN")):
-        # logging.trace("%s is equal to %s" % (node1["name"], node2["name"]))
+        #print("%s is equal to %s" % (node1["name"], node2["name"]))
         return True
     else:
-        # logging.debug("%s is NOT equal to %s" % (node1["name"], node2["name"]))
+        #print("%s is NOT equal to %s" % (node1["name"], node2["name"]))
         return False

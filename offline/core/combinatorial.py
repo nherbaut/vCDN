@@ -236,4 +236,4 @@ def get_node_clusters(nodes, class_count, substrate):
 
             i += 1
 
-    return res
+    return min_score , res

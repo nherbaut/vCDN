@@ -2,14 +2,16 @@
 
 import argparse
 import logging
+import multiprocessing
 import os
 import sys
 from argparse import RawTextHelpFormatter
+from multiprocessing.pool import ThreadPool
 
 import numpy as np
 
 import offline.core.sla
-from offline.tools.ostep import clean_and_create_experiment, create_sla, generate_candidates_param
+from offline.tools.ostep import clean_and_create_experiment, create_sla, generate_candidates_param, embbed_service
 
 root = logging.getLogger()
 root.setLevel(logging.DEBUG)
@@ -73,7 +75,7 @@ parser.add_argument('--disable-isomorph-check', dest="disable_isomorph_check", a
 parser.add_argument('--dest_folder', help="destination folder for restults", default=RESULTS_FOLDER)
 
 args = parser.parse_args()
-
+pool = ThreadPool(multiprocessing.cpu_count() - 1)
 if args.auto is False and (args.vhg is None or args.vcdn is None):
     parser.error('please specify --vhg and --vcdn args if not automatic calculation')
 elif args.auto is True and (args.vhg is not None or args.vcdn is not None):
@@ -95,14 +97,18 @@ for start in range(1, args.max_start + 1):
 
         sla = create_sla(start_nodes, cdn_nodes, args.sourcebw, su=su, rs=rs)
 
-        candidates += generate_candidates_param(sla,
-                                                automatic=True, use_heuristic=not args.disable_heuristic,
-                                                disable_isomorph_check=args.disable_isomorph_check)
+        candidates = generate_candidates_param(sla,
+                                               automatic=True, use_heuristic=not args.disable_heuristic,
+                                               disable_isomorph_check=args.disable_isomorph_check)
+
+        candidate_count = 0
 
 
-        res[start - 1, cdn - 1] += len(candidates)
+        # sys.stdout.write("\n\t Embedding services:%d\n" % len(candidates_param))
+        services = pool.map(embbed_service, candidates)
 
+        res[start - 1, cdn - 1] += len(services)
 
-np.savetxt( os.path.join(args.dest_folder,"res.txt"),res)
+np.savetxt(os.path.join(args.dest_folder, "res.txt"), res)
 print res
 print np.sum(res)

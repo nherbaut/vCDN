@@ -30,9 +30,14 @@ parser.add_argument('--seed', type=int, help='seed for random state generation',
                     default=0)
 parser.add_argument('--sla_delay', help="delay toward vCDN, float in ms", default=30.0, type=float)
 parser.add_argument('--max_start', type=int, help='maximum number of starters',
-                    default=5)
+                    default=1)
 parser.add_argument('--max_cdn', type=int, help='maximum number of CDNs',
-                    default=5)
+                    default=1)
+parser.add_argument('--min_start', type=int, help='min number of starters',
+                    default=1)
+parser.add_argument('--min_cdn', type=int, help='min number of CDNs',
+                    default=1)
+
 parser.add_argument('--vcdnratio', help="the share of source traffic toward vcdn (default 0.35)", default=0.35,
                     type=float)
 parser.add_argument('--sourcebw', help="cumulated source bw from every source (default 100 bits) ", default=100000000,
@@ -50,16 +55,19 @@ session = Session()
 tenant = Tenant()
 session.add(tenant)
 slas = generate_random_slas(rs, su, count=args.sla_count, user_count=1000, max_start_count=args.max_start,
-                            max_end_count=args.max_cdn, tenant=tenant)
+                            max_end_count=args.max_cdn, tenant=tenant,min_start_count=args.min_start,
+                            min_end_count=args.min_cdn)
 
 for sla in slas:
     try:
+        logging.debug("full")
         service_no_heuristic, count_embedding_no_heuristic = optimize_sla(sla, automatic=True, use_heuristic=False)
         service_no_heuristic_mapping_objective_function = service_no_heuristic.mapping.objective_function
     except ValueError as e:
         service_no_heuristic_mapping_objective_function = float("nan")
 
     try:
+        logging.debug("heuristic")
         service_yes_heuristic, count_embedding_yes_heuristic = optimize_sla(sla, automatic=True, use_heuristic=True)
         service_yes_heuristic_mapping_objective_function = service_yes_heuristic.mapping.objective_function
 
@@ -67,35 +75,25 @@ for sla in slas:
         service_yes_heuristic_mapping_objective_function = float("nan")
 
     try:
-        service_yes_heuristic11, count_embedding_yes_heuristic11 = optimize_sla(sla, vhg_count=1, vcdn_count=1,
-                                                                                automatic=False,
-                                                                                use_heuristic=True)
+        logging.debug("dummy random")
+        service_yes_heuristic11, count_embedding_yes_heuristic11 = optimize_sla(sla, automatic=True,
+                                                                                use_heuristic=True,random_edges=True)
         service_yes_heuristic11_mapping_objective_function = service_yes_heuristic11.mapping.objective_function
     except ValueError as e:
         service_yes_heuristic11_mapping_objective_function = float("nan")
 
-    try:
-        service_yes_heuristicNN, count_embedding_yes_heuristicNN = optimize_sla(sla, automatic=False,
-                                                                                vhg_count=len(sla.get_start_nodes()),
-                                                                                vcdn_count=len(sla.get_start_nodes()),
-                                                                                use_heuristic=True)
 
-        service_yes_heuristicNN_mapping_objective_function = service_yes_heuristicNN.mapping.objective_function
-
-    except ValueError as e:
-        service_yes_heuristicNN_mapping_objective_function = float("nan")
-
-        # print ( "winner : %s" % str(service.id))
-        # su.consume_service(service)
-    print "#\t%s\t%s\t%s\t%lf\t%lf\t%lf\t%lf" % (su,
+    # print ( "winner : %s" % str(service.id))
+    # su.consume_service(service)
+    print "#\t%s\t%s\t%s\t%lf\t%lf\t%lf" % (su,
                                                  "_".join([sn.topoNode.name for sn in sla.get_start_nodes()]),
                                                  "_".join([sn.topoNode.name for sn in sla.get_cdn_nodes()]),
                                                  service_no_heuristic_mapping_objective_function,
                                                  service_yes_heuristic_mapping_objective_function,
-                                                 service_yes_heuristic11_mapping_objective_function,
-                                                 service_yes_heuristicNN_mapping_objective_function)
+                                                 service_yes_heuristic11_mapping_objective_function
+                                                 )
 
-    
+
 
 '''
 service, count_embedding = create_sla(args.start, args.cdn, args.sourcebw, args.topo, 0,
