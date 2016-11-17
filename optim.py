@@ -3,11 +3,15 @@
 import argparse
 import logging
 import os
+import re
 import subprocess
 import sys
 import shutil
+import subprocess
 from argparse import RawTextHelpFormatter
 
+import offline.core.sla
+from offline.core.sla import generate_random_slas
 from offline.time.plottingDB import plotsol_from_db
 from offline.tools.ostep import clean_and_create_experiment, optimize_sla, create_sla
 
@@ -91,7 +95,34 @@ else:
     elif args.auto is True and (args.vhg is not None or args.vcdn is not None):
         parser.error("can't specify vhg count of vcdn count in --auto mode")
 
-    sla = create_sla(args.start, args.cdn, args.sourcebw, args.topo, su=None,  seed=0)
+    rs, su = clean_and_create_experiment(args.topo, args.seed)
+
+    start_nodes = None
+    if len(args.start) == 1:
+        match = re.findall("RAND\(([0-9]+),([0-9]+)\)", args.start[0])
+        if len(match) == 1:
+            nodes_by_bw = su.get_nodes_by_bw()
+            start_nodes = offline.core.sla.weighted_shuffle(nodes_by_bw.keys(), nodes_by_bw.values(), rs)[
+                          -rs.randint(int(match[0][0]), int(match[0][1]) + 1):]
+            print "random start nodes: %s"% " ".join(start_nodes)
+
+    cdn_nodes = None
+    if len(args.cdn) == 1:
+        match = re.findall("RAND\(([0-9]+),([0-9]+)\)", args.cdn[0])
+        if len(match) == 1:
+            nodes_by_degree = su.get_nodes_by_degree()
+
+            cdn_nodes = offline.core.sla.weighted_shuffle(nodes_by_degree.keys(), nodes_by_degree.values(), rs)[
+                        :rs.randint(int(match[0][0]), int(match[0][1]) + 1)]
+            print "random cdn nodes: %s" % " ".join(cdn_nodes )
+
+    if start_nodes is None:
+        start_nodes = args.start
+
+    if cdn_nodes is None:
+        cdn_nodes = args.cdn
+
+    sla=create_sla(start_nodes, cdn_nodes, args.sourcebw, su=su, rs=rs)
     service, count_embedding = optimize_sla(sla, vhg_count=args.vhg,
                                             vcdn_count=args.vcdn,
                                             automatic=args.auto, use_heuristic=not args.disable_heuristic)
@@ -101,9 +132,18 @@ else:
     shutil.copytree(os.path.join(RESULTS_FOLDER, str(service.id)), "winner")
 
     if service.mapping is not None:
-        with     open(os.path.join(args.dest_folder, "price.data"), "w") as f:
+        with open(os.path.join(args.dest_folder, "price.data"), "w") as f:
             f.write("%lf\n" % service.mapping.objective_function)
             f.write("%d,%d\n" % (service.vhg_count, service.vcdn_count))
+
+        print("Successfull mapping w price: \t %lf in \t %d embedding \t winner is %d (%d,%d)" % (
+            service.mapping.objective_function, count_embedding, service.id,service.vhg_count,service.vcdn_count))
+        #print'%s'%(" ".join([str(nm) for nm in service.mapping.dump_node_mapping()]))
+        #print'%s' % (" ".join([str(nm) for nm in service.mapping.dump_edge_mapping()]))
+
+
+
+        if args.plot:
             dest_folder = os.path.join(RESULTS_FOLDER, str(service.id))
             plotsol_from_db(service_link_linewidth=5, net=False, service=service,
                             dest_folder=dest_folder)
