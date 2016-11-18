@@ -1,16 +1,16 @@
 import os
 import pickle
 
+import networkx as nx
+from networkx.readwrite import json_graph
 from sqlalchemy import Column, Integer, Float, ForeignKey
-from sqlalchemy.orm import relationship
+from sqlalchemy import and_
+from sqlalchemy.orm import relationship, aliased
 
-from ..pricing.generator import get_migration_calculator
-from ..time.persistence import Base
+from ..time.persistence import Base, Session, Edge, Node
 
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
 PRICING_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../pricing')
-
-
 
 
 class Mapping(Base):
@@ -18,7 +18,7 @@ class Mapping(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
 
     service_id = Column(Integer, ForeignKey('Service.id'), nullable=False)
-    substrate_id=Column(Integer, ForeignKey('Substrate.id'))
+    substrate_id = Column(Integer, ForeignKey('Substrate.id'))
     service = relationship("Service", cascade="save-update", back_populates="mapping")
 
     node_mappings = relationship("NodeMapping", cascade="all")
@@ -27,6 +27,33 @@ class Mapping(Base):
 
     objective_function = Column(Float)
 
+    def to_json(self):
+        session = Session()
+        g = nx.Graph()
+        for nm in self.node_mappings:
+            g.add_node(nm.service_node.name, mapping=nm.node.name, cpu=nm.service_node.cpu,
+                       bandwidth=nm.service_node.bw)
+        for em in self.edge_mappings:
+            if not g.has_edge(em.serviceEdge.node_1.name, em.serviceEdge.node_2.name):
+                g.add_edge(em.serviceEdge.node_1.name, em.serviceEdge.node_2.name, mapping=[],
+                           bandwith=em.serviceEdge.bandwidth)
+
+            g[em.serviceEdge.node_1.name][em.serviceEdge.node_2.name]["mapping"].append(
+                (em.edge.node_1.name, em.edge.node_2.name))
+
+        # aggregate delay on the substrate to have the real delay
+        for service_start, service_end, data in g.edges(data=True):
+            delay = 0
+            for start, end in data["mapping"]:
+                Node1 = aliased(Node)
+                Node2 = aliased(Node)
+
+                delay += session.query(Edge).join((Node1, Node1.name == start)).join(
+                    (Node2, Node2.name == end)).filter(
+                    and_(Edge.node_1_id == Node1.id, Edge.node_2_id == Node2.id)).one().delay
+            g[service_start][service_end]["delay"] = delay
+
+        return json_graph.node_link_data(g)
 
     def dump_cdn_node_mapping(self):
         '''
@@ -98,9 +125,8 @@ class Mapping(Base):
             obj = pickle.load(self, file)
             return cls(obj.service_node_id, obj.edgesSol)
 
-
     @classmethod
-    def get_migration_cost(cls,a, b,migration_costs_func):
+    def get_migration_cost(cls, a, b, migration_costs_func):
         res = {}
         res = {nm.service_node.id: (nm.service_node.cpu, 0) for nm in a.node_mappings}
         for nm in b.node_mappings:
@@ -109,4 +135,4 @@ class Mapping(Base):
             else:
                 res[nm.service_node.id] = (0, nm.service_node.cpu)
 
-        return migration_costs_func(filter(lambda x: x[0]+x[1]!=0,res.values()))
+        return migration_costs_func(filter(lambda x: x[0] + x[1] != 0, res.values()))

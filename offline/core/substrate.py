@@ -6,7 +6,7 @@ import networkx as nx
 import numpy.random
 from haversine import haversine
 from pygraphml import GraphMLParser
-
+from networkx.readwrite import json_graph
 from ..time.persistence import *
 
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
@@ -123,7 +123,9 @@ class Substrate(Base):
 
     @classmethod
     def fromSpec(cls, specs, rs=numpy.random.RandomState()):
-        if specs[0] == "grid":
+        if specs[0] == "jsonfile":
+            return cls.__fromJson(list(specs[1]))
+        elif specs[0] == "grid":
             return cls.__fromSpec(list(specs[1]))
         elif specs[0] == "file":
             return cls.fromGraph(rs, specs[1])
@@ -133,6 +135,16 @@ class Substrate(Base):
             return cls.FromErdosRenyi(list(specs[1]))
         else:
             raise ValueError("not a valid topology spec %s" % str(specs))
+
+
+    @classmethod
+    def __fromJson(cls,specs):
+        json = specs
+
+        json_graph
+
+
+
 
     @classmethod
     def fromPowerLaw(cls, specs):
