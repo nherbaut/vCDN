@@ -84,6 +84,10 @@ class Substrate(Base):
 
         return self.g
 
+    def get_json(self):
+        g= self.__get_graph()
+        return json_graph.node_link_data(g)
+
     def __init__(self, edges, nodes):
         '''
 

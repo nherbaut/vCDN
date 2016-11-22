@@ -83,11 +83,19 @@ if args.disable_embedding:
     rs, su = clean_and_create_experiment(args.topo, 0)
 
     su.write(RESULTS_FOLDER)
-    plotsol_from_db(service_link_linewidth=5, net=True, substrate=su)
-    subprocess.Popen(
-        ["neato", os.path.join(RESULTS_FOLDER, "./substrate.dot"), "-Tsvg", "-o",
-         os.path.join(args.dest_folder, "topo.svg")]).wait()
-    shutil.copy(os.path.join(RESULTS_FOLDER, "./substrate.dot"), os.path.join(args.dest_folder, "substrate.dot"))
+    if args.json:
+            topo = su.get_json()
+            if args.b64:
+                sys.stdout.write(base64.b64encode(json.dumps(topo)))
+            else:
+                sys.stdout.write(json.dumps(topo))
+            sys.stdout.flush()
+    if args.plot:
+        plotsol_from_db(service_link_linewidth=5, net=True, substrate=su)
+        subprocess.Popen(
+            ["neato", os.path.join(RESULTS_FOLDER, "./substrate.dot"), "-Tsvg", "-o",
+             os.path.join(args.dest_folder, "topo.svg")]).wait()
+        shutil.copy(os.path.join(RESULTS_FOLDER, "./substrate.dot"), os.path.join(args.dest_folder, "substrate.dot"))
 
 
 else:
