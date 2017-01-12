@@ -124,8 +124,8 @@ def do_simu(migration_costs_func=migration_calculator, sla_pricer=price_slas, lo
     session.flush()
 
     for i in range(0, 1):
-        tenant_start_count = rs.randint(low=3, high=5)
-        tenant_cdn_count = rs.randint(low=2, high=3)
+        tenant_start_count = rs.randint(low=1, high=2)
+        tenant_cdn_count = rs.randint(low=1, high=2)
         logging.debug("vmg_max=%d vcdn_max=%d" % (tenant_start_count, tenant_cdn_count))
         draw = rs.choice(su.nodes, size=tenant_start_count + tenant_cdn_count, replace=False)
         tenant_start_nodes = draw[:tenant_start_count]
@@ -269,11 +269,13 @@ def do_simu(migration_costs_func=migration_calculator, sla_pricer=price_slas, lo
             total_bandwidth = max(1, sum(
                 [sum([sla.get_total_bandwidth() for sla in service.slas]) for service in session.query(Service).all()]))
 
-        y, y1, sla_hi, sla_low, ttbw = zip(*data)
+        y, y1, sla_hi, sla_low, total_bandwidth = zip(*data)
         # print("[")
         # for i in range(0, len(y)):
         #    print("(%lf,%lf,%lf,%lf)," % (y[i], y1[i], sla_hi[i], sla_low[i]))
         # print("]")
         candelPlot(np.arange(0, len(y)), y, y1, sla_hi, sla_low)
+        isp_cost=sum([x[0] for x in data])
+        total_bandwidth=sum(total_bandwidth[1:])
         return (
-            str(best_discretization_parameter), sum([x[0] for x in data]), sum(ttbw[1:]), total_sla_price, sla_count)
+            str(best_discretization_parameter), isp_cost , total_bandwidth, total_sla_price, sla_count)
