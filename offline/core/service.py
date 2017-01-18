@@ -77,6 +77,7 @@ class Service(Base):
     merged_sla = relationship("Sla", foreign_keys=[sla_id], cascade="all")
     mapping = relationship("Mapping", uselist=False, cascade="all", back_populates="service")
 
+    # TODO: update
     def update_mapping(self):
         '''
         :return: updates the internal mapping of the service according to the updated list of SLAS
@@ -86,20 +87,20 @@ class Service(Base):
             raise AttributeError("no mapping found")
 
         # get the new merged sla
-        merged_new = self.__get_merged_sla(self.slas)
+        merged_new = self.get_merged_sla(self.slas)
 
         # create the service topology from the new merged sla
-        self.topo = ServiceTopo(sla=merged_new, vhg_count=self.vhg_count,
-                                vcdn_count=self.vcdn_count, hint_node_mappings=self.mapping.node_mappings)
+        self.topo = ServiceTopoHeuristic(sla=merged_new, vhg_count=self.vhg_count,
+                                         vcdn_count=self.vcdn_count, hint_node_mappings=self.mapping.node_mappings)
 
         # retreive info on the new service.
         edges_from_new_topo = {(node_1, node_2): bw for node_1, node_2, bw in self.topo.dump_edges()}
-        nodes_from_new_topo = {node: cpu for node, cpu in self.topo.dump_nodes()}
+        nodes_from_new_topo = {node: cpu for node, cpu, bw in self.topo.getServiceNodes()}
 
         # update edge mapping topology, delete them if they are not present anymore
         for em in self.mapping.edge_mappings:
             edge = em.serviceEdge
-            service_edge = (edge.node_1.node_id, edge.node_2.node_id)
+            service_edge = (edge.node_1.name, edge.node_2.name)
             if service_edge in edges_from_new_topo:
                 edge.bandwidth = edges_from_new_topo[service_edge]
             else:
@@ -109,18 +110,18 @@ class Service(Base):
         # **don't** update CPU, just remove VHG or VCDN if they are not present anymore.
         for nm in self.mapping.node_mappings:
 
-            if nm.service_node.node_id not in nodes_from_new_topo:
+            if nm.service_node.name not in nodes_from_new_topo:
                 session.delete(nm)
                 session.flush()
         # prune service edges
         for se in self.serviceEdges:
-            if (se.node_1.node_id, se.node_2.node_id) not in edges_from_new_topo:
+            if (se.node_1.name, se.node_2.name) not in edges_from_new_topo:
                 session.delete(se)
                 session.flush()
 
         # prune service nodes
         for sn in self.serviceNodes:
-            if sn.node_id not in nodes_from_new_topo:
+            if sn.name not in nodes_from_new_topo:
                 session.delete(sn)
                 session.flush()
 
@@ -144,22 +145,23 @@ class Service(Base):
                 os.remove(f)
 
     def get_service_specs(self, include_cdn=True):
-        serviceSpecs = {}
+        service_specs = {}
         for sla in self.slas:
             spec = self.serviceSpecFactory.fromSla(sla)
             if not include_cdn:
                 spec.vcdn_count = 0
-            serviceSpecs[sla] = spec
+            service_specs[sla] = spec
 
-        return serviceSpecs
+        return service_specs
 
-    def __get_merged_sla(self, slas):
+    @classmethod
+    def get_merged_sla(cls, slas):
         session = Session()
         # create a dict that can accumulate
         merge_sla = Counter()
         # for every SLA
         min_delay = sys.float_info.max
-        for sla in self.slas:
+        for sla in slas:
             # accumulate in the dict
             merge_sla += Counter({node.toponode_id: node.attributes["bandwidth"] for node in sla.get_start_nodes()})
             min_delay = min(sla.delay, min_delay)
@@ -186,13 +188,13 @@ class Service(Base):
 
     @classmethod
     def get_optimal(cls, slas, serviceSpecFactory=ServiceSpecFactory, max_vhg_count=10, max_vcdn_count=10,
-                    threads=multiprocessing.cpu_count() - 1):
+                    threads=multiprocessing.cpu_count() - 1, remove_service=True, use_heuristic=True):
         session = Session()
         threadpool = ThreadPool(threads)
         thread_param = []
 
         max_vhg_count = min(max_vhg_count,
-                            len(set([nodes.toponode_id for sla in slas for nodes in sla.get_start_nodes()])))
+                            len(set([nodes.topoNode.name for sla in slas for nodes in sla.get_start_nodes()])))
         max_vcdn_count = min(max_vhg_count, max_vcdn_count)
 
         logging.debug("----------Looking for optima solution to embed %s with max_vhg=%d and max_vcdn=%d" % (
@@ -203,11 +205,10 @@ class Service(Base):
 
         for vhg_count in range(1, max_vhg_count + 1, ):
             for vcdn_count in range(1, min(vhg_count, max_vcdn_count) + 1):
-                thread_param.append(([sla.id for sla in slas], vhg_count, vcdn_count))
+                thread_param.append(([sla.id for sla in slas], vhg_count, vcdn_count, use_heuristic))
 
-
-        services = threadpool.map(f, thread_param)
-        # services = [f(x) for x in thread_param]
+        # services = threadpool.map(f, thread_param)
+        services = [f(x) for x in thread_param]
         services = session.query(Service).filter(Service.id.in_(services)).all()
 
         for service in services:
@@ -229,85 +230,89 @@ class Service(Base):
 
         for service in services:
             if service.id != best_service.id:
-                session.delete(service)
-                session.flush()
+                if remove_service:
+                    session.delete(service)
+                    session.flush()
 
         return best_service
 
-    def __init__(self, slasIDS, serviceSpecFactory=ServiceSpecFactory, vhg_count=1, vcdn_count=1):
+    def __init__(self, topo_instance, slasIDS, serviceSpecFactory=ServiceSpecFactory, vhg_count=1, vcdn_count=1,
+                 use_heuristic=True,solve=True):
         session = Session()
-        # print("7777777777777777 %s" % str(session))
 
         self.slas = session.query(Sla).filter(Sla.id.in_(slasIDS)).all()
         self.vhg_count = vhg_count
         self.vcdn_count = vcdn_count
-        self.merged_sla = self.__get_merged_sla(self.slas)
+        self.merged_sla = self.get_merged_sla(self.slas)
         self.serviceSpecFactory = serviceSpecFactory
+        self.topo = topo_instance
 
-        self.topo = {sla: ServiceTopo(sla=sla, vhg_count=vhg_count, vcdn_count=vcdn_count, hint_node_mappings=None) for
-                     sla in
-                     [self.merged_sla]}
-        # self.slas}
+        for node, cpu, bw in self.topo.getServiceNodes():
+            node = ServiceNode(name=node, cpu=cpu, sla_id=self.merged_sla.id, bw=bw)
+            session.add(node)
+            self.serviceNodes.append(node)
 
-        for sla in [self.merged_sla]:
-            for node, cpu in self.topo[sla].getServiceNodes():
-                node = ServiceNode(node_id=node, cpu=cpu, sla_id=sla.id)
-                session.add(node)
-                self.serviceNodes.append(node)
+        for node_1, node_2, bandwidth in self.topo.getServiceEdges():
+            snode_1 = session.query(ServiceNode).filter(
+                and_(ServiceNode.sla_id == self.merged_sla.id, ServiceNode.service_id == self.id,
+                     ServiceNode.name == node_1)).one()
 
-            for node_1, node_2, bandwidth in self.topo[sla].getServiceEdges():
-                snode_1 = session.query(ServiceNode).filter(
-                    and_(ServiceNode.sla_id == sla.id, ServiceNode.service_id == self.id,
-                         ServiceNode.node_id == node_1)).one()
+            snode_2 = session.query(ServiceNode).filter(
+                and_(ServiceNode.sla_id == self.merged_sla.id, ServiceNode.service_id == self.id,
+                     ServiceNode.name == node_2)).one()
 
-                snode_2 = session.query(ServiceNode).filter(
-                    and_(ServiceNode.sla_id == sla.id, ServiceNode.service_id == self.id,
-                         ServiceNode.node_id == node_2)).one()
-
-                sedge = ServiceEdge(node_1=snode_1, node_2=snode_2, bandwidth=bandwidth, sla_id=sla.id)
-                session.add(sedge)
-                self.serviceEdges.append(sedge)
-            session.flush()
-
-        # create temp mapping for vhg<->vcdn hints
-        assert self.id is not None
-        self.__solve(path=str(self.id))
+            sedge = ServiceEdge(node_1=snode_1, node_2=snode_2, bandwidth=bandwidth, sla_id=self.merged_sla.id)
+            session.add(sedge)
+            self.serviceEdges.append(sedge)
         session.flush()
 
-        if self.mapping is not None:
-            self.topo = {sla: ServiceTopo(sla=sla, vhg_count=vhg_count, vcdn_count=vcdn_count,
-                                          hint_node_mappings=self.mapping.node_mappings) for sla in [self.merged_sla]}
+        session.add(self)
+        session.flush()
+        if use_heuristic:
+            # create temp mapping for vhg<->vcdn hints
+            assert self.id is not None
+            self.__solve(path=str(self.id), reopt=False)
+            session.flush()
 
-            # add the CDN Edges to the feast
-            for sla in [self.merged_sla]:
+            if self.mapping is not None:
+                self.topo = list(ServiceTopoHeuristic(sla=self.merged_sla, vhg_count=vhg_count, vcdn_count=vcdn_count,
+                                                 hint_node_mappings=self.mapping.node_mappings).getTopos())[0]
 
-                for node_1, node_2, bandwidth in self.topo[sla].getServiceCDNEdges():
-                    snode_1 = session.query(ServiceNode).filter(
-                        and_(ServiceNode.sla_id == sla.id, ServiceNode.service_id == self.id,
-                             ServiceNode.node_id == node_1)).one()
+                # add the CDN Edges to the graph
+                for sla in [self.merged_sla]:
 
-                    snode_2 = session.query(ServiceNode).filter(
-                        and_(ServiceNode.sla_id == sla.id, ServiceNode.service_id == self.id,
-                             ServiceNode.node_id == node_2)).one()
+                    for node_1, node_2, bandwidth in self.topo.getServiceCDNEdges():
+                        snode_1 = session.query(ServiceNode).filter(
+                            and_(ServiceNode.sla_id == sla.id, ServiceNode.service_id == self.id,
+                                 ServiceNode.name == node_1)).one()
 
-                    sedge = ServiceEdge(node_1=snode_1, node_2=snode_2, bandwidth=bandwidth, sla_id=sla.id)
-                    session.add(sedge)
-                    self.serviceEdges.append(sedge)
+                        snode_2 = session.query(ServiceNode).filter(
+                            and_(ServiceNode.sla_id == sla.id, ServiceNode.service_id == self.id,
+                                 ServiceNode.name == node_2)).one()
+
+                        sedge = ServiceEdge(node_1=snode_1, node_2=snode_2, bandwidth=bandwidth, sla_id=sla.id)
+                        session.add(sedge)
+                        self.serviceEdges.append(sedge)
+                    session.flush()
+
+                session.delete(self.mapping)
                 session.flush()
+                if solve: #to perf measurements purposes, we should alway solve...
+                    self.__solve(path=str(self.id), use_heuristic=use_heuristic, reopt=True)
 
-            session.delete(self.mapping)
-            session.flush()
-            self.__solve(path=str(self.id))
-            session.flush()
+        else:
+            self.__solve(path=str(self.id), use_heuristic=use_heuristic, reopt=False)
 
-    def __solve(self, path="."):
-        '''
+        session.flush()
+
+    def __solve(self, path=".", use_heuristic=True,reopt=False):
+        """
         Solve the service according to specs
         :return: nothing, service.mapping may be initialized with an actual possible mapping
-        '''
+        """
         session = Session()
         if len(self.slas) > 0:
-            solve(self, self.slas[0].substrate, path)
+            solve(self, self.slas[0].substrate, path, use_heuristic,reopt)
             if self.mapping is not None:
                 session.add(self.mapping)
 
@@ -344,16 +349,15 @@ class Service(Base):
         with open(os.path.join(RESULTS_FOLDER, path, "service.edges.data"), mode) as f:
             for sla in slas:
                 postfix = "%d_%d" % (self.id, sla.id)
-                topo = self.topo[sla]
-                for start, end, bw in topo.dump_edges():
-                    f.write("%s_%s %s_%s %lf\n" % (start, postfix, end, postfix, bw))
+                for start, end, bw in self.topo.dump_edges():
+                    f.write("%s\t\t%s_%s\t\t%lf\n" % (("%s_%s" % (start, postfix)).ljust(20), end, postfix, bw))
 
         with open(os.path.join(RESULTS_FOLDER, path, "service.nodes.data"), mode) as f:
             for sla in slas:
                 postfix = "%d_%d" % (self.id, sla.id)
-                topo = self.topo[sla]
-                for snode_id, cpu in topo.dump_nodes():
-                    f.write("%s_%s %lf\n" % (snode_id, postfix, cpu))
+
+                for snode_id, cpu, bw in self.topo.getServiceNodes():
+                    f.write("%s\t\t%lf\t\t%lf\n" % (("%s_%s" % (snode_id, postfix)).ljust(20), cpu, bw))
                     # sys.stdout.write("%s_%s %lf\n" % (snode_id, postfix, cpu))
 
 
@@ -361,28 +365,29 @@ class Service(Base):
         with open(os.path.join(RESULTS_FOLDER, path, "CDN.nodes.data"), mode) as f:
             for sla in slas:
                 postfix = "%d_%d" % (self.id, sla.id)
-                for index, value in enumerate(sla.get_cdn_nodes(), start=1):
-                    f.write("CDN%d_%s %s\n" % (index, postfix, value.toponode_id))
+                self.merged_sla.get_cdn_nodes()
+                for node, mapping, bw in self.topo.get_CDN():
+                    f.write("%s_%s %s\n" % (node, postfix, mapping))
 
         # write constraints on starter placement
         with open(os.path.join(RESULTS_FOLDER, path, "starters.nodes.data"), mode) as f:
             for sla in slas:
                 postfix = "%d_%d" % (self.id, sla.id)
-                for s, topo in self.topo[sla].get_Starters():
-                    f.write("%s_%s %s\n" % (s, postfix, topo))
+                for s, topo, bw in self.topo.get_Starters():
+                    f.write("%s_%s %s %lf\n" % (s, postfix, topo, bw))
 
         # write the names of the VHG Nodes
         with open(os.path.join(RESULTS_FOLDER, path, "VHG.nodes.data"), mode) as f:
             for sla in slas:
                 postfix = "%d_%d" % (self.id, sla.id)
-                for vhg in self.topo[sla].get_vhg():
+                for vhg in self.topo.get_vhg():
                     f.write("%s_%s\n" % (vhg, postfix))
 
         # write the names of the VCDN nodes
         with open(os.path.join(RESULTS_FOLDER, path, "VCDN.nodes.data"), mode) as f:
             for sla in slas:
                 postfix = "%d_%d" % (self.id, sla.id)
-                for vcdn in self.topo[sla].get_vcdn():
+                for vcdn in self.topo.get_vcdn():
                     f.write("%s_%s\n" % (vcdn, postfix))
 
                     # write path to associate e2e delay
@@ -390,16 +395,16 @@ class Service(Base):
         with open(os.path.join(RESULTS_FOLDER, path, "service.path.delay.data"), "w") as f:
             for sla in slas:
                 postfix = "%d_%d" % (self.id, sla.id)
-                topo = self.topo[sla]
-                for apath, delay in topo.dump_delay_paths():
-                    f.write("%s_%s %lf\n" % (apath, postfix, delay))
+
+                for apath in self.topo.dump_delay_paths():
+                    f.write("%s_%s %lf\n" % (apath, postfix, self.topo.delay))
 
         # write e2e delay constraint
         with open(os.path.join(RESULTS_FOLDER, path, "service.path.data"), "w") as f:
             for sla in slas:
                 postfix = "%d_%d" % (self.id, sla.id)
-                topo = self.topo[sla]
-                for apath, s1, s2 in topo.dump_delay_routes():
+
+                for apath, s1, s2 in self.topo.dump_delay_routes():
                     f.write("%s_%s %s_%s %s_%s\n" % (apath, postfix, s1, postfix, s2, postfix))
 
     @classmethod

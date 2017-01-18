@@ -114,6 +114,8 @@ class EdgeMapping(Base):
                    start_service_node_id=edgeMapping.start_service_node_id,
                    end_service_node_id=edgeMapping.end_service_node_id)
 
+if not os.path.exists(RESULTS_FOLDER):
+    os.makedirs(RESULTS_FOLDER)
 
 #engine = create_engine('sqlite:///%s/example.db' % RESULTS_FOLDER, echo=False)
 engine = create_engine('mysql+mysqldb://root:root@127.0.0.1/paper4', )
