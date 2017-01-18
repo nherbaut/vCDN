@@ -115,9 +115,7 @@ class EdgeMapping(Base):
                    end_service_node_id=edgeMapping.end_service_node_id)
 
 
-# engine = create_engine('sqlite:///%s/example.db' % RESULTS_FOLDER, echo=True)
-
-
+#engine = create_engine('sqlite:///%s/example.db' % RESULTS_FOLDER, echo=False)
 engine = create_engine('mysql+mysqldb://root:root@127.0.0.1/paper4', )
 session_factory = sessionmaker(bind=engine, autocommit=True)
 Session = scoped_session(session_factory)

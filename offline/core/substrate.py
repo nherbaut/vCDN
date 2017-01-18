@@ -183,27 +183,45 @@ class Substrate(Base):
         return cls(edges, nodesdict)
 
     @classmethod
-    def fromGraph(cls, rs, file):
+    def fromGraph(cls, rs, file="Geant2012.graphml"):
+        session = Session()
+        cpu = 1000000
         parser = GraphMLParser()
 
         g = parser.parse(os.path.join(DATA_FOLDER, file))
+        nodes = [Node(id=str(n.id), cpu_capacity=cpu) for n in g.nodes()]
+        nodes_from_g = {str(n.id): n for n in g.nodes()}
+        session.add_all(nodes)
+        session.flush()
 
-        nodes = {str(n.id): n for n in g.nodes()}
-        edges = [(str(e.node1.id), str(e.node2.id), float(e.attributes()["d42"].value),
-                  get_delay(nodes[str(e.node1.id)], nodes[str(e.node2.id)]))
-                 for e in g.edges() if "d42" in e.attributes() and isOK(nodes[str(e.node1.id)], nodes[str(e.node2.id)])]
+        edges = [Edge
+                 (node_1=session.query(Node).filter(Node.id == str(e.node1.id)).one().id,
+                  node_2=session.query(Node).filter(Node.id == str(e.node2.id)).one().id,
+                  #bandwidth=float(e.attributes()["d42"].value),
+                  #delay=get_delay(nodes_from_g[str(e.node1.id)], nodes_from_g[str(e.node2.id)])
+                  bandwidth=10000000000000,
+                  delay=1
+                  )
 
-        # for which we have all the data
-        valid_nodes = list(set([e[0] for e in edges] + [e[1] for e in edges]))
+                 for e in g.edges() if
+                 "d42" in e.attributes()
+                 and isOK(nodes_from_g[str(e.node1.id)], nodes_from_g[str(e.node2.id)])
+                 ]
+        session.add_all(edges)
+        session.flush()
 
-        nodes = set([str(n.id) for n in g.nodes() if str(n.id) in valid_nodes])
-        nodesdict = {}
+        # filter out nodes for which we have edges
+        valid_nodes = list(set([e.node_1 for e in edges] + [e.node_2 for e in edges]))
+        nodes = list(set([n for n in nodes if str(n.id) in valid_nodes]))
 
-        for l in nodes:
-            value = max(rs.normal(100, 5, 1)[0], 0)
-            nodesdict[str(l)] = value
+        session.add_all(nodes)
+        session.flush()
+        session.add_all(edges)
+        session.flush()
 
-        return cls(edges, nodesdict)
+        return cls(edges, nodes)
+
+
 
     def release_service(self, service):
         self.__handle_service(service, +1)
@@ -212,7 +230,7 @@ class Substrate(Base):
         self.__handle_service(service, -1)
 
     def __handle_service(self, service, factor):
-        session=Session()
+        session = Session()
         # print "consuming..."
         for ns in service.mapping.node_mappings:
             # get topo node
@@ -224,8 +242,6 @@ class Substrate(Base):
             es.edge.bandwidth = es.edge.bandwidth + factor * es.serviceEdge.bandwidth
 
         session.flush()
-
-
 
     def deduce_bw(es, edges, service):
         candidate_edges = filter(lambda x: x[0] == es.start_topo_node_id and x[1] == es.end_topo_node_id, edges)
@@ -240,17 +256,19 @@ class Substrate(Base):
             return True
         return False
 
-    def get_delay(node1, node2):
-        return haversine((float(node1.attributes()["d29"].value), float(node1.attributes()["d32"].value)),
-                         (float(node2.attributes()["d29"].value), float(node2.attributes()["d32"].value))) / (
-                   299.300 * 0.6)
 
-    def isOK(node1, node2):
-        try:
-            get_delay(node1, node2)
-        except:
-            return False
-        return True
+def get_delay(node1, node2):
+    return haversine((float(node1.attributes()["d29"].value), float(node1.attributes()["d32"].value)),
+                     (float(node2.attributes()["d29"].value), float(node2.attributes()["d32"].value))) / (
+               299.300 * 0.6)
+
+
+def isOK(node1, node2):
+    try:
+        get_delay(node1, node2)
+    except:
+        return False
+    return True
 
     def get_substrate(rs, file=os.path.join(DATA_FOLDER, 'Geant2012.graphml')):
         su = Substrate.fromGraph(rs, file)

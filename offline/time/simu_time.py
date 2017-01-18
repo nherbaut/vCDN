@@ -113,7 +113,8 @@ def do_simu(migration_costs_func=migration_calculator, sla_pricer=price_slas, lo
 
     session = Session()
     # create the topo and load it
-    su = Substrate.fromGrid(delay=2, cpu=10000000, bw=10 ** 12)
+    su = Substrate.fromGrid(delay=2, cpu=10000000, bw=10 ** 12, width=5, height=5)
+    #su = Substrate.fromGraph(rs=rs )
     su.write(RESULTS_FOLDER)
 
     session.add(su)
@@ -124,8 +125,8 @@ def do_simu(migration_costs_func=migration_calculator, sla_pricer=price_slas, lo
     session.flush()
 
     for i in range(0, 1):
-        tenant_start_count = rs.randint(low=1, high=2)
-        tenant_cdn_count = rs.randint(low=1, high=2)
+        tenant_start_count = rs.randint(low=3, high=4)
+        tenant_cdn_count = rs.randint(low=2, high=3)
         logging.debug("vmg_max=%d vcdn_max=%d" % (tenant_start_count, tenant_cdn_count))
         draw = rs.choice(su.nodes, size=tenant_start_count + tenant_cdn_count, replace=False)
         tenant_start_nodes = draw[:tenant_start_count]
@@ -144,6 +145,7 @@ def do_simu(migration_costs_func=migration_calculator, sla_pricer=price_slas, lo
             cdn_nodes=tenant_cdn_nodes, substrate=su,
             delay=100, rs=rs,
         )
+
 
         session.flush()
 
