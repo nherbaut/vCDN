@@ -1,17 +1,19 @@
 #!/usr/bin/env python
 
-import networkx
+from itertools import tee, izip
+
+import networkx as nx
 import numpy.random
 from haversine import haversine
 from pygraphml import GraphMLParser
-
+from networkx.readwrite import json_graph
 from ..time.persistence import *
 
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
 DATA_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../data')
 
 substrate_to_node = Table('substrate_to_nodes', Base.metadata,
-                          Column('node_id', String(16), ForeignKey('Node.id')),
+                          Column('node_id', Integer, ForeignKey('Node.id')),
                           Column('substrate_id', Integer, ForeignKey('Substrate.id'))
                           )
 
@@ -19,6 +21,27 @@ substrate_to_edge = Table('substrate_to_edges', Base.metadata,
                           Column('edge_id', Integer, ForeignKey('Edge.id')),
                           Column('substrate_id', Integer, ForeignKey('Substrate.id'))
                           )
+
+
+def get_delay(node1, node2):
+    return haversine((float(node1.attributes()["d29"].value), float(node1.attributes()["d32"].value)),
+                     (float(node2.attributes()["d29"].value), float(node2.attributes()["d32"].value))) / (
+               299.300 * 0.6)
+
+
+def isOK(node1, node2):
+    try:
+        get_delay(node1, node2)
+    except:
+        return False
+    return True
+
+
+def pairwise(iterable):
+    "s -> (s0,s1), (s1,s2), (s2, s3), ..."
+    a, b = tee(iterable)
+    next(b, None)
+    return izip(a, b)
 
 
 class Substrate(Base):
@@ -37,16 +60,45 @@ class Substrate(Base):
     def get_nodes_sum(self):
         return sum([x.cpu for x in self.nodes.items()])
 
-    def __init__(self, edges, nodesdict):
+    def get_nodes_by_bw(self):
+        return self.__get_graph().degree(weight="bandwidth")
+
+    def get_nodes_by_degree(self):
+        return self.__get_graph().degree()
+
+    def shortest_path(self, node1, node2):
+        return nx.shortest_path(self.__get_graph(), node1, node2, weight="delay")
+
+    def compute_delay(self, alist):
+        return sum([self.__get_graph().get_edge_data(node1, node2)["delay"] for node1, node2 in pairwise(alist)])
+
+    def __get_graph(self):
+        if not hasattr(self, 'g'):
+            self.g = nx.Graph()
+            # it's silly to do that, as most of the underlying graph are nx.Graph objects...
+            for node in self.nodes:
+                self.g.add_node(node.name)
+
+            for edge in self.edges:
+                self.g.add_edge(edge.node_1.name, edge.node_2.name, bandwidth=edge.bandwidth, delay=edge.delay)
+
+        return self.g
+
+    def get_json(self):
+        g= self.__get_graph()
+        return json_graph.node_link_data(g)
+
+    def __init__(self, edges, nodes):
         '''
 
         :param edges: a list of edge spec
-        :param nodesdict: a dict of nodes spec
+        :param nodes: a dict of nodes spec
         :param cpuCost: the global cost for CPU
         :param netCost:  the global cost for network
         '''
+        session = Session()
         self.edges = edges
-        self.nodes = nodesdict
+        self.nodes = nodes
         self.edges_init = sorted(edges, key=lambda x: "%s%s" % (str(x.node_1), str(x.node_2)))
 
     def write(self, path="."):
@@ -61,11 +113,11 @@ class Substrate(Base):
         edges = self.edges
         nodesdict = self.nodes
         with open(edges_file, 'w') as f:
-            for edge in self.edges:
+            for edge in sorted(self.edges, key=lambda x: x.node_1.name):
                 f.write("%s\n" % edge)
 
         with open(nodes_file, 'w') as f:
-            for node in self.nodes:
+            for node in sorted(self.nodes, key=lambda x: x.name):
                 f.write("%s\n" % node)
 
     @classmethod
@@ -75,16 +127,28 @@ class Substrate(Base):
 
     @classmethod
     def fromSpec(cls, specs, rs=numpy.random.RandomState()):
-        if specs[0] == "grid":
-            return cls.__fromSpec(list(specs[1]) + [10 ** 10, 1, 5])
+        if specs[0] == "jsonfile":
+            return cls.__fromJson(list(specs[1]))
+        elif specs[0] == "grid":
+            return cls.__fromSpec(list(specs[1]))
         elif specs[0] == "file":
-            return cls.fromGraph(rs, specs[1][0])
+            return cls.fromGraph(rs, specs[1])
         elif specs[0] == "powerlaw":
-            return cls.fromPowerLaw(list(specs[1]) + [10 ** 10, 1, 5])
+            return cls.fromPowerLaw(list(specs[1]))
         elif specs[0] == "erdos_renyi":
-            return cls.FromErdosRenyi(list(specs[1]) + [10 ** 10, 1, 5])
+            return cls.FromErdosRenyi(list(specs[1]))
         else:
-            return cls.__fromSpec([5, 5] + [10 ** 10, 1, 5])
+            raise ValueError("not a valid topology spec %s" % str(specs))
+
+
+    @classmethod
+    def __fromJson(cls,specs):
+        json = specs
+
+        json_graph
+
+
+
 
     @classmethod
     def fromPowerLaw(cls, specs):
@@ -97,16 +161,27 @@ class Substrate(Base):
         m = int(m)
         p = float(p)
         seed = int(seed)
-        edges = []
-        nodesdict = {}
-        g = networkx.powerlaw_cluster_graph(n, m, p, seed)
-        for node in g.nodes():
-            nodesdict[str(node + 1)] = cpu
+        g = nx.powerlaw_cluster_graph(n, m, p, seed)
+        session = Session()
+        nodes = [Node(name=str(n), cpu_capacity=cpu) for n in g.nodes()]
 
-        for i, j in g.edges():
-            edges.append((str(i + 1), str(j + 1), bw, delay))
+        session.add_all(nodes)
+        session.flush()
 
-        return cls(edges, nodesdict)
+        edges = [Edge
+                 (node_1=session.query(Node).filter(Node.name == str(e[0])).one(),
+                  node_2=session.query(Node).filter(Node.name == str(e[1])).one(),
+                  bandwidth=bw,
+                  delay=delay
+                  )
+                 for e in g.edges()
+
+                 ]
+        session.add_all(edges)
+        session.flush()
+
+        return cls(edges, nodes
+                   )
 
     @classmethod
     def FromErdosRenyi(cls, specs):
@@ -118,40 +193,59 @@ class Substrate(Base):
         n = int(n)
         p = float(p)
         seed = int(seed)
-        edges = []
-        nodesdict = {}
-        g = networkx.erdos_renyi_graph(n, p, seed)
-        for node in g.nodes():
-            nodesdict[str(node + 1)] = cpu
+        g = nx.erdos_renyi_graph(n, p, seed)
+        session = Session()
+        nodes = [Node(name=str(n), cpu_capacity=cpu) for n in g.nodes()]
 
-        for i, j in g.edges():
-            edges.append((str(i + 1), str(j + 1), bw, delay))
+        session.add_all(nodes)
+        session.flush()
 
-        return cls(edges, nodesdict)
+        edges = [Edge
+                 (node_1=session.query(Node).filter(Node.name == str(e[0])).one(),
+                  node_2=session.query(Node).filter(Node.name == str(e[1])).one(),
+                  bandwidth=bw,
+                  delay=delay
+                  )
+                 for e in g.edges()
+
+                 ]
+        session.add_all(edges)
+        session.flush()
+
+        return cls(edges, nodes)
 
     @classmethod
     def fromGrid(cls, width=5, height=5, bw=10 ** 10, delay=10, cpu=10):
+        width = int(width)
+        height = int(height)
         session = Session()
         edges = []
         nodes = []
 
         for i in range(1, width + 1):
             for j in range(1, height + 1):
-                node = Node(id=str("%02d%02d" % (i, j)), cpu_capacity=cpu)
+                node = Node(name=str("%02d%02d" % (i, j)), cpu_capacity=cpu)
                 nodes.append(node)
                 session.add(node)
                 session.flush()
 
         for i in range(1, width + 1):
             for j in range(1, height + 1):
+
                 if j + 1 <= height:
-                    edge = Edge(node_1="%02d%02d" % (i, j), node_2="%02d%02d" % (i, j + 1), bandwidth=bw, delay=delay)
+                    edge = Edge(node_1=session.query(Node).filter(Node.name == "%02d%02d" % (i, j)).one(),
+                                node_2=session.query(Node).filter(Node.name == "%02d%02d" % (i, j + 1)).one(),
+                                bandwidth=bw, delay=delay)
                     edges.append(edge)
                 if i + 1 <= width:
-                    edge = Edge(node_1="%02d%02d" % (i, j), node_2="%02d%02d" % (i + 1, j), bandwidth=bw, delay=delay)
+                    edge = Edge(node_1=session.query(Node).filter(Node.name == "%02d%02d" % (i, j)).one(),
+                                node_2=session.query(Node).filter(Node.name == "%02d%02d" % (i + 1, j)).one(),
+                                bandwidth=bw, delay=delay)
                     edges.append(edge)
                 if j + 1 <= height and i + 1 <= width:
-                    edge = Edge(node_1="%02d%02d" % (i, j), node_2="%02d%02d" % (i + 1, j + 1), bandwidth=bw,
+                    edge = Edge(node_1=session.query(Node).filter(Node.name == "%02d%02d" % (i, j)).one(),
+                                node_2=session.query(Node).filter(Node.name == "%02d%02d" % (i + 1, j + 1)).one(),
+                                bandwidth=bw,
                                 delay=delay)
                     edges.append(edge)
 
@@ -162,45 +256,22 @@ class Substrate(Base):
         return cls(edges, nodes, )
 
     @classmethod
-    def fromFile(cls, edges_file=os.path.join(RESULTS_FOLDER, "substrate.edges.data"),
-                 nodes_file=os.path.join(RESULTS_FOLDER, "substrate.nodes.data")):
-
-        edges = []
-        nodesdict = {}
-
-        with open(edges_file, 'r') as f:
-            for line in f.read().split("\n"):
-                if len(line) > 2:
-                    node1, node2, bw, delay = line.split("\t")
-                    edges.append((node1, node2, float(bw), float(delay)))
-
-        with open(nodes_file, 'r') as f:
-            for line in f.read().split("\n"):
-                if len(line) > 2:
-                    nodeid, cpu = line.split("\t")
-                    nodesdict[nodeid] = float(cpu)
-
-        return cls(edges, nodesdict)
-
-    @classmethod
-    def fromGraph(cls, rs, file="Geant2012.graphml"):
+    def fromGraph(cls, rs, args):
         session = Session()
-        cpu = 1000000
+        file, cpu = args
         parser = GraphMLParser()
 
         g = parser.parse(os.path.join(DATA_FOLDER, file))
-        nodes = [Node(id=str(n.id), cpu_capacity=cpu) for n in g.nodes()]
+        nodes = [Node(name=str(n.id), cpu_capacity=cpu) for n in g.nodes()]
         nodes_from_g = {str(n.id): n for n in g.nodes()}
         session.add_all(nodes)
         session.flush()
 
         edges = [Edge
-                 (node_1=session.query(Node).filter(Node.id == str(e.node1.id)).one().id,
-                  node_2=session.query(Node).filter(Node.id == str(e.node2.id)).one().id,
-                  #bandwidth=float(e.attributes()["d42"].value),
-                  #delay=get_delay(nodes_from_g[str(e.node1.id)], nodes_from_g[str(e.node2.id)])
-                  bandwidth=10000000000000,
-                  delay=1
+                 (node_1=session.query(Node).filter(Node.name == str(e.node1.id)).one(),
+                  node_2=session.query(Node).filter(Node.name == str(e.node2.id)).one(),
+                  bandwidth=float(e.attributes()["d42"].value),
+                  delay=get_delay(nodes_from_g[str(e.node1.id)], nodes_from_g[str(e.node2.id)])
                   )
 
                  for e in g.edges() if
@@ -211,8 +282,8 @@ class Substrate(Base):
         session.flush()
 
         # filter out nodes for which we have edges
-        valid_nodes = list(set([e.node_1 for e in edges] + [e.node_2 for e in edges]))
-        nodes = list(set([n for n in nodes if str(n.id) in valid_nodes]))
+        valid_nodes = list(set([e.node_1.name for e in edges] + [e.node_2.name for e in edges]))
+        nodes = list(set([n for n in nodes if str(n.name) in valid_nodes]))
 
         session.add_all(nodes)
         session.flush()
@@ -220,8 +291,6 @@ class Substrate(Base):
         session.flush()
 
         return cls(edges, nodes)
-
-
 
     def release_service(self, service):
         self.__handle_service(service, +1)
@@ -255,20 +324,6 @@ class Substrate(Base):
                 "hein?"
             return True
         return False
-
-
-def get_delay(node1, node2):
-    return haversine((float(node1.attributes()["d29"].value), float(node1.attributes()["d32"].value)),
-                     (float(node2.attributes()["d29"].value), float(node2.attributes()["d32"].value))) / (
-               299.300 * 0.6)
-
-
-def isOK(node1, node2):
-    try:
-        get_delay(node1, node2)
-    except:
-        return False
-    return True
 
     def get_substrate(rs, file=os.path.join(DATA_FOLDER, 'Geant2012.graphml')):
         su = Substrate.fromGraph(rs, file)

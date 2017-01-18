@@ -46,8 +46,6 @@ args = parser.parse_args()
 
 
 
-
-
 rs = np.random.RandomState()
 su = Substrate.fromSpec(args.topo)
 
@@ -84,8 +82,4 @@ if not mapping is None:
     exit(0)
 else:
     sys.stdout.write("failure\n")
-    # mapping = __solve(service, su,allow_violations=True)
-    # if mapping:
-    #    for index, violation in enumerate(mapping.violations,start=1):
-    #        print("violation %d : %s" % (index,violation))
     exit(1)

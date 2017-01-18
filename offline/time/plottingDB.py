@@ -1,16 +1,10 @@
 #!/usr/bin/env python
-import argparse
 import hashlib
 import os
-import shutil
 import subprocess
-import tempfile
 
 import matplotlib.pyplot as plt
 import numpy
-
-from ..core.service import Service
-from ..time.persistence import Session
 
 OPTIM_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../optim')
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
@@ -156,35 +150,32 @@ def plotsol_from_db(**kwargs):
     nodesSol = []
     edgesSol = []
     net = kwargs["net"]
-    service_id = str(kwargs["service"].id)
+    service = kwargs.get("service", None)
+    dest_folder = kwargs.get("dest_folder", RESULTS_FOLDER)
+    if service is not None:
+        su = service.slas[0].substrate
+    else:
+        su = kwargs["substrate"]
+
     if not net:  # we don't display solution, only substrate
-        mapping = kwargs["service"].mapping
+        mapping = service.mapping
+        if mapping is None:
+            raise ValueError("no mapping for service")
 
         cdn_candidates = mapping.dump_cdn_node_mapping()
         starters_candiates = mapping.dump_starter_node_mapping()
         nodesSol = mapping.dump_node_mapping()
         edgesSol = mapping.dump_edge_mapping()
 
-    with open(os.path.join(RESULTS_FOLDER, service_id, "substrate.edges.data"), 'r') as f:
-        data = f.read()
-        for line in data.split("\n"):
-            line = line.split("\t")
-            if len(line) == 4:
-                edges.append(line)
+    edges = [(edge.node_1.name, edge.node_2.name, edge.bandwidth, edge.delay) for edge in su.edges]
 
-    with open(os.path.join(RESULTS_FOLDER, service_id, "substrate.nodes.data"), 'r') as f:
-        data = f.read()
-        for line in data.split("\n"):
+    nodesdict = {node.name: node.cpu_capacity for node in su.nodes}
 
-            line = line.split("\t")
-            if (len(line) == 2):
-                nodesdict[line[0]] = line[1]
-
-    with open(os.path.join(RESULTS_FOLDER, service_id, "substrate.dot"), 'w') as f:
+    with open(os.path.join(dest_folder, "substrate.dot"), 'w') as f:
         f.write("graph{rankdir=LR;overlap = voronoi;\n\n\n\n subgraph{\n\n\n")
         # f.write("graph{rankdir=LR;\n\n\n\n subgraph{\n\n\n")
 
-        avgcpu = reduce(lambda x, y: float(x) + float(y), nodesdict.values(), 0.0) / len(nodesdict)
+
 
         for node in nodesdict.items():
             if node[0] in starters_candiates:
@@ -193,23 +184,15 @@ def plotsol_from_db(**kwargs):
                 color = "red1"
             else:
                 color = "black"
-            # f.write("%s [shape=box,style=filled,fillcolor=white,color=%s,width=%f,fontsize=15,pos=\"%d,%d\"];\n" % (
-            # node[0], color, min(1, float(node[1]) / avgcpu), int(node[0][:2]), int(node[0][-2:])))
-            f.write("%s [shape=box,style=filled,fillcolor=white,color=%s,width=%f,fontsize=15];\n" % (
-                node[0], color, min(1, float(node[1]) / avgcpu),))
+            f.write("\"%s\" [shape=box,style=filled,fillcolor=white,color=%s,width=%f,fontsize=15,cpu=%s];\n" % (
+                node[0], color, 1,node[1]))
 
-        avgbw = [float(edge[2]) for edge in edges]
-        avgbw = sum(avgbw) / len(avgbw)
-
-        avgdelay = reduce(lambda x, y: float(x) + float(y[3]), edges, 0.0) / len(edge)
         for edge in edges:
-            availbw = float(edge[2])
-            # f.write("%s->%s [ label=\"%d\", penwidth=\"%d\", fontsize=20];\n " % (edge[0], edge[1], float(edge[2]), 1+3*availbw/avgbw))
-            f.write("%s--%s [penwidth=\"%d\",fontsize=15,len=2,label=\" \"];\n " % (edge[0], edge[1], 3))
+            f.write("\"%s\"--\"%s\" [penwidth=\"%d\",fontsize=15,len=2,label=\" \" id=\"%s--%s\",delay=%s,bw=%s];\n " % (edge[0], edge[1], 3,edge[0], edge[1],edge[3],edge[2]))
 
         for node in nodesSol:
             if "S0" not in node[1]:
-                f.write("%s--%s[color=blue,len=1.5,label=\" \"];\n" % node)
+                f.write("\"%s\"--\"%s\" [color=blue,len=1.5,label=\" \"  ];\n" % node)
                 name = node[1]
 
                 if "VHG" in node[1]:
@@ -226,52 +209,14 @@ def plotsol_from_db(**kwargs):
                     color = "red"
                     shape = "doublecircle"
 
-                f.write("%s[shape=%s,fillcolor=%s,style=filled,fontsize=12];\n" % (name, shape, color))
+                f.write("\"%s\" [shape=%s,fillcolor=%s,style=filled,fontsize=12];\n" % (name, shape, color))
         f.write("}")
 
         f.write("\nsubgraph{\n edge[color=chartreuse,weight=0];\n")
         for edge in edgesSol:
             if "S0" not in edge[2]:
-                f.write("%s--%s [ style=dashed,label=\"%s&#8594;%s\",fontcolor=blue3 ,fontsize=12,penwidth=%d];\n " % (
+                f.write("\"%s\"--\"%s\" [ style=dashed,label=\"%s&#8594;%s\",fontcolor=blue3 ,fontsize=12,penwidth=%d];\n " % (
                     edge + (kwargs["service_link_linewidth"],)))
 
         f.write("}\n\n")
         f.write("}")
-
-
-if __name__ == "__main__":
-
-    parser = argparse.ArgumentParser(description='1 iteration for solver')
-    parser.add_argument('--svg', dest='dosvg', action='store_true')
-    parser.add_argument('--service_link_linewidth', default=5, type=int)
-    parser.add_argument('--net', dest='net', action='store_true', help="print only the network")
-    parser.add_argument('--view', dest='view', action='store_true')
-    parser.add_argument("-s", '--serviceid', type=int)
-
-    args = parser.parse_args()
-
-    # if not args.net:
-    #     graphiz_exe="neato"
-    # else:
-    #     graphiz_exe="dot"
-
-    session = Session()
-    service = session.query(Service).filter(Service.id == args.serviceid).one()
-    service_id = str(args.serviceid)
-    #service.slas[0].substrate.write(path=str(args.serviceid))
-
-    dosvg = args.dosvg
-    plotsol_from_db(service_link_linewidth=args.service_link_linewidth, net=args.net, service=service)
-    if not dosvg:
-        file = tempfile.mkstemp(".pdf")[1]
-        subprocess.Popen(
-            ["neato", os.path.join(RESULTS_FOLDER, service_id, "./substrate.dot"), "-Tpdf", "-o", file]).wait()
-        if args.view:
-            subprocess.Popen(["evince", file]).wait()
-    else:
-        file = tempfile.mkstemp(".svg")[1]
-        subprocess.Popen(
-            ["neato", os.path.join(RESULTS_FOLDER, service_id, "./substrate.dot"), "-Tsvg", "-o", file]).wait()
-        if args.view:
-            subprocess.Popen(["eog", file]).wait()
-        shutil.copy(file, os.path.join(RESULTS_FOLDER, service_id,"./res.svg"))

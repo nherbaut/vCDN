@@ -9,7 +9,7 @@ from sqlalchemy import Column, Integer, ForeignKey
 from sqlalchemy import and_
 from sqlalchemy.orm import relationship
 
-from ..core.service_topo import ServiceTopo
+from offline.core.service_topo_heuristic import ServiceTopoHeuristic
 from ..core.sla import Sla, SlaNodeSpec
 from ..core.solver import solve
 from ..time.persistence import ServiceNode, ServiceEdge, Base, service_to_sla
@@ -21,9 +21,9 @@ RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../r
 
 def f(x):
     session = Session()
-    slasIDS, vhg_count, vcdn_count = x
+    slasIDS, vhg_count, vcdn_count, use_heuristic = x
     service = Service(slasIDS=slasIDS, serviceSpecFactory=ServiceSpecFactory, vhg_count=vhg_count,
-                      vcdn_count=vcdn_count)
+                      vcdn_count=vcdn_count, use_heuristic=use_heuristic)
     session.add(service)
     return service.id
 

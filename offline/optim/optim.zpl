@@ -47,6 +47,7 @@ param cpuCost_vHG := read "../../pricing/vmg/pricing_for_one_instance.properties
 param cpuCost_vCDN := read "../../pricing/cdn/pricing_for_one_instance.properties" as "1n" use 1;
 
 param netCost := read "../../pricing/net.cost.data" as "1n" use 1;
+param max_VHG_HOP := 3;
 
 var x[N cross NS ] binary;
 var x_cdn[N cross CDN_LABEL ] binary;
@@ -92,6 +93,10 @@ subto E2EdelayConstraint:
   forall <service,delay> in SERVICE_PATHS_DELAY:
     forall <k,i,j> in {<k,i,j>  in SERVICE_PATHS with k==service}:
      (sum <u,v> in E:y[u,v,i,j]*delays[u,v] + sum <u,v> in Et: y[u,v,i,j]*delays[v,u])<= delay;
+
+subto VHGopConstraint:
+    forall <i,j> in VHG_INCOMING_LINKS:
+        sum <u,v> in (E union Et): y[u,v,i,j] < max_VHG_HOP;
 
 
 

@@ -1,88 +1,181 @@
 #!/usr/bin/env python
 
-import argparse
+import logging
+import multiprocessing
 import os
+import random
 import sys
+from multiprocessing.pool import ThreadPool
 
-import numpy as np
+from numpy.random import RandomState
 
 from ..core.service import Service
-from ..core.solver import solve
+from ..core.service_topo_generator import ServiceTopoFullGenerator
+from ..core.service_topo_heuristic import ServiceTopoHeuristic
+from ..core.sla import Sla, SlaNodeSpec
 from ..core.substrate import Substrate
+from ..time.persistence import Session, Base, engine, drop_all, Tenant, Node
 
 GEANT_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../data/Geant2012.graphml')
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
 
-
-def unpack(first, *rest):
-    return first, rest
+candidate_count = 0
 
 
-def valid_topo(topo_spec):
-    name, spec = unpack(*topo_spec.split(","))
-    return (name, spec)
+def clean_and_create_experiment(topo, seed):
+    '''
+
+    :param topo: the topology generated according to specs
+    :param seed: the randomset used for generation
+    :return: rs, substrate
+    '''
+
+    session = Session()
+    Base.metadata.create_all(engine)
+    drop_all()
+
+    rs = RandomState(seed)
+    su = Substrate.fromSpec(topo, rs)
+    return rs, su
 
 
-parser = argparse.ArgumentParser(description='1 iteration for solver')
-parser.add_argument( "--just-topo", dest='just_topo', action='store_true')
-parser.add_argument('--sla_delay', help="delay toward vCDN", default=30.0, type=float)
-parser.add_argument('--start', metavar='S', type=str, nargs='+',
-                    help='a list of starters')
-parser.add_argument('--cdn', metavar='CDN', type=str, nargs='+',
-                    help='a list of CDN')
+def embbed_service_func(topology, slasIDS, vhg_count, vcdn_count, use_heuristic, solve=True):
+    session = Session()
+    service = Service(topo_instance=topology, slasIDS=slasIDS, vhg_count=vhg_count,
+                      vcdn_count=vcdn_count, use_heuristic=use_heuristic, solve=solve)
 
-parser.add_argument('--vcdnratio', help="the share of source traffic toward vcdn", default=0.35, type=float)
-parser.add_argument('--sourcebw', help="cumulated source bw from every source", default=1000000000, type=int)
-parser.add_argument('--topo', help="specify topo to use", default=('grid',["5","5"]), type=valid_topo)
+    session.add(service)
+    session.flush()
+    global candidate_count
+    candidate_count += 1
 
-args = parser.parse_args()
+    return service
 
-rs = np.random.RandomState()
-su = Substrate.fromSpec(args.topo)
 
-if args.just_topo:
-    su.write()
-    exit(0)
+def embbed_service_no_solve(x):
+    # print("%d so far " % candidate_count)
 
-for s in args.start:
-    assert s in su.nodesdict, "%s not in %s" % (s, su.nodesdict.keys())
+    topology, slasIDS, vhg_count, vcdn_count, use_heuristic = x
+    return embbed_service_func(topology, slasIDS, vhg_count, vcdn_count, use_heuristic, solve=False)
 
-for s in args.cdn:
-    assert s in su.nodesdict
 
-su.write()
+def embbed_service(x):
+    # print("%d so far " % candidate_count)
 
-best = sys.float_info.max
-best_service = None
-best_mapping = None
-for vhg in range(1, len(args.start) + 1):
-    for vcdn in range(1, min([len(args.start) + 1, vhg+1])):
+    topology, slasIDS, vhg_count, vcdn_count, use_heuristic = x
+    return embbed_service_func(topology, slasIDS, vhg_count, vcdn_count, use_heuristic)
 
-        service = Service(args.sourcebw/len(args.start), vhg, args.sla_delay, args.vcdnratio, 5, 3, vcdn, args.start,
-                          args.cdn, len(args.cdn), True)
-        service.write()
-        mapping = solve(service, su, preassign_vhg=True)
-        if mapping is not None:
-            if mapping.objective_function < best:
-                best = mapping.objective_function
-                best_service = service
-                best_mapping=mapping
 
-if not best_mapping is None:
+def create_sla(starts, cdns, sourcebw, topo=None, su=None, rs=None, seed=0):
+    if su is None:
+        rs, su = clean_and_create_experiment(topo, seed)
 
-    su.consume_service(best_service, best_mapping)
-    su.write()
-    best_mapping.save()
-    sys.stdout.write("success: %e\n" % best_mapping.objective_function)
-    with open(os.path.join(RESULTS_FOLDER, "best.mapping.data"),"w") as f:
-        f.write("VMG,VCDN,CostFunction\n")
-        f.write("%d,%d,%lf"%(best_service.vhgcount,best_service.vcdncount,best))
+    nodes_names = [n.name for n in su.nodes]
+    session = Session()
 
-    exit(0)
-else:
-    sys.stdout.write("failure\n")
-    # mapping = __solve(service, su,allow_violations=True)
-    # if mapping:
-    #    for index, violation in enumerate(mapping.violations,start=1):
-    #        print("violation %d : %s" % (index,violation))
-    exit(1)
+    for s in starts:
+        assert s in nodes_names, "%s not in %s" % (s, nodes_names)
+
+    if len(cdns) == 1 and cdns[0] == "all":
+        cdns = [node.name for node in su.nodes]
+
+    for s in cdns:
+        assert s in nodes_names, "%s not in %s" % (s, nodes_names)
+
+    su.write(RESULTS_FOLDER)
+    session.add(su)
+    session.flush()
+
+    tenant = Tenant()
+    session.add(tenant)
+
+    sla_node_specs = []
+    bw_per_s = sourcebw / float(len(starts))
+    for start in starts:
+        ns = SlaNodeSpec(topoNode=session.query(Node).filter(Node.name == start).one(), type="start",
+                         attributes={"bandwidth": bw_per_s})
+        sla_node_specs.append(ns)
+
+    for cdn in cdns:
+        ns = SlaNodeSpec(topoNode=session.query(Node).filter(Node.name == cdn).one(), type="cdn",
+                         attributes={"bandwidth": 1})
+        sla_node_specs.append(ns)
+
+    sla = Sla(substrate=su, delay=200, max_cdn_to_use=1, tenant_id=tenant.id, sla_node_specs=sla_node_specs)
+    session.add(sla)
+    session.flush()
+
+    return sla
+
+
+def generate_candidates_param(sla, vhg_count=None, vcdn_count=None,
+                              automatic=True, use_heuristic=True, disable_isomorph_check=False):
+    if not automatic:
+        if use_heuristic:
+            topoContainer = ServiceTopoHeuristic(sla=sla, vhg_count=vhg_count, vcdn_count=vcdn_count)
+        else:
+            topoContainer = ServiceTopoFullGenerator(sla=sla, vhg_count=vhg_count, vcdn_count=vcdn_count,
+                                                     disable_isomorph_check=disable_isomorph_check)
+
+        for topo in topoContainer.getTopos():
+            yield (topo, [sla.id], vhg_count, vcdn_count, use_heuristic)
+    else:
+        merged_sla = Service.get_merged_sla([sla])
+
+        if disable_isomorph_check:  # take only one service at random
+            for vhg_count in range(1, len(merged_sla.get_start_nodes()) + 1):
+                for vcdn_count in range(1, vhg_count + 1):
+                    topoContainer = ServiceTopoFullGenerator(sla=merged_sla, vhg_count=vhg_count, vcdn_count=vcdn_count,
+                                                             disable_isomorph_check=disable_isomorph_check)
+                    yield (random.choice(list(topoContainer.getTopos())), [merged_sla.id], vhg_count, vcdn_count,
+                           use_heuristic)
+
+        else:
+            for vhg_count in range(1, len(merged_sla.get_start_nodes()) + 1):
+                for vcdn_count in range(1, vhg_count + 1):
+                    if use_heuristic:
+                        topoContainer = ServiceTopoHeuristic(sla=merged_sla, vhg_count=vhg_count, vcdn_count=vcdn_count)
+                    else:
+                        topoContainer = ServiceTopoFullGenerator(sla=merged_sla, vhg_count=vhg_count,
+                                                                 vcdn_count=vcdn_count,
+                                                                 disable_isomorph_check=disable_isomorph_check)
+
+                    for topo in topoContainer.getTopos():
+                        yield (topo, [merged_sla.id], vhg_count, vcdn_count, use_heuristic)
+
+
+def optimize_sla(sla, vhg_count=None, vcdn_count=None,
+                 automatic=True, use_heuristic=True, random_edges=False, rs=None, isomorph_check=True):
+    if not random_edges:
+        candidates_param = generate_candidates_param(sla, vhg_count=vhg_count, vcdn_count=vcdn_count,
+                                                     automatic=automatic, use_heuristic=use_heuristic)
+    else:
+        candidates_param = generate_candidates_param(sla, vhg_count=vhg_count, vcdn_count=vcdn_count,
+                                                     automatic=automatic, use_heuristic=False,
+                                                     disable_isomorph_check=True)
+
+    candidates_param = list(candidates_param)
+    logging.debug("%d candidate " %len(candidates_param))
+
+    # sys.stdout.write("\n\t Service to embed :%d\n" % len(candidates_param))
+
+    # print("%d param to optimize" % len(candidates_param))
+    pool = ThreadPool(multiprocessing.cpu_count() - 1)
+    # sys.stdout.write("\n\t Embedding services:%d\n" % len(candidates_param))
+    services = pool.map(embbed_service, candidates_param)
+
+    # services = [embbed_service(param) for param in candidates_param]
+    #sys.stdout.write(" done!\n")
+
+    services = filter(lambda x: x.mapping is not None, services)
+    services = sorted(services, key=lambda x: x.mapping.objective_function, )
+
+    for service in services:
+        logging.debug(
+            "%d %lf %d %d" % (service.id, service.mapping.objective_function, service.vhg_count, service.vcdn_count))
+
+    if len(services) > 0:
+        winner = services[0]
+        return winner, candidate_count
+    else:
+        raise ValueError("failed to compute valide mapping")

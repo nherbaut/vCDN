@@ -48,21 +48,27 @@ param cpuCost_vHG := read "{{ pricing_dir }}/vmg/pricing_for_one_instance.proper
 param cpuCost_vCDN := read "{{ pricing_dir }}/cdn/pricing_for_one_instance.properties" as "1n" use 1;
 
 param netCost := read "{{ pricing_dir }}/net.cost.data" as "1n" use 1;
-
+param STARTERS_LABEL_BW_DEMAND[STARTERS_LABEL] := read "{{ dir }}/starters.nodes.data" as "<1s> 3n";
 
 
 var x[N cross NS ] binary;
 var y [(E union Et) cross ES ] binary;
-var w binary;
+
+var lambda[ES] binary;
+var z[NS] real;
+var w real;
 
 do forall <i> in NS
     do print i, bwN[i];
 
 minimize cost:
-    sum <u,v> in E union Et:(sum <i,j> in ES:(y[u,v,i,j] * bwS[i,j] * netCost))+
-	sum<vhg> in VHG_LABEL:(cpuCost_vHG*cpuS[vhg])+
-	sum<vcdn> in VCDN_LABEL:(cpuCost_vCDN*cpuS[vcdn]);
-	#sum <cdn> in CDN_LABEL: 	sum <vhg,ccdn> in { <vhg,ccdn> in VCDN_INCOMING_LINKS with ccdn==cdn}: 	   x[i,j]*bwN[i] * 10000000;
+        w;
+
+subto cost_constraint:
+    sum <u,v> in E union Et:(sum <i,j> in ES:(y[u,v,i,j] * z[j] * netCost)) +
+    	sum<vhg> in VHG_LABEL:(cpuCost_vHG*cpuS[vhg])+
+    	sum<vcdn> in VCDN_LABEL:(cpuCost_vCDN*cpuS[vcdn])+
+    	sum <cdn> in CDN_LABEL: 	sum <vhg,ccdn> in { <vhg,ccdn> in VCDN_INCOMING_LINKS with ccdn==cdn}: 	   x[i,j]*bwN[i] * 10000000 <= w;
 
 
 subto everyNodeIsMapped:
@@ -93,7 +99,7 @@ subto E2EdelayConstraint:
 subto flowconservation:
    forall <i,j> in {<i,j> in ES\CDN_LINKS }:
       forall <u> in N:
-         sum<v> in {<v> in N with <u,v> in (E union Et)}: (y[u, v, i, j] - y[v, u, i,j]) == x[u,i]-x[u,j];
+        sum<v> in {<v> in N with <u,v> in (E union Et)}: (y[u, v, i, j] - y[v, u, i,j])*lambda[i,j] == (x[u,i]-x[u,j])*lambda[i,j];
 
 
 subto noloop:
@@ -107,11 +113,6 @@ subto noBigloop:
 			sum <v> in delta(u):
 			  y[u,v,i,j] <= 1;
 		
-		
-
-
-
-
 subto sources:
     forall <name,id> in STARTERS_MAPPING:
         x[id,name]==1;
@@ -139,3 +140,50 @@ subto bwSubstrate_cdn:
 subto bwtSubstrate_cdn:
    forall <u,v> in Et:
        sum<i,j> in CDN_LINKS: (y[u,v,i,j]+y[v,u,i,j]) * bwS[i,j] <= bwt[u,v];
+
+
+#################################################
+
+
+
+
+defset deltaSp(u) := { <v> in NS with <v,u> in ES};
+defset deltaSm(u) := { <v> in NS with <u,v> in ES};
+
+defnumb r(i) := if <i> in CDN_LABEL then  0.65
+					else if <i> in VCDN_LABEL then 0.35
+							else 1
+						 end
+					end
+					;
+
+defnumb vmgCost(i) := i*0.000002*100;
+defnumb vcdnCost(i) := i*0.000002*100;
+
+subto starterBWDemand:
+  forall <i> in STARTERS_LABEL:
+		z[i]==STARTERS_LABEL_BW_DEMAND[i];
+
+subto OtherBWDemand:
+  forall <i> in NS \ STARTERS_LABEL:
+		sum <j> in { <j> in deltaSp(i)}: lambda[j,i] * z[j] * r(i) == z[i];
+
+
+subto EachSourceConnectedTo1VMG:
+forall <s> in STARTERS_LABEL:
+  sum <j> in deltaSm(s): lambda[s,j]==1;
+
+
+subto eachVMhasACDN:
+forall <i> in VHG_LABEL:
+  sum <j> in CDN_LABEL: lambda[i,j]==1;
+
+subto eachVMhasAVCDN:
+forall <i> in VHG_LABEL:
+  sum <j> in VCDN_LABEL: lambda[i,j]==1;
+
+subto EachVMHHasOneOrMoreSource:
+forall <s> in VHG_LABEL:
+  sum <j> in deltaSp(s): lambda[j,s]>=1;
+
+

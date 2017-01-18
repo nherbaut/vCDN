@@ -100,8 +100,8 @@ def fill_db_with_sla(data_files, pricer, tenant, **kwargs):
             tses = {key: discretize(windows, centroids, ts=value[1], df=value[2]) for key, value in tsdf.items()}
             slas = chunk_series_as_sla(tses)
             price = pricer([item for sublist in slas.values() for item in sublist])
-            logging.debug("%d slas generated for (%d,%d)" % (sum([1 for sublist in slas.values() for item in sublist]), windows, centroids))
-
+            logging.debug("%d slas generated for (%d,%d)" % (
+            sum([1 for sublist in slas.values() for item in sublist]), windows, centroids))
 
             logging.debug("For (%d,%d) the price is %lf" % (windows, centroids, price))
             if price < best_price:

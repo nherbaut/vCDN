@@ -5,9 +5,14 @@ from mininet.topo import Topo
 import math
 import numpy as np
 import re
+import ..
 
 rs = np.random.RandomState()
 
+
+class TopoDB(Topo):
+
+    def __init__(self):
 
 class loadTopo(Topo):
     "Simple topology example."

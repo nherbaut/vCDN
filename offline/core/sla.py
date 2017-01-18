@@ -1,13 +1,27 @@
 import scipy
 import scipy.integrate as integrate
+from bisect import bisect_right
+
+import numpy as np
 from sqlalchemy import Column, Integer, DateTime, Float, ForeignKey, String, PickleType
 from sqlalchemy.orm import relationship
 
-
-from ..core.substrate import Substrate
+from ..time.persistence import Node
 from ..time.persistence import Session, Base, service_to_sla
 
 tcp_win = 65535.0
+
+
+# http://nicky.vanforeest.com/probability/weightedRandomShuffling/weighted.html
+def weighted_shuffle(a, w, rs):
+    r = np.empty_like(a)
+    cumWeights = np.cumsum(w)
+    for i in range(len(a)):
+        rnd = rs.uniform() * cumWeights[-1]
+        j = bisect_right(cumWeights, rnd)
+        r[i] = a[j]
+        cumWeights[j:] -= w[j]
+    return r
 
 
 def concurrentUsers(t, m, sigma, duration):
@@ -21,7 +35,7 @@ class SlaNodeSpec(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     sla_id = Column(Integer, ForeignKey("Sla.id"))
     sla = relationship("Sla", cascade="save-update")
-    toponode_id = Column(String(16), ForeignKey("Node.id"), nullable=False)
+    toponode_id = Column(Integer, ForeignKey("Node.id"), nullable=False)
     topoNode = relationship("Node", order_by="Node.id", cascade="save-update")
     attributes = Column(PickleType)
     type = Column(String(16))
@@ -44,8 +58,6 @@ class Sla(Base):
     substrate_id = Column(Integer, ForeignKey("Substrate.id"))
     substrate = relationship("Substrate", cascade="save-update")
 
-
-
     def __init__(self, *args, **kwargs):
         '''
         :param start_nodes: a list of nodes with their metadata includeing bandwidth {"S1":{"bandwidth":12},"S2":{"bandwidth":13}}
@@ -61,13 +73,13 @@ class Sla(Base):
         self.sla_node_specs = kwargs.get("sla_node_specs", [])
 
     def get_total_bandwidth(self):
-        return sum([start_node.attributes["bandwidth"] for start_node in self.get_start_nodes()] )
+        return sum([start_node.attributes["bandwidth"] for start_node in self.get_start_nodes()])
 
     def get_start_nodes(self):
-        return filter(lambda x: x.type == "start", self.sla_node_specs)
+        return sorted(filter(lambda x: x.type == "start", self.sla_node_specs), key=lambda x: x.toponode_id)
 
     def get_cdn_nodes(self):
-        return filter(lambda x: x.type == "cdn", self.sla_node_specs)
+        return sorted(filter(lambda x: x.type == "cdn", self.sla_node_specs), key=lambda x: x.toponode_id)
 
 
 def findSLAByDate(date):
@@ -83,44 +95,53 @@ def write_sla(sla, seed=None):
         f.write("%s \n" % sla.start)
 
 
-def generate_random_slas(rs, substrate, count=1000, start_count=0, end_count=0, tenant=None):
-    session=Session()
+def generate_random_slas(rs, substrate, count=1000, user_count=1000, max_start_count=1, max_end_count=1,tenant=None,sourcebw=0,min_start_count=1,
+                            min_end_count=1):
+    session = Session()
     res = []
     for i in range(0, count):
-        bitrate = getRandomBitrate(rs)
-        # bitrate = rs.choice([   400000, 500000, 600000])
-        concurent_users = max(rs.normal(20000, 5000), 1000)
-        # concurent_users = max(rs.normal(20000, 5000), 5000)
-        time_span = max(rs.normal(24 * 60 * 60, 60 * 60), 0)
-        movie_duration = max(rs.normal(60 * 60, 10 * 60), 0)
+        if sourcebw==0:
+            bitrate = getRandomBitrate(rs)
+            # bitrate = rs.choice([   400000, 500000, 600000])
+            concurent_users = max(rs.normal(20000, 5000), 1000)
+            # concurent_users = max(rs.normal(20000, 5000), 5000)
+            time_span = max(rs.normal(24 * 60 * 60, 60 * 60), 0)
+            movie_duration = max(rs.normal(60 * 60, 10 * 60), 0)
 
-        delay = tcp_win / bitrate * 1000.0
-        bandwidth = count * bitrate * movie_duration / time_span
+            delay = tcp_win / bitrate * 1000.0
+            bandwidth = user_count * bitrate * movie_duration / time_span
+        else:
+            bandwidth=sourcebw
 
-        if not (start_count > 0 and end_count > 0):
-            start_count = rs.randint(low=1, high=5)
-            end_count = rs.randint(low=1, high=start_count)
+            # get the nodes and their total bw
+        nodes_by_degree = substrate.get_nodes_by_degree()
+        nodes_by_bw = substrate.get_nodes_by_bw()
 
-        random_nodes = rs.choice(substrate.nodes, size=start_count + end_count, replace=False)
-
-        start_nodes = random_nodes[:start_count]
-        nodespecs=[]
+        cdn_nodes = weighted_shuffle(nodes_by_degree.keys(), nodes_by_degree.values(), rs)[
+                    :rs.randint(min_end_count, max_end_count + 1)]
+        start_nodes = weighted_shuffle(nodes_by_bw.keys(), nodes_by_bw.values(), rs)[
+                      -rs.randint(min_start_count, max_start_count + 1):]
+        nodespecs = []
         for sn in start_nodes:
+            sn = session.query(Node).filter(Node.name == sn).one()
+            nodespecs.append(
+                SlaNodeSpec(type="start", topoNode=sn, attributes={"bandwidth": bandwidth / (1.0 * len(start_nodes))}))
 
-            nodespecs.append(SlaNodeSpec(type="start",topoNode=sn, attributes={"bandwidth": bandwidth / (1.0 * len(start_nodes))}))
+        for sn in cdn_nodes:
+            sn = session.query(Node).filter(Node.name == sn).one()
+            nodespecs.append(
+                SlaNodeSpec(type="cdn", topoNode=sn, attributes={"bandwidth": 0}))
 
-        cdn_nodes = random_nodes[start_count:]
-        for cdnn in cdn_nodes:
-            nodespecs.append(SlaNodeSpec(type="cdn", topoNode=sn, attributes={"bandwidth": bandwidth / (1.0 * len(start_nodes))}))
-
-        res.append(
-            Sla(start_date=None, end_date=None,
-                bandwidth=bandwidth,
-                tenant_id=tenant.id,
-                sla_node_specs=nodespecs,
-                substrate=substrate,
-                delay=delay
-                ))
+        sla = Sla(start_date=None, end_date=None,
+                  bandwidth=bandwidth,
+                  tenant_id=tenant.id,
+                  sla_node_specs=nodespecs,
+                  substrate=substrate,
+                  delay=delay
+                  )
+        session.add(sla)
+        session.flush()
+        res.append(sla)
 
     return res
 
