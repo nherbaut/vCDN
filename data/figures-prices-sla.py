@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 means=pickle.load(open("means.pickle"))
 def filterIX(x):
 	ixs={"IX":"IX1","linx":"IX2","ecix":"IX3"}
-	for k in ixs.keys():
+	for k in list(ixs.keys()):
 		if k in x:
 			return ixs[k]	
 	else:
@@ -24,11 +24,11 @@ for item in ["sla_vio_mean","sla_vio_fc80", "sla_vio_fc95",]:
 	res=defaultdict(lambda: [])
 	for x in vio_means:
 		res[x[0]].append(x[1])
-	print("%s"%item)
+	print(("%s"%item))
 	for k in sorted(res.keys()):
 	  data_means[k].append(np.mean(res[k]))
 	  data_std[k].append(np.sqrt(np.std(res[k])))
-	  print("%s\t%lf\t(%lf)"%(k,np.mean(res[k]),np.sqrt(np.std(res[k]))))
+	  print(("%s\t%lf\t(%lf)"%(k,np.mean(res[k]),np.sqrt(np.std(res[k])))))
 	
 	  
 	  
@@ -93,11 +93,11 @@ for item in ["price_fcmean","price_fc80", "price_fc95",]:
 	res=defaultdict(lambda: [])
 	for x in vio_means:
 		res[x[0]].append(x[1])
-	print("%s"%item)
+	print(("%s"%item))
 	for k in sorted(res.keys()):
 	  data_means[k].append(np.mean(res[k]))
 	  data_std[k].append(np.sqrt(np.std(res[k])))
-	  print("%s\t%lf\t(%lf)"%(k,np.mean(res[k]),np.sqrt(np.std(res[k]))))
+	  print(("%s\t%lf\t(%lf)"%(k,np.mean(res[k]),np.sqrt(np.std(res[k])))))
 	
 	  
 	  
@@ -159,11 +159,11 @@ for item in ["MAPE","MASE",]:
 	res=defaultdict(lambda: [])
 	for x in vio_means:
 		res[x[0]].append(x[1])
-	print("%s"%item)
+	print(("%s"%item))
 	for k in sorted(res.keys()):
 	  data_means[k].append(np.mean(res[k]))
 	  data_std[k].append(np.sqrt(np.std(res[k])))
-	  print("%s\t%lf\t(%lf)"%(k,np.mean(res[k]),np.sqrt(np.std(res[k]))))
+	  print(("%s\t%lf\t(%lf)"%(k,np.mean(res[k]),np.sqrt(np.std(res[k])))))
 	
 	  
 	  

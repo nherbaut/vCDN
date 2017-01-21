@@ -58,4 +58,4 @@ else:
             res=1
 
 
-print res
+print(res)

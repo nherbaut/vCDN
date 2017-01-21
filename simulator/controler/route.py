@@ -104,7 +104,7 @@ def loadroutes(solutionsfile):
                 if int(edge[0], 16) in switch:
                     switch[int(node[0], 16)].append(edge)
             else:
-                print 'error'
+                print('error')
     pass
 
 

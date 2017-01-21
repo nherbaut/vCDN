@@ -39,4 +39,4 @@ for file in sorted(os.listdir(DATA_FOLDER)):
 
 tses = {file: get_forecast(os.path.join(DATA_FOLDER, file), 1, 20) for file in data_files[3:7]}
 
-plot_3D_slas(tses.values())
+plot_3D_slas(list(tses.values()))

@@ -21,7 +21,7 @@ for index, key in enumerate(sorted(res.keys()),start=1):
 
 
 buffer=""
-print "q to quit, d 1 to delete reccord 1"
+print("q to quit, d 1 to delete reccord 1")
 buffer=""
 while buffer != "q\n":
     buffer=sys.stdin.readline()
@@ -31,17 +31,17 @@ while buffer != "q\n":
         if keydict[index] in res :
             if user_input[0]=="d" and  len(user_input)==2:
                 del res[keydict[index]]
-                print "reccord %s deleted" % keydict[index]
+                print(("reccord %s deleted" % keydict[index]))
                 continue
 
 
             elif user_input[0] == "l" and  len(user_input)==3:
                 res[keydict[index]][0].linestyle=user_input[2]
-                print "%s will be displayed with %s" % (keydict[index], user_input[2])
+                print(("%s will be displayed with %s" % (keydict[index], user_input[2])))
                 continue
             elif user_input[0] == "m" and  len(user_input)==3:
                 res[keydict[index]][0].marker=user_input[2]
-                print "%s will be displayed with %s" % (keydict[index], user_input[2])
+                print(("%s will be displayed with %s" % (keydict[index], user_input[2])))
                 continue
 
             elif user_input[0] == "n" and  len(user_input)==3:
@@ -50,12 +50,12 @@ while buffer != "q\n":
                 res[user_input[2]]=v
                 continue
         else:
-            print "error - no one here"
+            print("error - no one here")
 
 
 
 
 with open("results.pickle", "w") as f:
         pickle.dump(res,f)
-        print "saved"
+        print("saved")
 

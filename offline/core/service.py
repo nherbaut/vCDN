@@ -54,7 +54,7 @@ class ServiceSpec:
 
 
 def get_count_by_type(self, type):
-    return filter(lambda x: x[2]["type"] == 'x', self.servicetopo.edges_iter(data=True))
+    return [x for x in self.servicetopo.edges_iter(data=True) if x[2]["type"] == 'x']
 
 
 def get_vhg_count(self):
@@ -168,7 +168,7 @@ class Service(Base):
         # create the node specs
         merge_sla_nodes_specs = []
 
-        for key, value in merge_sla.items():
+        for key, value in list(merge_sla.items()):
             merge_sla_nodes_specs.append(SlaNodeSpec(toponode_id=key, attributes={"bandwidth": value}, type="start"))
 
         for cdnNodeSpec in slas[0].get_cdn_nodes():
@@ -324,7 +324,7 @@ class Service(Base):
         sla_max_cdn_to_use = self.sla.max_cdn_to_use
         sla_node_specs = self.sla.sla_node_specs
         self.sla.max_cdn_to_use = 0
-        self.sla.sla_node_specs = filter(lambda x: x.type == "cdn", self.sla.sla_node_specs)
+        self.sla.sla_node_specs = [x for x in self.sla.sla_node_specs if x.type == "cdn"]
 
         mapping = solve(self)
         if mapping is None:

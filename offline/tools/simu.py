@@ -51,13 +51,13 @@ if os.path.isfile(os.path.join(RESULTS_FOLDER, "results.pickle")):
 else:
     res_file = {}
 
-for key in res.keys():
+for key in list(res.keys()):
     if key in res_file:
 
-        print
+        print()
         "won't add %s to already existing result" % key
         new_key = key + str(random.uniform(1, 10000))
-        print
+        print()
         "writing to another result instead : %s" % new_key
         res_file[new_key] = res[key]
     else:
@@ -68,7 +68,7 @@ with open(os.path.join(RESULTS_FOLDER, "results.pickle"), "w") as f:
     pickle.dump(res_file, f)
 
 print("saved results with keys:")
-for key in res.keys():
+for key in list(res.keys()):
     if key in res_file:
         sys.stdout.write("%s " % key)
 

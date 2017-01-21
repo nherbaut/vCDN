@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import re
+from functools import reduce
 
 edges = []
 nodesdict = {}
@@ -40,9 +41,9 @@ with open("solutions.data", "r") as sol:
 with open("substrate.dot", 'w') as f:
     f.write("digraph{rankdir=LR;\n\n\n\n subgraph{\n\n\n")
     
-    avgcpu = reduce(lambda x,y: float(x)+float(y),nodesdict.values(),0.0)/len(nodesdict)
+    avgcpu = reduce(lambda x,y: float(x)+float(y),list(nodesdict.values()),0.0)/len(nodesdict)
 
-    for node in nodesdict.items():
+    for node in list(nodesdict.items()):
         # f.write("%s [label=%2.2f,shape=box,color=black,width=%f];\n"%(node[0],float(node[1]),min	(1,float(node[1])/avgcpu)))
         f.write("\"%s\" [shape=box,color=black,width=%f,fontsize=20];\n" % (node[0], min(1, float(node[1]) / avgcpu)))
 

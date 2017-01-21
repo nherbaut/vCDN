@@ -94,7 +94,7 @@ class Mapping(Base):
             pickle.Pickler(f).dump(self)
 
     def get_vhg_mapping(self):
-        return filter(lambda x: "VHG" in x.service_node_id, self.node_mappings)
+        return [x for x in self.node_mappings if "VHG" in x.service_node_id]
 
     def get_objective_function(self):
         '''
@@ -136,4 +136,4 @@ class Mapping(Base):
             else:
                 res[nm.service_node.id] = (0, nm.service_node.cpu)
 
-        return migration_costs_func(filter(lambda x: x[0] + x[1] != 0, res.values()))
+        return migration_costs_func([x for x in list(res.values()) if x[0] + x[1] != 0])

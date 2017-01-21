@@ -41,23 +41,23 @@ class ServiceTopoHeuristic(AbstractServiceTopo):
             service.add_node("S%d" % key, cpu=0, type="S", mapping=slaNodeSpec.topoNode.name, bandwidth=0)
 
         # create s<-> vhg edges
-        score, cluster = get_node_clusters(map(lambda x: x.topoNode.name, mapped_start_nodes), vhg_count,
+        score, cluster = get_node_clusters([x.topoNode.name for x in mapped_start_nodes], vhg_count,
                                                        substrate=substrate)
-        for toponode_name, vmg_id in cluster.items():
+        for toponode_name, vmg_id in list(cluster.items()):
             s = [n[0] for n in service.nodes(data=True) if n[1].get("mapping", None) == toponode_name][0]
-            service.add_edge(s, "VHG%d" % vmg_id, delay=sys.maxint, bandwidth=0)
+            service.add_edge(s, "VHG%d" % vmg_id, delay=sys.maxsize, bandwidth=0)
 
         # create vhg <-> vcdn edges
         # here, each S "votes" for a vCDN and tell its VHG
 
-        score, cluster = get_node_clusters(map(lambda x: x.topoNode.name, mapped_start_nodes), vcdn_count,substrate=substrate)
-        for toponode_name, vCDN_id in cluster.items():
+        score, cluster = get_node_clusters([x.topoNode.name for x in mapped_start_nodes], vcdn_count,substrate=substrate)
+        for toponode_name, vCDN_id in list(cluster.items()):
             # get the S from the toponode_id
             s = [n[0] for n in service.nodes(data=True) if n[1].get("mapping", None) == toponode_name][0]
 
             vcdn = "VCDN%d" % vCDN_id
             # get the vhg from the S
-            vhg = service[s].items()[0][0]
+            vhg = list(service[s].items())[0][0]
 
             # apply the votes
             if "votes" not in service.node[vhg]:
@@ -69,7 +69,7 @@ class ServiceTopoHeuristic(AbstractServiceTopo):
         # create the edge according to the votes
         for vhg in [n[0] for n in service.nodes(data=True) if n[1].get("type") == "VHG"]:
             votes = service.node[vhg]["votes"]
-            winners = max(votes.iteritems(), key=operator.itemgetter(1))
+            winners = max(iter(list(votes.items())), key=operator.itemgetter(1))
             if len(winners) == 1:
                 service.add_edge(vhg, winners[0], bandwidth=0)
             else:
@@ -97,7 +97,7 @@ class ServiceTopoHeuristic(AbstractServiceTopo):
                                "VHG" in nmapping.service_node.name]
                 cdn_mapping = [(nm.topoNode.name, "CDN%d" % index) for index, nm in
                                enumerate(mapped_cdn_nodes, start=1)]
-                for vhg, cdn in get_vhg_cdn_mapping(vhg_mapping, cdn_mapping,substrate).items():
+                for vhg, cdn in list(get_vhg_cdn_mapping(vhg_mapping, cdn_mapping,substrate).items()):
                     if vhg in service.node:
                         service.add_edge(vhg, cdn, bandwidth=0,)
 

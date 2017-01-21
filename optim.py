@@ -97,7 +97,7 @@ if args.disable_embedding:
              os.path.join(args.dest_folder, "topo.svg")]).wait()
         source_path = os.path.normpath(os.path.join(RESULTS_FOLDER, "./substrate.dot"))
         dest_path = os.path.normpath(os.path.join(args.dest_folder, "substrate.dot"))
-        if source_path <> dest_path:
+        if source_path != dest_path:
             shutil.copy(os.path.join(RESULTS_FOLDER, "./substrate.dot"), )
         subprocess.Popen(["eog", os.path.join(args.dest_folder, "topo.svg")]).wait()
 
@@ -118,7 +118,7 @@ else:
         match = re.findall("RAND\(([0-9]+),([0-9]+)\)", args.start[0])
         if len(match) == 1:
             nodes_by_bw = su.get_nodes_by_bw()
-            start_nodes = offline.core.sla.weighted_shuffle(nodes_by_bw.keys(), nodes_by_bw.values(), rs)[
+            start_nodes = offline.core.sla.weighted_shuffle(list(nodes_by_bw.keys()), list(nodes_by_bw.values()), rs)[
                           -rs.randint(int(match[0][0]), int(match[0][1]) + 1):]
             logging.debug("random start nodes: %s" % " ".join(start_nodes))
 
@@ -128,7 +128,7 @@ else:
         if len(match) == 1:
             nodes_by_degree = su.get_nodes_by_degree()
 
-            cdn_nodes = offline.core.sla.weighted_shuffle(nodes_by_degree.keys(), [30-i for i in nodes_by_degree.values()], rs)[
+            cdn_nodes = offline.core.sla.weighted_shuffle(list(nodes_by_degree.keys()), [30-i for i in list(nodes_by_degree.values())], rs)[
                         :rs.randint(int(match[0][0]), int(match[0][1]) + 1)]
             logging.debug("random cdn nodes: %s" % " ".join(cdn_nodes))
 
@@ -166,8 +166,8 @@ else:
                 f.write("%lf\n" % service.mapping.objective_function)
                 f.write("%d,%d\n" % (service.vhg_count, service.vcdn_count))
 
-            print("Successfull mapping w price: \t %lf in \t %d embedding \t winner is %d (%d,%d)" % (
-                service.mapping.objective_function, count_embedding, service.id, service.vhg_count, service.vcdn_count))
+            print(("Successfull mapping w price: \t %lf in \t %d embedding \t winner is %d (%d,%d)" % (
+                service.mapping.objective_function, count_embedding, service.id, service.vhg_count, service.vcdn_count)))
 
         if args.plot:
             dest_folder = os.path.join(RESULTS_FOLDER, str(service.id))

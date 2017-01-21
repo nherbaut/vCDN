@@ -43,7 +43,7 @@ def pairwise(iterable):
     "s -> (s0,s1), (s1,s2), (s2, s3), ..."
     a, b = tee(iterable)
     next(b, None)
-    return zip(a, b)
+    return list(zip(a, b))
 
 
 class Substrate(Base):
@@ -66,7 +66,7 @@ class Substrate(Base):
         return sum([x.bandwidth for x in self.edges])
 
     def get_nodes_sum(self):
-        return sum([x.cpu for x in self.nodes.items()])
+        return sum([x.cpu for x in list(self.nodes.items())])
 
     def get_nodes_by_bw(self):
         return self.__get_graph().degree(weight="bandwidth")
@@ -170,7 +170,7 @@ class Substrate(Base):
                         g.add_edge(root, node)
 
         # take the biggest connected subgraph
-        g = max({sg: len(sg.nodes()) for sg in nx.connected_component_subgraphs(g)}.items(),
+        g = max(list({sg: len(sg.nodes()) for sg in nx.connected_component_subgraphs(g)}.items()),
                 key=operator.itemgetter(1))[0]
 
         session = Session()
@@ -361,14 +361,14 @@ class Substrate(Base):
         session.flush()
 
     def deduce_bw(es, edges, service):
-        candidate_edges = filter(lambda x: x[0] == es.start_topo_node_id and x[1] == es.end_topo_node_id, edges)
+        candidate_edges = [x for x in edges if x[0] == es.start_topo_node_id and x[1] == es.end_topo_node_id]
         if len(candidate_edges) != 0:
             sub_edge = candidate_edges[0]
             service_edge = service.spec.edges["%s %s" % (es.start_service_node_id, es.end_service_node_id)]
             edges.remove(sub_edge)
             edges.append((sub_edge[0], sub_edge[1], sub_edge[2] - service_edge.bw, sub_edge[3]))
             if sub_edge[2] - service_edge.bw < 0:
-                print
+                print()
                 "hein?"
             return True
         return False

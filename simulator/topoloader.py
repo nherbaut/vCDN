@@ -5,7 +5,7 @@ from mininet.topo import Topo
 import math
 import numpy as np
 import re
-import ..
+
 
 rs = np.random.RandomState()
 
@@ -13,6 +13,7 @@ rs = np.random.RandomState()
 class TopoDB(Topo):
 
     def __init__(self):
+        pass
 
 class loadTopo(Topo):
     "Simple topology example."
@@ -131,7 +132,7 @@ class loadTopo(Topo):
                                                                           port2=40000 + int(
                                                                               "%s" % re.findall('\d+', node[1])[0]))
                 else:
-                    print 'error'
+                    print('error')
 
         pass
 

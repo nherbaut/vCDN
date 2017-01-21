@@ -11,7 +11,7 @@ from mininet.link import TCLink
 from mininet.net import Mininet
 from mininet.node import RemoteController, Controller, OVSController
 
-from CustomTopo import MyTopo
+from .CustomTopo import MyTopo
 from mininet.node import OVSSwitch
 from functools import partial
 from mininet.cli import CLI
@@ -39,8 +39,8 @@ h11.cmd('./dash_pool.py --mini_buffer_seconds 5 --maxi_buffer_seconds 10 --name 
 #h11.cmd('./dash_pool.py  --name h12 --host %s --port 8000 --path data --user_count=1000 --arrival_time=1 --target_br=2000000&'%h32.IP())
 #print res
 #CLI(net)
-print "press enter to stop mininet"
+print("press enter to stop mininet")
 sys.stdin.readline()
-print "stopping mininet"
+print("stopping mininet")
 net.stop()
-print "mininet is stopped"
+print("mininet is stopped")

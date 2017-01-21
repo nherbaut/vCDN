@@ -85,7 +85,7 @@ def fill_db_with_sla(data_files, pricer, tenant, **kwargs):
     cdn_nodes = [node.id for node in kwargs.get("cdn_nodes", [])]
     forecast_series_count = len(start_nodes)
 
-    file_to_node = dict(zip(data_files, start_nodes))
+    file_to_node = dict(list(zip(data_files, start_nodes)))
 
     best_price = sys.float_info.max
     best_slas = None
@@ -97,11 +97,11 @@ def fill_db_with_sla(data_files, pricer, tenant, **kwargs):
 
     for windows in range(1, 11, 2):
         for centroids in range(1, 11, 1):
-            tses = {key: discretize(windows, centroids, ts=value[1], df=value[2]) for key, value in tsdf.items()}
+            tses = {key: discretize(windows, centroids, ts=value[1], df=value[2]) for key, value in list(tsdf.items())}
             slas = chunk_series_as_sla(tses)
-            price = pricer([item for sublist in slas.values() for item in sublist])
+            price = pricer([item for sublist in list(slas.values()) for item in sublist])
             logging.debug("%d slas generated for (%d,%d)" % (
-            sum([1 for sublist in slas.values() for item in sublist]), windows, centroids))
+            sum([1 for sublist in list(slas.values()) for item in sublist]), windows, centroids))
 
             logging.debug("For (%d,%d) the price is %lf" % (windows, centroids, price))
             if price < best_price:
@@ -115,13 +115,13 @@ def fill_db_with_sla(data_files, pricer, tenant, **kwargs):
         "best discretization parameters are %s with a price of %ld " % (str(best_discretization_parameter), best_price))
 
     total_sla_plot = pd.Series()
-    for item in [item for sublist in best_slas.values() for item in sublist]:
+    for item in [item for sublist in list(best_slas.values()) for item in sublist]:
         total_sla_plot = pd.Series.add(item, total_sla_plot, fill_value=0)
 
     logging.info("generating     %d slas for best solution" % (
-        sum([1 for sublist in best_slas.values() for item in sublist]),))
+        sum([1 for sublist in list(best_slas.values()) for item in sublist]),))
 
-    for key, sla_list in best_slas.items():
+    for key, sla_list in list(best_slas.items()):
 
         for topokey, value in [(file_to_node[key], value) for value in sla_list]:
             nodespecs = []
@@ -145,7 +145,7 @@ def fill_db_with_sla(data_files, pricer, tenant, **kwargs):
                                      out_file_name="dummy" + ".svg", plot_name=None, total_sla_plot=total_sla_plot)
 
     return list(best_tse.values())[0].index[0], list(best_tse.values())[0].index[
-        -1], best_price, best_discretization_parameter, len(best_slas.keys())
+        -1], best_price, best_discretization_parameter, len(list(best_slas.keys()))
 
 
 if __name__ == "__main__":

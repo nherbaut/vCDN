@@ -1,5 +1,5 @@
 class Solution:
     def __init__(self):
         with open("solutions.data") as f:
-            constraints=filter(lambda x: "master" in x, f.read().split("\n"))
+            constraints=[x for x in f.read().split("\n") if "master" in x]
 

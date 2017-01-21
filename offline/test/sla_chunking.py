@@ -22,7 +22,7 @@ class MyTestCase(unittest.TestCase):
         slas = chunk_series_as_sla({"1": s0, "2": s1})
 
         s3 = pd.Series()
-        for sla in [item for sublist in slas.values() for item in sublist]:
+        for sla in [item for sublist in list(slas.values()) for item in sublist]:
             s3 = pd.Series.add(s3, sla, fill_value=0)
 
         for i in s0.index:
@@ -35,10 +35,10 @@ class MyTestCase(unittest.TestCase):
 
 
         for i in np.arange(1,10):
-            tses = {key: discretize(1, i, ts=value, df=value[1], forecast_detector=lambda x: 0) for key, value in s.items()}
+            tses = {key: discretize(1, i, ts=value, df=value[1], forecast_detector=lambda x: 0) for key, value in list(s.items())}
             chunked = chunk_series_as_sla(tses)
             self.assertEqual(len(chunked), 10)
-            for chunky in chunked.values():
+            for chunky in list(chunked.values()):
                 self.assertEqual(len(chunky), i)
 
 

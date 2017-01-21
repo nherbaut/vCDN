@@ -44,7 +44,7 @@ class SimpleMonitor(app_manager.RyuApp):
 
     def _monitor(self):
         while True:
-            for dp in self.datapaths.values():
+            for dp in list(self.datapaths.values()):
                 self._request_stats(dp)
             hub.sleep(1)
 
@@ -90,7 +90,7 @@ class SimpleMonitor(app_manager.RyuApp):
                     timespan=float(time.time()-oldtime)
                 else:
                     oldtime,rx_packets,rx_bytes,rx_errors,tx_packets,tx_bytes,tx_errors=(time.time(),0,0,0,0,0,0)
-                    timespan=float(sys.maxint)
+                    timespan=float(sys.maxsize)
 
 
 

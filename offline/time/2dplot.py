@@ -4,7 +4,7 @@ import argparse
 import datetime
 import locale
 import matplotlib.dates as mdates
-from SLA3D import *
+from .SLA3D import *
 
 locale.setlocale(locale.LC_ALL, 'en_US.utf8')
 

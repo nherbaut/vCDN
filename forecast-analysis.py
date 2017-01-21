@@ -16,7 +16,7 @@ ds = [x["file"] for index, x in
 
 for d in ds:
     # print("mv %s* /home/nherbaut/workspace/algotel2016-code/offline/data/bad" % d)
-    print("%s" % d)
+    print(("%s" % d))
 plot_forecast_bench(means)
 
 # merge_with_forecast("/home/nherbaut/workspace/algotel2016-code/offline/data/New-York-IX-daily-in_5T.csvx.out","/home/nherbaut/workspace/algotel2016-code/offline/time/forecast.csv","/home/nherbaut/Desktop/out.txt")

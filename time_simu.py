@@ -29,11 +29,11 @@ best_discretization_param_str, isp_cost, total_bw, total_sla_price, sla_count = 
     threads=args.threads)
 
 print("migration_cos\t\tcdn_discount\t\tbest_discretization_param_str\t\tisp_cost\t\ttotal_bw=\t\ttotal_sla_price=\t\tsla_count=%d" )
-print("%lf\t\t%lf\t\t%s\t\t%lf\t\t%lf\t\t%lf\t\t%d" % (
+print(("%lf\t\t%lf\t\t%s\t\t%lf\t\t%lf\t\t%lf\t\t%d" % (
 args.ispmigration,
 args.cdnDiscount,
 best_discretization_param_str,
 isp_cost,
 total_bw,
 total_sla_price,
-sla_count))
+sla_count)))

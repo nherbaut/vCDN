@@ -13,7 +13,7 @@ class timed(object):
     def __call__(self, **kwargs):
         self.start = time.time()
         res = self.f(**kwargs)
-        print(        "\n%s in %lf for %d run : %lf" % (            kwargs["name"], time.time() - self.start, len(res), (time.time() - self.start) / (1 + len(res))))
+        print((        "\n%s in %lf for %d run : %lf" % (            kwargs["name"], time.time() - self.start, len(res), (time.time() - self.start) / (1 + len(res)))))
         return res
 
 

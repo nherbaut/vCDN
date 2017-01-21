@@ -271,7 +271,7 @@ def do_simu(migration_costs_func=migration_calculator, sla_pricer=price_slas, lo
             total_bandwidth = max(1, sum(
                 [sum([sla.get_total_bandwidth() for sla in service.slas]) for service in session.query(Service).all()]))
 
-        y, y1, sla_hi, sla_low, total_bandwidth = zip(*data)
+        y, y1, sla_hi, sla_low, total_bandwidth = list(zip(*data))
         # print("[")
         # for i in range(0, len(y)):
         #    print("(%lf,%lf,%lf,%lf)," % (y[i], y1[i], sla_hi[i], sla_low[i]))

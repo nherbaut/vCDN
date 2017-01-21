@@ -85,13 +85,13 @@ for sla in slas:
 
     # print ( "winner : %s" % str(service.id))
     # su.consume_service(service)
-    print "#\t%s\t%s\t%s\t%lf\t%lf\t%lf" % (su,
+    print(("#\t%s\t%s\t%s\t%lf\t%lf\t%lf" % (su,
                                                  "_".join([sn.topoNode.name for sn in sla.get_start_nodes()]),
                                                  "_".join([sn.topoNode.name for sn in sla.get_cdn_nodes()]),
                                                  service_no_heuristic_mapping_objective_function,
                                                  service_yes_heuristic_mapping_objective_function,
                                                  service_yes_heuristic11_mapping_objective_function
-                                                 )
+                                                 )))
 
 
 

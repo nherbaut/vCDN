@@ -169,7 +169,7 @@ def optimize_sla(sla, vhg_count=None, vcdn_count=None,
     services = [embbed_service(param) for param in candidates_param]
     #sys.stdout.write(" done!\n")
 
-    services = filter(lambda x: x.mapping is not None, services)
+    services = [x for x in services if x.mapping is not None]
     services = sorted(services, key=lambda x: x.mapping.objective_function, )
 
     for service in services:

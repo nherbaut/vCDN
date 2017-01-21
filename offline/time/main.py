@@ -49,7 +49,7 @@ def youtube_search(options):
   for video_result in video_response.get("items", []):
     videos.append("%s" % video_result["id"])
 
-  print "Videos:\n", "\n".join(videos), "\n"
+  print(("Videos:\n", "\n".join(videos), "\n"))
 
 
 if __name__ == "__main__":
@@ -61,5 +61,5 @@ if __name__ == "__main__":
 
   try:
     youtube_search(args)
-  except HttpError, e:
-    print "An HTTP error %d occurred:\n%s" % (e.resp.status, e.content)
+  except HttpError as e:
+    print(("An HTTP error %d occurred:\n%s" % (e.resp.status, e.content)))

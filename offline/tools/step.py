@@ -85,7 +85,7 @@ if service.mapping is not None:
     if not dry:
         su.consume_service(service)
         su.write(RESULTS_PATH)
-        print("success %lf"%service.mapping.objective_function)
+        print(("success %lf"%service.mapping.objective_function))
 
     exit(0)
 else:

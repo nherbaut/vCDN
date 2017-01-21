@@ -11,6 +11,7 @@ import numpy
 
 import sys
 import os
+from functools import reduce
 
 OPTIM_FOLDER=os.path.join(os.path.dirname(os.path.realpath(__file__)),'../optim')
 RESULTS_FOLDER=os.path.join(os.path.dirname(os.path.realpath(__file__)),'../results')
@@ -182,7 +183,7 @@ def plotsol(**kwargs):
                         edgesSol.append(matches[0])
                         continue
         except IOError:
-            print "no solution found, displaying topo only"
+            print("no solution found, displaying topo only")
 
 
     with open(os.path.join(RESULTS_FOLDER,"substrate.edges.data"), 'r') as f:
@@ -205,9 +206,9 @@ def plotsol(**kwargs):
         f.write("graph{rankdir=LR;overlap = voronoi;\n\n\n\n subgraph{\n\n\n")
         #f.write("graph{rankdir=LR;\n\n\n\n subgraph{\n\n\n")
 
-        avgcpu = reduce(lambda x, y: float(x) + float(y), nodesdict.values(), 0.0) / len(nodesdict)
+        avgcpu = reduce(lambda x, y: float(x) + float(y), list(nodesdict.values()), 0.0) / len(nodesdict)
 
-        for node in nodesdict.items():
+        for node in list(nodesdict.items()):
             if node[0] in starters_candiates:
                 color = "green1"
             elif node[0] in cdn_candidates:

@@ -21,10 +21,10 @@ def do_plot(file):
     # read the file
     data = collections.defaultdict(lambda: collections.defaultdict(lambda: 0))
     data_pc = collections.defaultdict(lambda: collections.defaultdict(lambda: 0))
-    print("%s" % file)
+    print(("%s" % file))
     with open(file) as f:
 
-        for name, bw, type in filter(lambda x: len(x) == 3, list(csv.reader(f))):
+        for name, bw, type in [x for x in list(csv.reader(f)) if len(x) == 3]:
             data[type][name] += float(bw) / 1000.0
 
     # get the %
@@ -33,10 +33,10 @@ def do_plot(file):
         for key2 in data[key1]:
             data_pc[key1][key2] = data[key1][key2] * 1.0 / total_size
 
-    for type in data.keys():
-        print("%s" % type)
+    for type in list(data.keys()):
+        print(("%s" % type))
         for name in data[type]:
-            print("\t%s:%lf%% or %lf" % (name, 100 * data_pc[type][name], data[type][name]))
+            print(("\t%s:%lf%% or %lf" % (name, 100 * data_pc[type][name], data[type][name])))
 
     # solution here: http://stackoverflow.com/questions/20549016/explode-multiple-slices-of-pie-together-in-matplotlib
 
@@ -47,7 +47,7 @@ def do_plot(file):
     colors = ['yellowgreen', 'gold', 'lightskyblue', 'lightcoral']
 
     sizes_cat = [np.sum([data[a][b] for b in sorted(data[a])]) for a in sorted(data) if a != "Content"]
-    sizes_cat_labels = ["%s (%1.1lf Gbps)" % (a, np.sum(data[a].values())) for a in sorted(data) if a != "Content"]
+    sizes_cat_labels = ["%s (%1.1lf Gbps)" % (a, np.sum(list(data[a].values()))) for a in sorted(data) if a != "Content"]
     sizes_content = [data[a][b] for a in sorted(data) for b in sorted(data[a]) if a == "Content" if
                      data_pc[a][b] > CUTOFF]
     sizes_content_other_content = np.sum([data[a][b] for a in sorted(data) for b in sorted(data[a]) if a == "Content" if

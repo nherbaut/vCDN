@@ -76,10 +76,10 @@ class Sla(Base):
         return sum([start_node.attributes["bandwidth"] for start_node in self.get_start_nodes()])
 
     def get_start_nodes(self):
-        return sorted(filter(lambda x: x.type == "start", self.sla_node_specs), key=lambda x: x.toponode_id)
+        return sorted([x for x in self.sla_node_specs if x.type == "start"], key=lambda x: x.toponode_id)
 
     def get_cdn_nodes(self):
-        return sorted(filter(lambda x: x.type == "cdn", self.sla_node_specs), key=lambda x: x.toponode_id)
+        return sorted([x for x in self.sla_node_specs if x.type == "cdn"], key=lambda x: x.toponode_id)
 
 
 def findSLAByDate(date):

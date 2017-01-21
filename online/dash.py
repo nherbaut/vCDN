@@ -29,8 +29,8 @@ def download_bytes(host, path, port, bytes_count, proxy_host, proxy_port):
             return 0
     except exceptions.BaseException as e:
         traceback.print_exc(file=sys.stdout)
-        print e
-        print "failed to download"
+        print(e)
+        print("failed to download")
         return 0
 
 
@@ -70,7 +70,7 @@ def do_dash(name, target_br, mini_buffer_seconds, maxi_buffer_seconds, movie_siz
         if buffer == 0 and time.time() - start >= 10:
             stalled[name] += 1
             logging.debug("stalled")
-            print "%d\t%s\tstalled!" % (time.time(), name)
+            print(("%d\t%s\tstalled!" % (time.time(), name)))
 
         if buffer <= m * TARGET_BITRATE:
             buffer += download_bytes(host, path, port, CHUNK_SIZE, proxy_host, proxy_port)

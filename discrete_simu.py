@@ -82,7 +82,7 @@ try:
     while True:
         tn = random.choice(sla.get_start_nodes()).topoNode.name
         path = tn_cdn(tn, cdns, g, 10000000, install=True)
-        print("hitting %s from %s " % (path[-1][1], tn))
+        print(("hitting %s from %s " % (path[-1][1], tn)))
         # remaining = np.sum(d[2]["bandwidth"] for d in g.edges(data=True))
         # print("%lf \t\t %lf\n" % (remaining,(original - remaining ) / original))
         # print("%lf remaining on path" % min(g.edge[n0][n1]["bandwidth"] for n0, n1 in path))

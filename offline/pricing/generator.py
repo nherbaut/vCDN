@@ -27,7 +27,7 @@ def get_vmg_calculator(sys_spec_file_path=os.path.join(PRICING_FOLDER, "vmg/vio_
 
     sys_specs = None
     with open(sys_spec_file_path, "r") as f:
-        for key in csv.reader(filter(lambda row: row[0] != '#', f)):
+        for key in csv.reader([row for row in f if row[0] != '#']):
             return eval(key[0])
 
 
@@ -39,7 +39,7 @@ def get_vcdn_calculator(file_path=os.path.join(PRICING_FOLDER, "cdn/azure_cdn_pr
     '''
     sys_specs = None
     with open(file_path, "r") as f:
-        for key in csv.reader(filter(lambda row: row[0] != '#', f)):
+        for key in csv.reader([row for row in f if row[0] != '#']):
             return eval(key[0])
 
 
@@ -55,7 +55,7 @@ def vcdn_calculator(quantity_gb, threshold_prices):
     :return: a price in USD
     '''
     res = 0
-    for threshold, price in threshold_prices.items():
+    for threshold, price in list(threshold_prices.items()):
         if (quantity_gb >= threshold):
             res += 10 * 0.087
             quantity_gb -= threshold

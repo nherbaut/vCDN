@@ -57,7 +57,7 @@ if args.just_topo:
 
 
 for s in args.start:
-    assert s in su.nodesdict , "%s not in %s" % (s,su.nodesdict.keys())
+    assert s in su.nodesdict , "%s not in %s" % (s,list(su.nodesdict.keys()))
 
 for s in args.cdn:
     assert s in su.nodesdict

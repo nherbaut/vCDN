@@ -177,7 +177,7 @@ def plotsol_from_db(**kwargs):
 
 
 
-        for node in nodesdict.items():
+        for node in list(nodesdict.items()):
             if node[0] in starters_candiates:
                 color = "green1"
             elif node[0] in cdn_candidates:

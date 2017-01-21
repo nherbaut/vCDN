@@ -33,18 +33,18 @@ __all__ = ["RangeHTTPRequestHandler"]
 
 import os
 import posixpath
-import BaseHTTPServer
-import urllib
+import http.server
+import urllib.request, urllib.parse, urllib.error
 import cgi
 import shutil
 import mimetypes
 try:
-    from cStringIO import StringIO
+    from io import StringIO
 except ImportError:
-    from StringIO import StringIO
+    from io import StringIO
 
 
-class RangeHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
+class RangeHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
 
     """Simple HTTP request handler with GET and HEAD commands.
 
@@ -62,7 +62,7 @@ class RangeHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     def do_GET(self):
         """Serve a GET request."""
         f, start_range, end_range = self.send_head()
-        print "Got values of ", start_range, " and ", end_range, "...\n"
+        print(("Got values of ", start_range, " and ", end_range, "...\n"))
         if f:
             f.seek(start_range, 0)
             chunk = 0x1000
@@ -146,7 +146,7 @@ class RangeHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         self.send_header("Content-Length", end_range - start_range)
         self.send_header("Last-Modified", self.date_time_string(fs.st_mtime))
         self.end_headers()
-        print "Sending Bytes ",start_range, " to ", end_range, "...\n"
+        print(("Sending Bytes ",start_range, " to ", end_range, "...\n"))
         return (f, start_range, end_range)
 
     def list_directory(self, path):
@@ -164,7 +164,7 @@ class RangeHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             return None
         list.sort(key=lambda a: a.lower())
         f = StringIO()
-        displaypath = cgi.escape(urllib.unquote(self.path))
+        displaypath = cgi.escape(urllib.parse.unquote(self.path))
         f.write('<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">')
         f.write("<html>\n<title>Directory listing for %s</title>\n" % displaypath)
         f.write("<body>\n<h2>Directory listing for %s</h2>\n" % displaypath)
@@ -180,7 +180,7 @@ class RangeHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                 displayname = name + "@"
                 # Note: a link to a directory displays with @ and links with /
             f.write('<li><a href="%s">%s</a>\n'
-                    % (urllib.quote(linkname), cgi.escape(displayname)))
+                    % (urllib.parse.quote(linkname), cgi.escape(displayname)))
         f.write("</ul>\n<hr>\n</body>\n</html>\n")
         length = f.tell()
         f.seek(0)
@@ -201,9 +201,9 @@ class RangeHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         # abandon query parameters
         path = path.split('?',1)[0]
         path = path.split('#',1)[0]
-        path = posixpath.normpath(urllib.unquote(path))
+        path = posixpath.normpath(urllib.parse.unquote(path))
         words = path.split('/')
-        words = filter(None, words)
+        words = [_f for _f in words if _f]
         path = os.getcwd()
         for word in words:
             drive, word = os.path.splitdrive(word)
@@ -266,8 +266,8 @@ class RangeHTTPRequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
 
 def test(HandlerClass = RangeHTTPRequestHandler,
-         ServerClass = BaseHTTPServer.HTTPServer):
-    BaseHTTPServer.test(HandlerClass, ServerClass)
+         ServerClass = http.server.HTTPServer):
+    http.server.test(HandlerClass, ServerClass)
 
 
 if __name__ == '__main__':

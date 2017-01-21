@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from    __future__ import division
+
 
 import multiprocessing
 import os
@@ -23,7 +23,7 @@ def best_price(forecast, pricer=price_slas, cilevel="fcmean"):
         for centroids in range(1, 20, 2):
             tses = discretize(windows, centroids, ts=ts, df=forecast)
             slas = chunk_series_as_sla({1: tses})
-            price = pricer([item for sublist in slas.values() for item in sublist])
+            price = pricer([item for sublist in list(slas.values()) for item in sublist])
             if best_price > price:
                 best_price = price
 
@@ -33,7 +33,7 @@ def best_price(forecast, pricer=price_slas, cilevel="fcmean"):
 def perform_forecast_bench(folders, filter=lambda x: True if "daily" in x and not "forecast" in x else False):
     data_files = []
     for folder in folders:
-        data_files += [os.path.join(folder, file) for file in os.listdir(folder) if filter(file)]
+        data_files += [os.path.join(folder, file) for file in os.listdir(folder) if list(filter(file))]
 
     pool = ThreadPool(multiprocessing.cpu_count() - 1)
     forecasts = pool.map(get_forecast, data_files)
@@ -94,11 +94,11 @@ def plot_forecast_bench(means):
         pickle.dump(means,f)
     exit(-2)
 
-    index, mape, mase, file = zip(
+    index, mape, mase, file = list(zip(
         *[(index, x["MAPE"], x["MASE"], os.path.basename(x["file"]).split("daily")[0]) for index, x in
           enumerate(sorted(means,
                            # key=lambda x: os.path.basename(x["file"]).split("daily")[0]))])
-                           key=sort_by_name_and_mape))])
+                           key=sort_by_name_and_mape))]))
 
     ax1.set_xticks(np.arange(0, len(file) + 1, 1))
 
@@ -127,13 +127,13 @@ def plot_forecast_bench(means):
     ax1.set_xticklabels(np.array(file))
     ax1.set_xticklabels(ax1.xaxis.get_majorticklabels(), rotation=45, fontsize=7)
 
-    index, file, fcmean_score, fc80_score, fc95_score = zip(
+    index, file, fcmean_score, fc80_score, fc95_score = list(zip(
         *[(index, os.path.basename(x["file"].split("daily")[0]), x["sla_vio_mean"], x["sla_vio_fc80"],
            x["sla_vio_fc95"],)
           for index, x in
           enumerate(sorted(means,
                            # key=lambda x: os.path.basename(x["file"]).split("daily")[0]))])
-                           key=lambda x: -x["MAPE"]))])
+                           key=lambda x: -x["MAPE"]))]))
 
     ax1.bar(np.array(index), fcmean_score, width=0.3, color='r', label="Prediction", )
     ax1.bar(np.array(index) + 0.3, np.array(fc80_score) + 2, width=0.3, color='g', label="80% CI", )

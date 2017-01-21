@@ -97,5 +97,5 @@ if __name__ == "__main__":
 ]
 
 
-    y, y1, sla_hi, sla_low = zip(*d)
+    y, y1, sla_hi, sla_low = list(zip(*d))
     candelPlot(np.arange(0, len(y)), y, y1, sla_hi, sla_low)

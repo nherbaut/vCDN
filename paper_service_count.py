@@ -88,11 +88,11 @@ for start in range(1, args.max_start + 1):
         candidates = []
 
         nodes_by_bw = su.get_nodes_by_bw()
-        start_nodes = offline.core.sla.weighted_shuffle(nodes_by_bw.keys(), nodes_by_bw.values(), rs)[
+        start_nodes = offline.core.sla.weighted_shuffle(list(nodes_by_bw.keys()), list(nodes_by_bw.values()), rs)[
                       -start:]
 
         nodes_by_degree = su.get_nodes_by_degree()
-        cdn_nodes = offline.core.sla.weighted_shuffle(nodes_by_degree.keys(), nodes_by_degree.values(), rs)[
+        cdn_nodes = offline.core.sla.weighted_shuffle(list(nodes_by_degree.keys()), list(nodes_by_degree.values()), rs)[
                     :cdn]
 
         sla = create_sla(start_nodes, cdn_nodes, args.sourcebw, su=su, rs=rs)
@@ -110,5 +110,5 @@ for start in range(1, args.max_start + 1):
         res[start - 1, cdn - 1] += len(services)
 
 np.savetxt(os.path.join(args.dest_folder, "res.txt"), res)
-print res
-print np.sum(res)
+print(res)
+print((np.sum(res)))

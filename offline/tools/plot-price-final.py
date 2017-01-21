@@ -25,7 +25,7 @@ for key in sorted(pdata.keys()):
     if len(pdata[key]) > 3:
         fig, ax1 = plt.subplots()
         ax2 = ax1.twinx()
-        discounts, isp_prices, cdn_price= zip(*sorted(pdata[key], key=lambda x: x[0]))
+        discounts, isp_prices, cdn_price= list(zip(*sorted(pdata[key], key=lambda x: x[0])))
         discounts=np.array(discounts)*100
 
         fmt = '%.0f%%'  # Format you want the ticks, e.g. '40%'
@@ -61,7 +61,7 @@ for key in sorted(pdata.keys()):
     #take the first on that is 10% higher than the min
     t = list(zip(*pdata[key]))[1]
     min_generator = (i for i, v in enumerate(t) if v < (np.min(t) * 1.3))
-    isp_prices.append(list(zip(*pdata[key]))[0][min_generator.next()])
+    isp_prices.append(list(zip(*pdata[key]))[0][next(min_generator)])
 
 fig, ax1 = plt.subplots()
 ax1.plot(discounts, isp_prices, label="best discount price per migration cost")

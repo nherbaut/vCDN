@@ -44,7 +44,7 @@ class TopoInstance:
         :return: [(start , end , bandwidth)]
         '''
         res = []
-        for start, ends in self.servicetopo.edge.items():
+        for start, ends in list(self.servicetopo.edge.items()):
             for end in ends:
                 edge = self.servicetopo[start][end]
                 res.append((start, end, edge.get("bandwidth", 0)))
@@ -55,7 +55,7 @@ class TopoInstance:
 
         :return: start, end, edge["bandwidth"]
         '''
-        for start, ends in self.servicetopo.edge.items():
+        for start, ends in list(self.servicetopo.edge.items()):
             cdns = self.get_cdn()
             for end in [end for end in ends if end in cdns]:
                 edge = self.servicetopo[start][end]
@@ -66,7 +66,7 @@ class TopoInstance:
 
         :return: start, end, edge["bandwidth"]
         '''
-        for start, ends in self.servicetopo.edge.items():
+        for start, ends in list(self.servicetopo.edge.items()):
             for end in ends:
                 edge = self.servicetopo[start][end]
                 yield start, end, edge.get("bandwidth", 0)
@@ -89,7 +89,7 @@ class TopoInstance:
         :return: (path,  segment[0], segment[1]
         '''
         res = []
-        for path, segments in self.delay_routes.items():
+        for path, segments in list(self.delay_routes.items()):
             for segment in segments:
                 res.append((path, segment[0], segment[1]))
 

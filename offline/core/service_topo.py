@@ -31,7 +31,7 @@ class AbstractServiceTopo(object):
         while len(workin_nodes) > 0:
             node = workin_nodes.pop(0)
             bandwidth = service.node[node].get("bandwidth", 0.0)
-            children = service[node].items()
+            children = list(service[node].items())
             for subnode, data in children:
                 if subnode not in workin_nodes:
                     workin_nodes.append(subnode)

@@ -74,7 +74,7 @@ class ServiceTopoFullGenerator(AbstractServiceTopo):
                 for edge in t:
                     serviceT.add_edge(edge[0], edge[1])
 
-                for node, degree in serviceT.degree().items():
+                for node, degree in list(serviceT.degree().items()):
                     if degree == 0:
                         serviceT.remove_node(node)
 

@@ -11,7 +11,7 @@ from scipy.stats import poisson, binom
 import pandas as pd
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime as dt
-from dash import do_dash
+from .dash import do_dash
 import logging
 import numpy as np
 
@@ -154,7 +154,7 @@ if __name__ == "__main__":
         with open(stalled_file, "a") as f:
             now=dt.now()
 
-            stalled_hd = sum([x[1] for x in filter(lambda value: "hd" in value[0], stalled.items())])
+            stalled_hd = sum([x[1] for x in [value for value in list(stalled.items()) if "hd" in value[0]]])
             stalled_total = sum(stalled.values())
 
 

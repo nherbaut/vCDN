@@ -14,7 +14,7 @@ def plot_forecast_and_disc_and_total(tsr, windows, centroids, plot_name="default
     plt.close('all')
     plot_count = len(tsr)
     tse_sum = pd.Series()
-    for index, (plot_name, data) in enumerate(tsr.items(), start=1):
+    for index, (plot_name, data) in enumerate(list(tsr.items()), start=1):
         time_serie=data[1]
         tse1 = get_tse(time_serie, windows, centroids)
         tse_sum=pd.Series.add(tse_sum, tse1, fill_value=0)

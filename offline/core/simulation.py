@@ -3,12 +3,12 @@ import sys
 from copy import deepcopy
 
 import numpy as np
-import substrate
-import utils
-from result import ResultItem
-from service import Service
-from sla import generate_random_slas
-from solver import solve
+from . import substrate
+from . import utils
+from .result import ResultItem
+from .service import Service
+from .sla import generate_random_slas
+from .solver import solve
 
 
 @utils.timed

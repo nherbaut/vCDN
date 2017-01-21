@@ -51,8 +51,8 @@ def topology():
     for host in net.hosts:
         if host.name in topo._cmd:
             for cmd in topo._cmd[host.name]:
-                print "send cmd"
-                print (host.sendCmd(cmd))
+                print("send cmd")
+                print((host.sendCmd(cmd)))
 
 
 

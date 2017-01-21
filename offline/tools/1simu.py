@@ -63,11 +63,11 @@ else:
 
 
 
-for key in res.keys():
+for key in list(res.keys()):
     if key in res_file:
-        print "won't add %s to already existing result" % key
+        print(("won't add %s to already existing result" % key))
         new_key=key + str(random.uniform(1,10000))
-        print "writing to another result instead : %s" % new_key
+        print(("writing to another result instead : %s" % new_key))
         res_file[new_key]=res[key]
     else:
         res_file[key]=res[key]
@@ -80,7 +80,7 @@ with open("results.pickle", "w") as f:
 
 
 print("saved results with keys:")
-for key in res.keys():
+for key in list(res.keys()):
     if key in res_file:
         sys.stdout.write("%s "%key)
 

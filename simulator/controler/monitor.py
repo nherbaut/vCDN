@@ -2,7 +2,7 @@ import json
 import os
 import threading
 import time
-from SimpleXMLRPCServer import SimpleXMLRPCServer,SimpleXMLRPCRequestHandler
+from xmlrpc.server import SimpleXMLRPCServer,SimpleXMLRPCRequestHandler
 from operator import attrgetter
 
 from ryu.controller import ofp_event
@@ -10,7 +10,7 @@ from ryu.controller.handler import MAIN_DISPATCHER, DEAD_DISPATCHER
 from ryu.controller.handler import set_ev_cls
 from ryu.lib import hub
 
-import route
+from . import route
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../offline/results')
 
 JSON_MAX = 300
@@ -54,16 +54,16 @@ class SimpleMonitor(route.MWCController):
 
 
     def logStart(self):
-        import SimpleHTTPServer
-        import SocketServer
+        import http.server
+        import socketserver
 
         PORT = 9998
 
-        Handler = SimpleHTTPServer.SimpleHTTPRequestHandler
+        Handler = http.server.SimpleHTTPRequestHandler
 
-        httpd = SocketServer.TCPServer(("", PORT), Handler)
+        httpd = socketserver.TCPServer(("", PORT), Handler)
 
-        print "serving at port", PORT
+        print(("serving at port", PORT))
 
         thread = threading.Thread(target= httpd.serve_forever)
         thread.start()
@@ -94,7 +94,7 @@ class SimpleMonitor(route.MWCController):
 
     def _monitor(self):
         while True:
-            for dp in self.datapaths.values():
+            for dp in list(self.datapaths.values()):
                 self._request_stats(dp)
             hub.sleep(1)
 

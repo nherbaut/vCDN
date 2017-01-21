@@ -1,7 +1,7 @@
 # !/usr/bin/env python
 # turn test.csv to proper time serie
 
-from __future__ import print_function
+
 
 import datetime
 from collections import defaultdict
@@ -48,16 +48,16 @@ def chunk_series_as_sla(series):
 
 def chunk_series_as_sla2(series):
     aserie = series
-    while len(aserie.keys()) > 0:
+    while len(list(aserie.keys())) > 0:
         res = defaultdict(
             lambda: (defaultdict(lambda: {})))  # { (begining_date,end_date):{serie1: bw, serie2: bw, sereien: bw},
         # (begining_date,end_date):{serie1: bw, serie2: bw, sereien: bw} }
 
         spans = defaultdict(lambda: [])
-        min_obs_0 = np.max(aserie.items()[0][1].index)
-        max_obs_0 = np.min(aserie.items()[0][1].index)
+        min_obs_0 = np.max(list(aserie.items())[0][1].index)
+        max_obs_0 = np.min(list(aserie.items())[0][1].index)
 
-        for key, serie in aserie.items():
+        for key, serie in list(aserie.items()):
             min_obs = min_obs_0
             max_obs = max_obs_0
 
@@ -75,7 +75,7 @@ def chunk_series_as_sla2(series):
         current_span = (None, None)
         for adate in pd.date_range(min_obs, max_obs, freq="H"):
 
-            if any([adate in serie.index for serie in series.values()]):  # at least 1 serie has a value here
+            if any([adate in serie.index for serie in list(series.values())]):  # at least 1 serie has a value here
                 if current_span[0] is None:
                     current_span = (adate, None)
             else:
@@ -88,11 +88,11 @@ def chunk_series_as_sla2(series):
             sla_indexes.append((current_span[0], adate))
 
         for span in sla_indexes:
-            for key, serie in series.items():
+            for key, serie in list(series.items()):
                 res[span][key] = np.min(serie)
 
         minified_series = {}
-        for key, serie in series.items():
+        for key, serie in list(series.items()):
             serie = serie - np.min(serie)
             serie = serie[serie > 0]
             if len(serie) > 0:

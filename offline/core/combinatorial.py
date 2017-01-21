@@ -121,15 +121,14 @@ def do_dist(bunch, substrate):
     else:
         asum = 0
 
-        for i in filter(lambda x: x[0] != x[1],
-                        map(lambda x: x.split(" "), set([" ".join(sorted(i)) for i in product(bunch, bunch)]))):
+        for i in [x for x in [x.split(" ") for x in set([" ".join(sorted(i)) for i in product(bunch, bunch)])] if x[0] != x[1]]:
 
             value = shortest_path_cached(str(i[0]), str(i[1]), substrate)
 
             if value is not None:
                 asum += value
             else:
-                print
+                print()
                 "failure: %s" % str(i)
 
         return asum
@@ -183,7 +182,7 @@ def get_vhg_cdn_mapping(vhgs, cdns, substrate):
     # logging.debug("managing %d vhgs and %d cdns" % (len(vhgs), len(cdns)))
     res = {}
     for vhg in vhgs:
-        best = sys.maxint
+        best = sys.maxsize
         for cdn in cdns:
             value = shortest_path_cached(vhg[0], cdn[0], substrate)
             if value is not None:
@@ -212,11 +211,11 @@ def get_node_clusters(nodes, class_count, substrate):
         if len(i) > 0:
             data[len(i)].append(i)
 
-    combinaisons = [map(lambda x: int(x), x.split(" ")) for x in
-                    set([" ".join(map(lambda x: str(x), (sorted(x)))) for x in
+    combinaisons = [[int(x) for x in x.split(" ")] for x in
+                    set([" ".join([str(x) for x in (sorted(x))]) for x in
                          generate_problem_combinaisons([len(nodes), class_count])])]
 
-    min_score = sys.maxint
+    min_score = sys.maxsize
     candidate = None
 
     for i in combinaisons:

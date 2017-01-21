@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #turn test.csv to proper time serie
 
-from __future__ import print_function
+
 import argparse
 import matplotlib.pyplot as plt
 import statsmodels.api as sm
