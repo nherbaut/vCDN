@@ -8,6 +8,7 @@ from sqlalchemy import and_
 from sqlalchemy.orm import relationship, aliased
 
 from ..time.persistence import Base, Session, Edge, Node
+from ..core.substrate import Substrate
 
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
 PRICING_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../pricing')

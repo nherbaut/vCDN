@@ -28,8 +28,10 @@ args = parser.parse_args()
 #     graphiz_exe="dot"
 
 session = Session()
-service = session.query(Service).order_by(Service.id.desc()).all()[0]
-service_id = str(service.id)
+service = session.query(Service).order_by(Service.id.desc()).all()
+if len(service)>0 :
+    service = service[0]
+    service_id = str(service.id)
 # service.slas[0].substrate.write(path=str(args.serviceid))
 
 dosvg = args.dosvg
@@ -37,12 +39,12 @@ plotsol_from_db(service_link_linewidth=args.service_link_linewidth, net=args.net
 if not dosvg:
     file = tempfile.mkstemp(".pdf")[1]
     subprocess.Popen(
-        ["neato", os.path.join(RESULTS_FOLDER, service_id, "./substrate.dot"), "-Tpdf", "-o", file]).wait()
+        ["neato", os.path.join(RESULTS_FOLDER, service_id, "../substrate.dot"), "-Tpdf", "-o", file]).wait()
     if args.view:
         subprocess.Popen(["evince", file]).wait()
 else:
     file = args.dest
     subprocess.Popen(
-        ["neato", os.path.join(RESULTS_FOLDER, service_id, "./substrate.dot"), "-Tsvg", "-o", file]).wait()
+        ["neato", os.path.join(RESULTS_FOLDER, service_id, "../substrate.dot"), "-Tsvg", "-o", file]).wait()
     if args.view:
         subprocess.Popen(["eog", file]).wait()

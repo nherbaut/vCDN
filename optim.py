@@ -84,18 +84,24 @@ if args.disable_embedding:
 
     su.write(RESULTS_FOLDER)
     if args.json:
-            topo = su.get_json()
-            if args.b64:
-                sys.stdout.write(base64.b64encode(json.dumps(topo)))
-            else:
-                sys.stdout.write(json.dumps(topo))
-            sys.stdout.flush()
+        topo = su.get_json()
+        if args.b64:
+            sys.stdout.write(base64.b64encode(json.dumps(topo)))
+        else:
+            sys.stdout.write(json.dumps(topo))
+        sys.stdout.flush()
     if args.plot:
         plotsol_from_db(service_link_linewidth=5, net=True, substrate=su)
         subprocess.Popen(
             ["neato", os.path.join(RESULTS_FOLDER, "./substrate.dot"), "-Tsvg", "-o",
              os.path.join(args.dest_folder, "topo.svg")]).wait()
-        shutil.copy(os.path.join(RESULTS_FOLDER, "./substrate.dot"), os.path.join(args.dest_folder, "substrate.dot"))
+        source_path = os.path.normpath(os.path.join(RESULTS_FOLDER, "./substrate.dot"))
+        dest_path = os.path.normpath(os.path.join(args.dest_folder, "substrate.dot"))
+        if source_path <> dest_path:
+            shutil.copy(os.path.join(RESULTS_FOLDER, "./substrate.dot"), )
+        subprocess.Popen(["eog", os.path.join(args.dest_folder, "topo.svg")]).wait()
+
+
 
 
 else:
@@ -122,7 +128,7 @@ else:
         if len(match) == 1:
             nodes_by_degree = su.get_nodes_by_degree()
 
-            cdn_nodes = offline.core.sla.weighted_shuffle(nodes_by_degree.keys(), nodes_by_degree.values(), rs)[
+            cdn_nodes = offline.core.sla.weighted_shuffle(nodes_by_degree.keys(), [30-i for i in nodes_by_degree.values()], rs)[
                         :rs.randint(int(match[0][0]), int(match[0][1]) + 1)]
             logging.debug("random cdn nodes: %s" % " ".join(cdn_nodes))
 

@@ -9,10 +9,12 @@ class AbstractServiceTopo(object):
         self.sla = sla
         self.vhg_count = vhg_count
         self.vcdn_count = vcdn_count
-        self.hint_node_mappings=hint_node_mappings
+        self.hint_node_mappings = hint_node_mappings
+
+
 
     def getTopos(self):
-        res= list(self.compute_service_topo(
+        res = list(self.compute_service_topo(
             mapped_start_nodes=self.mapped_start_nodes, mapped_cdn_nodes=self.mapped_cdn_nodes,
             vhg_count=self.vhg_count,
             vcdn_count=self.vcdn_count, delay=self.sla.delay,

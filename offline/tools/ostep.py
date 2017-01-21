@@ -109,7 +109,8 @@ def create_sla(starts, cdns, sourcebw, topo=None, su=None, rs=None, seed=0):
 
 
 def generate_candidates_param(sla, vhg_count=None, vcdn_count=None,
-                              automatic=True, use_heuristic=True, disable_isomorph_check=False):
+                              automatic=True, use_heuristic=True, disable_isomorph_check=False,
+                              max_vhg_count=10, max_vcdn_count=10):
     if not automatic:
         if use_heuristic:
             topoContainer = ServiceTopoHeuristic(sla=sla, vhg_count=vhg_count, vcdn_count=vcdn_count)
@@ -131,8 +132,8 @@ def generate_candidates_param(sla, vhg_count=None, vcdn_count=None,
                            use_heuristic)
 
         else:
-            for vhg_count in range(1, len(merged_sla.get_start_nodes()) + 1):
-                for vcdn_count in range(1, vhg_count + 1):
+            for vhg_count in range(1, min(max_vhg_count,len(merged_sla.get_start_nodes())) + 1):
+                for vcdn_count in range(1, min(max_vcdn_count,vhg_count) + 1):
                     if use_heuristic:
                         topoContainer = ServiceTopoHeuristic(sla=merged_sla, vhg_count=vhg_count, vcdn_count=vcdn_count)
                     else:
@@ -145,14 +146,15 @@ def generate_candidates_param(sla, vhg_count=None, vcdn_count=None,
 
 
 def optimize_sla(sla, vhg_count=None, vcdn_count=None,
-                 automatic=True, use_heuristic=True, random_edges=False, rs=None, isomorph_check=True):
+                 automatic=True, use_heuristic=True, random_edges=False, rs=None, isomorph_check=True,
+                 max_vhg_count=None, max_vcdn_count=None):
     if not random_edges:
         candidates_param = generate_candidates_param(sla, vhg_count=vhg_count, vcdn_count=vcdn_count,
-                                                     automatic=automatic, use_heuristic=use_heuristic)
+                                                     automatic=automatic, use_heuristic=use_heuristic,max_vhg_count=max_vhg_count, max_vcdn_count=max_vcdn_count)
     else:
         candidates_param = generate_candidates_param(sla, vhg_count=vhg_count, vcdn_count=vcdn_count,
                                                      automatic=automatic, use_heuristic=False,
-                                                     disable_isomorph_check=True)
+                                                     disable_isomorph_check=True,max_vhg_count=max_vhg_count, max_vcdn_count=max_vcdn_count)
 
     candidates_param = list(candidates_param)
     logging.debug("%d candidate " %len(candidates_param))
@@ -162,9 +164,9 @@ def optimize_sla(sla, vhg_count=None, vcdn_count=None,
     # print("%d param to optimize" % len(candidates_param))
     pool = ThreadPool(multiprocessing.cpu_count() - 1)
     # sys.stdout.write("\n\t Embedding services:%d\n" % len(candidates_param))
-    services = pool.map(embbed_service, candidates_param)
+    #services = pool.map(embbed_service, candidates_param)
 
-    # services = [embbed_service(param) for param in candidates_param]
+    services = [embbed_service(param) for param in candidates_param]
     #sys.stdout.write(" done!\n")
 
     services = filter(lambda x: x.mapping is not None, services)

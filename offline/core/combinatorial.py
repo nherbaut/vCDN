@@ -3,7 +3,7 @@ import re
 import subprocess
 import sys
 from collections import defaultdict
-from itertools import chain, combinations, product, tee, izip
+from itertools import chain, combinations, product
 
 OPTIM_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../optim')
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')

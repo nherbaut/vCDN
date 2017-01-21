@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 
-from itertools import tee, izip
+import operator
+from itertools import tee
 
 import networkx as nx
 import numpy.random
 from haversine import haversine
-from pygraphml import GraphMLParser
 from networkx.readwrite import json_graph
+from pygraphml import GraphMLParser
+
 from ..time.persistence import *
 
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
@@ -41,7 +43,7 @@ def pairwise(iterable):
     "s -> (s0,s1), (s1,s2), (s2, s3), ..."
     a, b = tee(iterable)
     next(b, None)
-    return izip(a, b)
+    return zip(a, b)
 
 
 class Substrate(Base):
@@ -49,6 +51,12 @@ class Substrate(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     nodes = relationship("Node", secondary=substrate_to_node, cascade="all")
     edges = relationship("Edge", secondary=substrate_to_edge, cascade="all")
+
+    def get_nxgraph(self):
+        g = nx.Graph()
+        for edge in self.edges:
+            g.add_edge(edge.node_1.name, edge.node_2.name, attr_dict={"bandwidth": edge.bandwidth, "delay": edge.delay})
+        return g
 
     def __str__(self):
         # print [x[1] for x in self.nodes.items()]
@@ -85,7 +93,7 @@ class Substrate(Base):
         return self.g
 
     def get_json(self):
-        g= self.__get_graph()
+        g = self.__get_graph()
         return json_graph.node_link_data(g)
 
     def __init__(self, edges, nodes):
@@ -131,6 +139,8 @@ class Substrate(Base):
             return cls.__fromJson(list(specs[1]))
         elif specs[0] == "grid":
             return cls.__fromSpec(list(specs[1]))
+        elif specs[0] == "links":
+            return cls.fromLinks(list(specs[1]))
         elif specs[0] == "file":
             return cls.fromGraph(rs, specs[1])
         elif specs[0] == "powerlaw":
@@ -140,15 +150,53 @@ class Substrate(Base):
         else:
             raise ValueError("not a valid topology spec %s" % str(specs))
 
-
     @classmethod
-    def __fromJson(cls,specs):
+    def __fromJson(cls, specs):
         json = specs
 
         json_graph
 
+    @classmethod
+    def fromLinks(cls, specs):
+        name = specs[0]
+        g = nx.Graph()
+        # load all the links
+        with open(os.path.join(DATA_FOLDER, "links", "operator-%s.links" % name)) as f:
+            for line in f.read().split("\n"):
+                nodes = line.strip().split(" ")
+                while len(nodes) >= 2:
+                    root = nodes.pop(0)
+                    for node in nodes:
+                        g.add_edge(root, node)
 
+        # take the biggest connected subgraph
+        g = max({sg: len(sg.nodes()) for sg in nx.connected_component_subgraphs(g)}.iteritems(),
+                key=operator.itemgetter(1))[0]
 
+        session = Session()
+        nodes = [Node(name=str(n), cpu_capacity=100) for n in g.nodes()]
+        nodesDict = {node.name: node for node in nodes}
+
+        session.add_all(nodes)
+        session.flush()
+
+        Session.begin()
+        edges = [Edge
+                 (node_1=nodesDict[e[0]],
+                  node_2=nodesDict[e[1]],
+                  bandwidth=g.degree(e[0]) * g.degree(e[1]) * 10000000000,
+                  delay=2
+                  )
+                 for e in g.edges()
+
+                 ]
+
+        session.add_all(edges)
+
+        Session.commit()
+        session.flush()
+
+        return cls(edges, nodes)
 
     @classmethod
     def fromPowerLaw(cls, specs):

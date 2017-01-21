@@ -19,7 +19,7 @@ class ServiceTopoHeuristic(AbstractServiceTopo):
     def compute_service_topo(self, substrate, mapped_start_nodes, mapped_cdn_nodes, vhg_count, vcdn_count, delay,
                              hint_node_mappings=None):
 
-        vhg_count = min(len(mapped_start_nodes), vhg_count)
+        vhg_count = min(len(mapped_start_nodes), vhg_count )
         vcdn_count = min(vcdn_count, vhg_count)
 
         vmg_calc = get_vmg_calculator()
@@ -49,10 +49,6 @@ class ServiceTopoHeuristic(AbstractServiceTopo):
 
         # create vhg <-> vcdn edges
         # here, each S "votes" for a vCDN and tell its VHG
-
-        for i in range(1,5):
-          score, _ = get_node_clusters(map(lambda x: x.topoNode.name, mapped_start_nodes), i, substrate=substrate)
-          #print score
 
         score, cluster = get_node_clusters(map(lambda x: x.topoNode.name, mapped_start_nodes), vcdn_count,substrate=substrate)
         for toponode_name, vCDN_id in cluster.items():
