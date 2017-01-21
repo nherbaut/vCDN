@@ -95,12 +95,13 @@ def write_sla(sla, seed=None):
         f.write("%s \n" % sla.start)
 
 
-def generate_random_slas(rs, substrate, count=1000, user_count=1000, max_start_count=1, max_end_count=1,tenant=None,sourcebw=0,min_start_count=1,
-                            min_end_count=1):
+def generate_random_slas(rs, substrate, count=1000, user_count=1000, max_start_count=1, max_end_count=1, tenant=None,
+                         sourcebw=0, min_start_count=1,
+                         min_end_count=1):
     session = Session()
     res = []
     for i in range(0, count):
-        if sourcebw==0:
+        if sourcebw == 0:
             bitrate = getRandomBitrate(rs)
             # bitrate = rs.choice([   400000, 500000, 600000])
             concurent_users = max(rs.normal(20000, 5000), 1000)
@@ -111,15 +112,15 @@ def generate_random_slas(rs, substrate, count=1000, user_count=1000, max_start_c
             delay = tcp_win / bitrate * 1000.0
             bandwidth = user_count * bitrate * movie_duration / time_span
         else:
-            bandwidth=sourcebw
+            bandwidth = sourcebw
 
             # get the nodes and their total bw
         nodes_by_degree = substrate.get_nodes_by_degree()
         nodes_by_bw = substrate.get_nodes_by_bw()
 
-        cdn_nodes = weighted_shuffle(nodes_by_degree.keys(), np.array(nodes_by_degree.values())*100, rs)[
+        cdn_nodes = weighted_shuffle(list(nodes_by_degree.keys()), np.array(list(nodes_by_degree.values())) * 100, rs)[
                     :rs.randint(min_end_count, max_end_count + 1)]
-        start_nodes = weighted_shuffle(nodes_by_bw.keys(), nodes_by_bw.values(), rs)[
+        start_nodes = weighted_shuffle(list(nodes_by_bw.keys()), list(nodes_by_bw.values()), rs)[
                       -rs.randint(min_start_count, max_start_count + 1):]
         nodespecs = []
         for sn in start_nodes:

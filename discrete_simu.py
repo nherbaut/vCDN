@@ -1,9 +1,10 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # run simulation for paper 5
 # import simpy
 # from offline.core.substrate import Substrate
 import logging
 import random
+from functools import lru_cache
 
 import networkx as nx
 import numpy as np
@@ -13,7 +14,7 @@ from offline.core.sla import generate_random_slas, Sla
 from offline.core.substrate import Substrate
 from offline.time.persistence import Session, Tenant
 from offline.tools.ostep import clean_and_create_experiment
-from functools import lru_cache
+
 
 class NotEnoughBandwidthError(Exception):
     pass
@@ -28,7 +29,7 @@ def get_nearest_cdn_and_path(tn, cdns):
 def tn_cdn(tn, cdns, g, bw, install=True):
     best_cdn, interm_nodes = get_nearest_cdn_and_path(tn, frozenset(cdns))
     path = list(zip(interm_nodes, interm_nodes[1:]))
-    tn_cdn_with_path(tn, path, g, bw, install)
+    tn_cdn_with_path(path, g, bw, install)
     return path
 
 
@@ -67,10 +68,11 @@ except:
     session.add(tenant)
     session.add(su)
     session.flush()
-    slas = generate_random_slas(rs, su, count=1, user_count=1000000, max_start_count=5, max_end_count=5, tenant=tenant,
-                                min_start_count=4, min_end_count=4)
-    session.add_all(slas)
-    session.flush()
+slas = generate_random_slas(rs, su, count=1, user_count=1000000, max_start_count=100, max_end_count=10, tenant=tenant,
+                            min_start_count=99, min_end_count=9)
+session.add_all(slas)
+session.flush()
+
 sla = slas[0]
 cdns = [node.topoNode.name for node in sla.get_cdn_nodes()]
 g = su.get_nxgraph()
@@ -79,11 +81,11 @@ original = np.sum(d[2]["bandwidth"] for d in g.edges(data=True))
 try:
     while True:
         tn = random.choice(sla.get_start_nodes()).topoNode.name
-        path = tn_cdn(tn, cdns, g, 100000000, install=True)
-        print("%s to %s" % (tn, path[-1][1]))
+        path = tn_cdn(tn, cdns, g, 10000000, install=True)
+        print("hitting %s from %s " % (path[-1][1], tn))
         # remaining = np.sum(d[2]["bandwidth"] for d in g.edges(data=True))
         # print("%lf \t\t %lf\n" % (remaining,(original - remaining ) / original))
-        print("%lf remaining on path" % min(g.edge[n0][n1]["bandwidth"] for n0, n1 in path))
+        # print("%lf remaining on path" % min(g.edge[n0][n1]["bandwidth"] for n0, n1 in path))
 
 except NotEnoughBandwidthError as e:
     print("this is the end of time")

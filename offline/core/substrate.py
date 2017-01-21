@@ -170,7 +170,7 @@ class Substrate(Base):
                         g.add_edge(root, node)
 
         # take the biggest connected subgraph
-        g = max({sg: len(sg.nodes()) for sg in nx.connected_component_subgraphs(g)}.iteritems(),
+        g = max({sg: len(sg.nodes()) for sg in nx.connected_component_subgraphs(g)}.items(),
                 key=operator.itemgetter(1))[0]
 
         session = Session()
