@@ -4,54 +4,31 @@
 # from offline.core.substrate import Substrate
 import logging
 import random
-from functools import lru_cache
+import sys
 
-import networkx as nx
-import numpy as np
 from numpy.random import RandomState
 
-from offline.core.sla import generate_random_slas, Sla
+from offline.core.sla import generate_random_slas
 from offline.core.substrate import Substrate
+from offline.discrete.Contents import Contents
+from offline.discrete.utils import create_content_delivery, CDNStorage
 from offline.time.persistence import Session, Tenant
 from offline.tools.ostep import clean_and_create_experiment
 
+root = logging.getLogger()
+root.setLevel(logging.DEBUG)
 
-class NotEnoughBandwidthError(Exception):
-    pass
-
-
-@lru_cache(maxsize=200)
-def get_nearest_cdn_and_path(tn, cdns):
-    return min(sorted({cdn: nx.shortest_path(g, tn, cdn) for cdn in cdns}.items()),
-               key=lambda x: len(x[1]))
-
-
-def tn_cdn(tn, cdns, g, bw, install=True):
-    best_cdn, interm_nodes = get_nearest_cdn_and_path(tn, frozenset(cdns))
-    path = list(zip(interm_nodes, interm_nodes[1:]))
-    tn_cdn_with_path(path, g, bw, install)
-    return path
-
-
-def tn_cdn_with_path(path, g, bw, install=True):
-    # removing bw
-    for node1, node2 in path:
-        if install:
-            if g.edge[node1][node2]["bandwidth"] > bw:
-                g.edge[node1][node2]["bandwidth"] = g.edge[node1][node2]["bandwidth"] - bw
-                g.node[node1]["routes"] = g.node[node1].get("routes", 0) + 1
-            else:
-                raise NotEnoughBandwidthError()
-        else:
-            g.edge[node1][node2]["bandwidth"] = g.edge[node1][node2]["bandwidth"] + bw
-            g.node[node1]["routes"] = g.node[node1].get("routes", 0) - 1
-
+ch = logging.StreamHandler(sys.stderr)
+ch.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+ch.setFormatter(formatter)
+root.addHandler(ch)
 
 ############"
 
-logging.basicConfig(filename='simu.log', level="DEBUG", )
+contents = Contents()
 session = Session()
-link_id = "5511"
+link_id = "12322"
 # create the topology and the random state
 
 try:
@@ -59,36 +36,46 @@ try:
     tenant = session.query(Tenant).filter(Tenant.name == link_id).one()
     su = session.query(Substrate).one()
     rs = RandomState()
-    slas = [session.query(Sla).one()]
     logging.debug("Data logged from DB")
 except:
+    logging.info("Unexpected error:", sys.exc_info()[0])
     logging.debug("Failed to read data from DB, reloading from file")
     rs, su = clean_and_create_experiment(("links", (link_id,)), int(random.uniform(1, 100)))
     tenant = Tenant(name=link_id)
     session.add(tenant)
     session.add(su)
     session.flush()
-slas = generate_random_slas(rs, su, count=1, user_count=1000000, max_start_count=100, max_end_count=10, tenant=tenant,
-                            min_start_count=99, min_end_count=9)
+logging.debug("SLA generation")
+slas = generate_random_slas(rs, su, count=1, user_count=1000000, max_start_count=100, max_end_count=5, tenant=tenant,
+                            min_start_count=99, min_end_count=4)
+
 session.add_all(slas)
 session.flush()
+logging.debug("SLA saved")
 
 sla = slas[0]
-cdns = [node.topoNode.name for node in sla.get_cdn_nodes()]
+logging.debug("Loading graph in memory")
 g = su.get_nxgraph()
-original = np.sum(d[2]["bandwidth"] for d in g.edges(data=True))
 
-try:
-    while True:
-        tn = random.choice(sla.get_start_nodes()).topoNode.name
-        path = tn_cdn(tn, cdns, g, 10000000, install=True)
-        print(("hitting %s from %s " % (path[-1][1], tn)))
-        # remaining = np.sum(d[2]["bandwidth"] for d in g.edges(data=True))
-        # print("%lf \t\t %lf\n" % (remaining,(original - remaining ) / original))
-        # print("%lf remaining on path" % min(g.edge[n0][n1]["bandwidth"] for n0, n1 in path))
+logging.debug("setup content and capacity")
+cdns = [node.topoNode.name for node in sla.get_cdn_nodes()]
+for cdn in cdns:
+    g.node[cdn]["storage"] = CDNStorage()
+    g.node[cdn]["capacity"] = 20000
 
-except NotEnoughBandwidthError as e:
-    print("this is the end of time")
+success = 1.
+trial = 1.
+while success / trial > 0.8:
+    try:
 
+        trial += 1
+        consumer = random.choice(sla.get_start_nodes()).topoNode.name
+        winner, price = create_content_delivery(g=g, peers=cdns, content=contents.draw(), consumer=consumer)
+        success += 1
+        print("%lf\t%lf\t%.2f\t\tserved %s \t\tfrom %s for %lf" % (success ,trial,success / trial,winner[0][0], winner[-1][1], price))
+    except Exception as e:
+        #logging.error(e)
+        #print("this is the end of time")
+        pass
 
-# add the session and the tentant.
+        # add the session and the tentant.
