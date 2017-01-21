@@ -12,6 +12,7 @@ from numpy.random import RandomState
 
 from offline.core.sla import generate_random_slas
 from offline.core.substrate import Substrate
+from offline.core.utils import red
 from offline.discrete.Contents import Contents
 from offline.discrete.utils import CDNStorage, create_content_delivery, get_popular_contents, NoPeerAvailableException
 from offline.time.persistence import Session, Tenant
@@ -28,11 +29,11 @@ root.addHandler(ch)
 
 ############"
 
-contents = Contents(1.01)
+contents = Contents(1.1)
 session = Session()
-# link_id = "12322"
-link_id = "dummy"
-cdn_count = 10
+link_id = "5511"
+# link_id = "dummy"
+cdn_count = 0
 client_count = 100
 vcdn_count = 10
 # create the topology and the random state
@@ -46,9 +47,8 @@ try:
 except:
     logging.info("Unexpected error:", sys.exc_info()[0])
     logging.debug("Failed to read data from DB, reloading from file")
-    # rs, su = clean_and_create_experiment(("links", (link_id,)), int(random.uniform(1, 100)))
-    rs, su = clean_and_create_experiment(("powerlaw", (500, 2, 0.3, 1, 1000000000, 20, 200,)),
-                                         int(random.uniform(1, 100)))
+    rs, su = clean_and_create_experiment(("links", (link_id,)), int(random.uniform(1, 100)))
+    # rs, su = clean_and_create_experiment(("powerlaw", (500, 2, 0.3, 1, 1000000000, 20, 200,)),                                         int(random.uniform(1, 100)))
     tenant = Tenant(name=link_id)
     session.add(tenant)
     session.add(su)
@@ -72,37 +72,37 @@ cdns = servers[0:cdn_count]
 vcdns = servers[cdn_count:(cdn_count + vcdn_count)]
 for cdn in cdns:
     g.node[cdn]["storage"] = CDNStorage()
-    g.node[cdn]["capacity"] = 20000
+    g.node[cdn]["capacity"] = 200
     g.node[cdn]["type"] = "CDN"
 
 for vcdn in vcdns:
-    g.node[vcdn]["storage"] = pylru.lrucache(10)
-    g.node[vcdn]["capacity"] = 2000
+    g.node[vcdn]["storage"] = pylru.lrucache(20)
+    g.node[vcdn]["capacity"] = 100
     g.node[vcdn]["type"] = "vCDN"
 
 contentHistory = pd.DataFrame()
 success = 1.
 trial = 1.
-while success / trial > 0.8:
+
+while trial < 10000:
     try:
 
         trial += 1
         consumer = random.choice(sla.get_start_nodes()).topoNode.name
-        content = contents.draw()
+        content = contents.draw()[0]
         contentHistory = pd.concat([contentHistory, pd.DataFrame([content])])
 
         # pull popular content
-        for vcdn in vcdns:
-            for content in get_popular_contents(contentHistory, windows=200, count=5):
-                g.node[vcdn]["storage"][content] = True
+        if trial % 200 == 0:
+            for vcdn in vcdns:
+                for content in get_popular_contents(contentHistory, windows=200, count=5):
+                    g.node[vcdn]["storage"][content] = True
 
         winner, price = create_content_delivery(g=g, peers=servers, content=content, consumer=consumer)
         success += 1
-        logging.debug("%lf\t%lf\t%.2f\t\tserved %s \t\tfrom %s for %lf" % (
-            success, trial, success / trial, consumer, winner[-1][1], price))
+        # logging.debug("%lf\t%lf\t%.2f\t\tserved %s \t\tfrom %s for %lf" % (            success, trial, success / trial, consumer, winner[-1][1], price))
     except NoPeerAvailableException as e:
-        logging.error(e)
-        # print("this is the end of time")
-        pass
+        logging.debug("%s" % red("No Hit"))
+
 
         # add the session and the tentant.
