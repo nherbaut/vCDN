@@ -11,6 +11,17 @@ class CDNStorage:
         return True
 
 
+def get_popular_contents(dataframe, windows=200, count=5):
+    '''
+
+    :param dataframe: the dataframe containing historic data
+    :param windows: last *windows* observations to consider
+    :param count: top *count* content id
+    :return: a numpy.ndarray containing the values, ordered
+    '''
+    return dataframe.tail(windows)[0].value_counts().index[:count].values
+
+
 def tn_cdn_with_path(path, g, bw, install=True):
     # removing bw
     for node1, node2 in path:
