@@ -7,6 +7,7 @@ import sys
 import numpy as np
 import pandas as pd
 
+from offline.core.utils import yellow, red, green
 from ..core.mapping import Mapping
 from ..core.service import Service
 from ..core.sla import findSLAByDate
@@ -46,33 +47,6 @@ def printProgress(iteration, total, prefix='', suffix='', decimals=1, barLength=
         file.flush()
 
 
-class bcolors:
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-    UNDERLINE = '\033[4m'
-
-
-def yellow(arg):
-    return col(arg, bcolors.WARNING)
-
-
-def red(arg):
-    return col(arg, bcolors.FAIL)
-
-
-def green(arg):
-    return col(arg, bcolors.OKGREEN)
-
-
-def col(arg, colr=bcolors.ENDC):
-    return colr + str(arg) + bcolors.ENDC
-
-
 def merge_services(s1, s2, migration_costs_func):
     '''
 
@@ -93,7 +67,7 @@ def merge_services(s1, s2, migration_costs_func):
         logging.debug("CONSOLIDATED COSTS for %s : %lf" % (s3, s3.mapping.objective_function))
         logging.debug("INDIVIDUAL COSTS FOR %s : %lf" % ("\t".join([str(s1), str(s2)]), individual_costs))
         if consolidated_cost < individual_costs:
-            logging.debug(green("CREATED %s AND OPTIMAL we win %lf (%lf %%)" % (s3, (individual_costs - consolidated_cost),100*(individual_costs - consolidated_cost)/individual_costs )))
+            logging.debug(green("CREATED %s AND OPTIMAL we win %lf (%lf %%)" % (s3, (individual_costs - consolidated_cost), 100 * (individual_costs - consolidated_cost) / individual_costs)))
             session.flush()
             return s3, Mapping.get_migration_cost(s3.mapping, s1.mapping, migration_costs_func)
         else:

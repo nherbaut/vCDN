@@ -40,3 +40,30 @@ def printProgress(iteration, total, prefix='', suffix='', decimals=1, barLength=
     if iteration == total:
         file.write('\n')
         file.flush()
+
+
+class bcolors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
+
+def yellow(arg):
+    return col(arg, bcolors.WARNING)
+
+
+def red(arg):
+    return col(arg, bcolors.FAIL)
+
+
+def green(arg):
+    return col(arg, bcolors.OKGREEN)
+
+
+def col(arg, colr=bcolors.ENDC):
+    return colr + str(arg) + bcolors.ENDC

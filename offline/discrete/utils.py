@@ -1,6 +1,9 @@
 import functools
+import logging
 
 import networkx as nx
+
+from offline.core.utils import green, yellow
 
 
 class CDNStorage:
@@ -50,7 +53,8 @@ def get_peers_with_content(g, peers, content):
 
 def get_path_has_bandwidth(g, path, bw):
     for node1, node2 in path:
-        if g.edge[node1][node2]["bandwidth"] < bw:
+
+        if node1 != node2 and g.edge[node1][node2]["bandwidth"] < bw:
             return False
     return True
 
@@ -65,13 +69,30 @@ def p2p_get_shortest_path(g, peer1, peer2):
     return list(zip(iterim_nodes, iterim_nodes[1:]))
 
 
-def consume_content_delivery(g, path, bw, capacity):
-    consumer = path[0][0]
-    producer = path[-1][1]
+def consume_content_delivery(g, consumer, path, bw, capacity, content):
+    if len(path) > 0:  # remote content
+        producer = path[-1][1]
+        # consume for LRU
 
-    g.node[producer]["capacity"] = g.node[producer]["capacity"] - capacity
-    for node1, node2 in path:
-        g.edge[node1][node2]["bandwidth"] = g.edge[node1][node2]["bandwidth"] - bw
+        g.node[producer]["capacity"] = g.node[producer]["capacity"] - capacity
+        for node1, node2 in path:
+            if node1 != node2:
+                g.edge[node1][node2]["bandwidth"] = g.edge[node1][node2]["bandwidth"] - bw
+        if g.node[producer]["type"] == "vCDN":
+            logging.debug("content delivery by %s" % green("VCDN"))
+        else:
+            logging.debug("content delivery by %s" % yellow("CDN"))
+    else:
+        _ = g.node[consumer]["storage"][content]
+        path.append((consumer, consumer))
+        if g.node[consumer]["type"] == "vCDN":
+            logging.debug("content delivery by %s" % green("VCDN"))
+        else:
+            logging.debug("content delivery by %s" % yellow("CDN"))
+
+
+class NoPeerAvailableException(Exception):
+    pass
 
 
 def create_content_delivery(g, peers, content, consumer, bw=5000000, capacity=1):
@@ -83,9 +104,9 @@ def create_content_delivery(g, peers, content, consumer, bw=5000000, capacity=1)
                          if get_path_has_bandwidth(g, path, bw)]
 
     if len(valid_path_prices) == 0:
-        raise Exception("No peer available")
+        raise NoPeerAvailableException("No peer available")
 
     winner, price = min(valid_path_prices, key=lambda x: x[1])
 
-    consume_content_delivery(g, winner, bw, capacity)
+    consume_content_delivery(g, consumer, winner, bw, capacity, content)
     return winner, price
