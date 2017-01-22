@@ -1,14 +1,7 @@
-import numpy as np
+def get_content_generator(rs, param):
+    def draw():
+        return rs.zipf(param)
+
+    return draw
 
 
-class Contents:
-    def __init__(self, param=1.1):
-        self.param = param
-
-    def draw(self, count=1):
-        return np.random.zipf(self.param, count)
-
-
-class Content_Frequency:
-    def __init__(self,size=1000):
-        self

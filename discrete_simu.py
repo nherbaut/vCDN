@@ -13,7 +13,7 @@ from numpy.random import RandomState
 from offline.core.sla import generate_random_slas
 from offline.core.substrate import Substrate
 from offline.core.utils import red
-from offline.discrete.Contents import Contents
+from offline.discrete.Contents import get_content_generator
 from offline.discrete.utils import CDNStorage, create_content_delivery, get_popular_contents, NoPeerAvailableException
 from offline.time.persistence import Session, Tenant
 from offline.tools.ostep import clean_and_create_experiment
@@ -34,7 +34,7 @@ root.addHandler(ch)
 ############ SETUP TOPOLOGY ####################
 ################################################
 
-contents = Contents(1.1)
+
 link_id = "5511"
 # link_id = "dummy"
 cdn_count = 0
@@ -116,6 +116,8 @@ try:
 except:
     tenant, su, rs = create_new_experiment(link_id)
 
+content_draw = get_content_generator(rs, 1.1)
+
 # generate SLAS
 sla = create_sla(client_count, cdn_count, vcdn_count)
 
@@ -144,7 +146,7 @@ while trial < 10000:
 
         trial += 1
         consumer = random.choice(sla.get_start_nodes()).topoNode.name
-        content = contents.draw()[0]
+        content = content_draw()
 
         contentHistory = get_updated_history(contentHistory, content)
 
@@ -156,4 +158,3 @@ while trial < 10000:
 
     except NoPeerAvailableException as e:
         logging.debug("%s" % red("No Hit"))
-
