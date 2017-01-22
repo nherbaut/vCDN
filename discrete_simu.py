@@ -3,18 +3,21 @@
 # import simpy
 # from offline.core.substrate import Substrate
 import logging
-import random
 import sys
 
 import pandas as pd
 import pylru
+import simpy
 from numpy.random import RandomState
 
 from offline.core.sla import generate_random_slas
 from offline.core.substrate import Substrate
-from offline.core.utils import red
+from offline.discrete.ContentHistory import ContentHistory
 from offline.discrete.Contents import get_content_generator
-from offline.discrete.utils import CDNStorage, create_content_delivery, get_popular_contents, NoPeerAvailableException
+from offline.discrete.Generators import get_ticker
+from offline.discrete.endUser import User
+from offline.discrete.utils import CDNStorage
+from offline.discrete.vCDN import vCDN
 from offline.time.persistence import Session, Tenant
 from offline.tools.ostep import clean_and_create_experiment
 
@@ -35,8 +38,8 @@ root.addHandler(ch)
 ################################################
 
 
-link_id = "5511"
-# link_id = "dummy"
+# link_id = "5511"
+link_id = "dummy"
 cdn_count = 0
 client_count = 100
 vcdn_count = 10
@@ -49,7 +52,7 @@ def load_exising_experiment(link_id):
     # first, if data is already present, try with it
     tenant = session.query(Tenant).filter(Tenant.name == link_id).one()
     su = session.query(Substrate).one()
-    rs = RandomState()
+    rs = RandomState(seed=5)
     logging.debug("Data logged from DB")
     return tenant, su, rs
 
@@ -58,8 +61,8 @@ def create_new_experiment(link_id):
     session = Session()
     logging.info("Unexpected error:", sys.exc_info()[0])
     logging.debug("Failed to read data from DB, reloading from file")
-    rs, su = clean_and_create_experiment(("links", (link_id,)), int(random.uniform(1, 100)))
-    # rs, su = clean_and_create_experiment(("powerlaw", (500, 2, 0.3, 1, 1000000000, 20, 200,)),                                         int(random.uniform(1, 100)))
+    # rs, su = clean_and_create_experiment(("links", (link_id,)), int(random.uniform(1, 100)))
+    rs, su = clean_and_create_experiment(("powerlaw", (500, 2, 0.3, 1, 1000000000, 20, 200,)), seed=5)
     tenant = Tenant(name=link_id)
     session.add(tenant)
     session.add(su)
@@ -106,8 +109,12 @@ def setup_servers(g, cdns, vcdns):
         g.node[vcdn]["type"] = "vCDN"
 
 
-def get_updated_history(df, c):
-    return pd.concat([df, pd.DataFrame([content])])
+
+
+def update_vcdn_storage(g, contentHistory):
+    for vcdn in vcdns:
+        for content in get_popular_contents(contentHistory, windows=200, count=5):
+            g.node[vcdn]["storage"][content] = True
 
 
 # load topology data
@@ -115,8 +122,6 @@ try:
     tenant, su, rs = load_exising_experiment(link_id)
 except:
     tenant, su, rs = create_new_experiment(link_id)
-
-content_draw = get_content_generator(rs, 1.1)
 
 # generate SLAS
 sla = create_sla(client_count, cdn_count, vcdn_count)
@@ -130,31 +135,26 @@ servers, cdns, vcdns = get_servers_from_sla(sla)
 # setup servers capacity, storage...
 setup_servers(g, cdns, vcdns)
 
-contentHistory = pd.DataFrame()
-success = 1.
-trial = 1.
+contentHistory = ContentHistory()
 
+content_draw = get_content_generator(rs, 1.1, contentHistory)
 
-def update_vcdn_storage(g, contentHistory):
-    for vcdn in vcdns:
-        for content in get_popular_contents(contentHistory, windows=200, count=5):
-            g.node[vcdn]["storage"][content] = True
+consumers = [node.topoNode.name for node in sla.get_start_nodes()]
 
+# contentHistory = get_updated_history(contentHistory, content)
 
-while trial < 10000:
-    try:
+# update_vcdn_storage(g, contentHistory)
 
-        trial += 1
-        consumer = random.choice(sla.get_start_nodes()).topoNode.name
-        content = content_draw()
+# winner, price = create_content_delivery(g=g, peers=servers, content=content,consumer=consumer)
 
-        contentHistory = get_updated_history(contentHistory, content)
+env = simpy.Environment()
+the_time = 0
+ticker = get_ticker(rs, 1, )
+while the_time < 3000:
+    location = rs.choice(consumers)
+    the_time = ticker() + the_time
+    User(env, location, the_time, content_draw, content_duration=120)
 
-        if trial % 200 == 0:
-            update_vcdn_storage(g, contentHistory)
-
-        winner, price = create_content_delivery(g=g, peers=servers, content=content, consumer=consumer)
-        success += 1
-
-    except NoPeerAvailableException as e:
-        logging.debug("%s" % red("No Hit"))
+for server in servers:
+    vCDN(env, server, g, contentHistory)
+env.run(until=3000)

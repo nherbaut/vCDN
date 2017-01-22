@@ -1,7 +1,7 @@
-def get_content_generator(rs, param):
+def get_content_generator(rs, param, contentHistory):
     def draw():
-        return rs.zipf(param)
+        content = rs.zipf(param)
+        contentHistory.push(content)
+        return content
 
     return draw
-
-
