@@ -31,7 +31,7 @@ from offline.tools.ostep import clean_and_create_experiment
 root = logging.getLogger()
 root.setLevel(logging.DEBUG)
 
-ch = logging.StreamHandler(sys.stderr)
+ch = logging.StreamHandler(sys.stdout)
 ch.setLevel(logging.DEBUG)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 ch.setFormatter(formatter)
@@ -51,10 +51,10 @@ cache_size_vcdn = 15
 vcdn_capacity = 100
 cdn_capacity = 1000
 zipf_param = 1.1
-poisson_param = 0.1
-max_time_experiment = 500
-content_duration=20
-refresh_delay = 50
+poisson_param = 1
+max_time_experiment = 1500
+content_duration=100
+refresh_delay = 60
 download_delay = 10
 
 

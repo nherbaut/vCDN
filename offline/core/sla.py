@@ -120,18 +120,22 @@ def generate_random_slas(rs, substrate, count=1000, user_count=1000, max_start_c
 
         cdn_nodes = weighted_shuffle(list(nodes_by_degree.keys()), np.array(list(nodes_by_degree.values())) * 100, rs)[
                     :rs.randint(min_end_count, max_end_count + 1)]
-        start_nodes = weighted_shuffle(list(nodes_by_bw.keys()), list(nodes_by_bw.values()), rs)[
-                      -rs.randint(min_start_count, max_start_count + 1):]
+
         nodespecs = []
-        for sn in start_nodes:
-            sn = session.query(Node).filter(Node.name == sn).one()
-            nodespecs.append(
-                SlaNodeSpec(type="start", topoNode=sn, attributes={"bandwidth": bandwidth / (1.0 * len(start_nodes))}))
+
 
         for sn in cdn_nodes:
             sn = session.query(Node).filter(Node.name == sn).one()
             nodespecs.append(
                 SlaNodeSpec(type="cdn", topoNode=sn, attributes={"bandwidth": 0}))
+
+        start_nodes = [i for i in weighted_shuffle(list(nodes_by_bw.keys()), list(nodes_by_bw.values()), rs) if i not in cdn_nodes][-rs.randint(min_start_count, max_start_count + 1):]
+
+        for sn in start_nodes:
+            sn = session.query(Node).filter(Node.name == sn).one()
+            nodespecs.append(
+                SlaNodeSpec(type="start", topoNode=sn, attributes={"bandwidth": bandwidth / (1.0 * len(start_nodes))}))
+
 
         sla = Sla(start_date=None, end_date=None,
                   bandwidth=bandwidth,

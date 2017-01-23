@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import matplotlib.pyplot as plt
 import pandas as pd
 
@@ -13,10 +14,11 @@ price=price.resample("60s").bfill().fillna(0)
 #e1M["USER"].cumsum().plot()
 
 plt.plot(e1M.index,e1M["REQUEST"],)
+plt.plot(e1M.index,e1M["HIT.HIT"],)
 plt.plot(e1M.index,e1M["HIT.CDN"],)
 plt.plot(e1M.index,e1M["HIT.VCDN"],)
 
-plt.legend(["REQUESTS","HIT.CDN","HIT.VCDN"], loc='upper left')
+plt.legend(["REQUESTS","HIT.HIT","HIT.CDN","HIT.VCDN"], loc='upper left')
 
 
 plt.show()
