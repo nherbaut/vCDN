@@ -6,7 +6,7 @@ import logging
 import sys
 import matplotlib.pyplot as plt
 import matplotlib
-
+import random
 matplotlib.style.use('ggplot')
 
 import pylru
@@ -42,20 +42,20 @@ root.addHandler(ch)
 ################################################
 
 
-# link_id = "5511"
+#link_id = "5511"
 link_id = "dummy"
-cdn_count = 2
-client_count = 500
-vcdn_count = 3
+cdn_count = 10
+client_count = 1000
+vcdn_count = 100
 cache_size_vcdn = 15
-vcdn_capacity = 20000
-cdn_capacity = 20000
-zipf_param = 1.5
+vcdn_capacity = 100
+cdn_capacity = 1000
+zipf_param = 2
 poisson_param = 0.1
-max_time_experiment = 300
-
-refresh_delay = 5
-download_delay = 0
+max_time_experiment = 2000
+content_duration=300
+refresh_delay = 20
+download_delay = 3
 
 
 # create the topology and the random state
@@ -74,8 +74,11 @@ def create_new_experiment(link_id):
     session = Session()
     logging.info("Unexpected error:", sys.exc_info()[0])
     logging.debug("Failed to read data from DB, reloading from file")
-    # rs, su = clean_and_create_experiment(("links", (link_id,)), int(random.uniform(1, 100)))
-    rs, su = clean_and_create_experiment(("powerlaw", (500, 2, 0.3, 1, 1000000000, 20, 200,)), seed=5)
+    if link_id == "dummy":
+        rs, su = clean_and_create_experiment(("powerlaw", (2000, 2, 0.3, 1, 1000000000, 20, 200,)), seed=5)
+    else:
+        rs, su = clean_and_create_experiment(("links", (link_id,)), 5)
+
     tenant = Tenant(name=link_id)
     session.add(tenant)
     session.add(su)
@@ -144,7 +147,7 @@ setup_servers(g, cdns, vcdns)
 
 contentHistory = ContentHistory()
 
-content_draw = get_content_generator(rs, zipf_param, contentHistory, 5000000, 1)
+content_draw = get_content_generator(rs, zipf_param, contentHistory, 5000000, 1,content_duration)
 
 consumers = [node.topoNode.name for node in sla.get_start_nodes()]
 
@@ -162,10 +165,11 @@ ticker = get_ticker(rs, poisson_param, )
 while the_time < max_time_experiment:
     location = rs.choice(consumers)
     the_time = ticker() + the_time
-    User(g, cdns + vcdns, env, location, the_time, content_draw, content_duration=120)
+    User(g, cdns + vcdns, env, location, the_time, content_draw)
 
 for vcdn in vcdns:
     vCDN(env, vcdn, g, contentHistory, refresh_delay=refresh_delay, download_delay=download_delay)
 env.run(until=max_time_experiment * 2)
 
-Monitoring.getdf()["price"].dropna().plot()
+Monitoring.getdf().to_csv("eval.csv")
+

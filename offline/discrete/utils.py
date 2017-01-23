@@ -2,8 +2,9 @@ import functools
 import logging
 
 import networkx as nx
+from offline.discrete.Monitoring import Monitoring
 
-from offline.core.utils import green, yellow
+from offline.core.utils import green, yellow, red
 
 
 class CDNStorage:
@@ -61,7 +62,7 @@ def p2p_get_shortest_path(g, peer1, peer2):
     return list(zip(iterim_nodes, iterim_nodes[1:]))
 
 
-def consume_content_delivery(g, consumer, path, bw, capacity):
+def consume_content_delivery(env,g, consumer, path, bw, capacity):
     if len(path) > 0:  # remote content
         producer = path[-1][1]
         # consume for LRU
@@ -72,26 +73,30 @@ def consume_content_delivery(g, consumer, path, bw, capacity):
                 g.edge[node1][node2]["bandwidth"] = g.edge[node1][node2]["bandwidth"] - bw
         if g.node[producer]["type"] == "vCDN":
             logging.debug("content delivery by %s " % (green("vCDN")))
+            Monitoring.push("HIT.VCDN",env.now,1)
         else:
             logging.debug("content delivery by %s " % (yellow("CDN")))
+            Monitoring.push("HIT.CDN", env.now, 1)
     else:
 
         path.append((consumer, consumer))
         if g.node[consumer]["type"] == "vCDN":
             logging.debug("content delivery by %s " % (green("vCDN")))
+            Monitoring.push("HIT.VCDN", env.now, 1)
         else:
             logging.debug("content delivery by %s " % (yellow("CDN")))
+            Monitoring.push("HIT.CDN", env.now, 1)
 
 
 class NoPeerAvailableException(Exception):
     pass
 
 
-def release_content_delivery(g, consumer, winner, bw, capacity):
-    consume_content_delivery(g, consumer, winner, -bw, -capacity)
+def release_content_delivery(env,g, consumer, winner, bw, capacity):
+    consume_content_delivery(env,g, consumer, winner, -bw, -capacity)
 
 
-def create_content_delivery(g, peers, content, consumer, bw=5000000, capacity=1):
+def create_content_delivery(env, g, peers, content, consumer, bw=5000000, capacity=1):
     peers_with_content = get_peers_with_content(g, peers, content)
     peers_with_content_and_capacity = get_peers_with_capacity(g, peers_with_content, capacity)
 
@@ -100,11 +105,13 @@ def create_content_delivery(g, peers, content, consumer, bw=5000000, capacity=1)
                          if get_path_has_bandwidth(g, path, bw)]
 
     if len(valid_path_prices) == 0:
+        Monitoring.push("HIT.MISS", env.now, 1)
+        logging.debug("content delivery %s" % (red("MISS")))
         raise NoPeerAvailableException("No peer available")
 
     winner, price = min(valid_path_prices, key=lambda x: x[1])
 
-    consume_content_delivery(g, consumer, winner, bw, capacity)
+    consume_content_delivery(env, g, consumer, winner, bw, capacity)
 
     if len(winner) > 0:
         # update storage for LRU, if not on the same host
