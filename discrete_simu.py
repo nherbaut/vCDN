@@ -4,8 +4,11 @@
 # from offline.core.substrate import Substrate
 import logging
 import sys
+import matplotlib.pyplot as plt
+import matplotlib
 
-import pandas as pd
+matplotlib.style.use('ggplot')
+
 import pylru
 import simpy
 from numpy.random import RandomState
@@ -13,6 +16,7 @@ from numpy.random import RandomState
 from offline.core.sla import generate_random_slas
 from offline.core.substrate import Substrate
 from offline.discrete.ContentHistory import ContentHistory
+from offline.discrete.Monitoring import Monitoring
 from offline.discrete.Contents import get_content_generator
 from offline.discrete.Generators import get_ticker
 from offline.discrete.endUser import User
@@ -40,9 +44,18 @@ root.addHandler(ch)
 
 # link_id = "5511"
 link_id = "dummy"
-cdn_count = 0
-client_count = 100
-vcdn_count = 10
+cdn_count = 2
+client_count = 500
+vcdn_count = 3
+cache_size_vcdn = 15
+vcdn_capacity = 20000
+cdn_capacity = 20000
+zipf_param = 1.5
+poisson_param = 0.1
+max_time_experiment = 300
+
+refresh_delay = 5
+download_delay = 0
 
 
 # create the topology and the random state
@@ -94,27 +107,21 @@ def get_servers_from_sla(sla):
     servers = [node.topoNode.name for node in sla.get_cdn_nodes()]
     cdns = servers[0:cdn_count]
     vcdns = servers[cdn_count:(cdn_count + vcdn_count)]
-    return servers, cdns, vcdns
+    return cdns, vcdns
 
 
 def setup_servers(g, cdns, vcdns):
     for cdn in cdns:
         g.node[cdn]["storage"] = CDNStorage()
-        g.node[cdn]["capacity"] = 200
+
+        g.node[cdn]["capacity"] = cdn_capacity
         g.node[cdn]["type"] = "CDN"
 
     for vcdn in vcdns:
-        g.node[vcdn]["storage"] = pylru.lrucache(20)
-        g.node[vcdn]["capacity"] = 100
+        g.node[vcdn]["storage"] = pylru.lrucache(cache_size_vcdn)
+
+        g.node[vcdn]["capacity"] = vcdn_capacity
         g.node[vcdn]["type"] = "vCDN"
-
-
-
-
-def update_vcdn_storage(g, contentHistory):
-    for vcdn in vcdns:
-        for content in get_popular_contents(contentHistory, windows=200, count=5):
-            g.node[vcdn]["storage"][content] = True
 
 
 # load topology data
@@ -130,14 +137,14 @@ sla = create_sla(client_count, cdn_count, vcdn_count)
 g = su.get_nxgraph()
 
 # get servers
-servers, cdns, vcdns = get_servers_from_sla(sla)
+cdns, vcdns = get_servers_from_sla(sla)
 
 # setup servers capacity, storage...
 setup_servers(g, cdns, vcdns)
 
 contentHistory = ContentHistory()
 
-content_draw = get_content_generator(rs, 1.1, contentHistory)
+content_draw = get_content_generator(rs, zipf_param, contentHistory, 5000000, 1)
 
 consumers = [node.topoNode.name for node in sla.get_start_nodes()]
 
@@ -149,12 +156,16 @@ consumers = [node.topoNode.name for node in sla.get_start_nodes()]
 
 env = simpy.Environment()
 the_time = 0
-ticker = get_ticker(rs, 1, )
-while the_time < 3000:
+
+ticker = get_ticker(rs, poisson_param, )
+
+while the_time < max_time_experiment:
     location = rs.choice(consumers)
     the_time = ticker() + the_time
-    User(env, location, the_time, content_draw, content_duration=120)
+    User(g, cdns + vcdns, env, location, the_time, content_draw, content_duration=120)
 
-for server in servers:
-    vCDN(env, server, g, contentHistory)
-env.run(until=3000)
+for vcdn in vcdns:
+    vCDN(env, vcdn, g, contentHistory, refresh_delay=refresh_delay, download_delay=download_delay)
+env.run(until=max_time_experiment * 2)
+
+Monitoring.getdf()["price"].dropna().plot()

@@ -13,8 +13,8 @@ class CDNStorage:
     def get(self, key, default=None):
         return True
 
-
-
+    def keys(self):
+        return ['CDN has all']
 
 
 def tn_cdn_with_path(path, g, bw, install=True):
@@ -61,7 +61,7 @@ def p2p_get_shortest_path(g, peer1, peer2):
     return list(zip(iterim_nodes, iterim_nodes[1:]))
 
 
-def consume_content_delivery(g, consumer, path, bw, capacity, content):
+def consume_content_delivery(g, consumer, path, bw, capacity):
     if len(path) > 0:  # remote content
         producer = path[-1][1]
         # consume for LRU
@@ -71,20 +71,24 @@ def consume_content_delivery(g, consumer, path, bw, capacity, content):
             if node1 != node2:
                 g.edge[node1][node2]["bandwidth"] = g.edge[node1][node2]["bandwidth"] - bw
         if g.node[producer]["type"] == "vCDN":
-            logging.debug("content delivery by %s" % green("VCDN"))
+            logging.debug("content delivery by %s " % (green("vCDN")))
         else:
-            logging.debug("content delivery by %s" % yellow("CDN"))
+            logging.debug("content delivery by %s " % (yellow("CDN")))
     else:
-        _ = g.node[consumer]["storage"][content]
+
         path.append((consumer, consumer))
         if g.node[consumer]["type"] == "vCDN":
-            logging.debug("content delivery by %s" % green("VCDN"))
+            logging.debug("content delivery by %s " % (green("vCDN")))
         else:
-            logging.debug("content delivery by %s" % yellow("CDN"))
+            logging.debug("content delivery by %s " % (yellow("CDN")))
 
 
 class NoPeerAvailableException(Exception):
     pass
+
+
+def release_content_delivery(g, consumer, winner, bw, capacity):
+    consume_content_delivery(g, consumer, winner, -bw, -capacity)
 
 
 def create_content_delivery(g, peers, content, consumer, bw=5000000, capacity=1):
@@ -100,5 +104,10 @@ def create_content_delivery(g, peers, content, consumer, bw=5000000, capacity=1)
 
     winner, price = min(valid_path_prices, key=lambda x: x[1])
 
-    consume_content_delivery(g, consumer, winner, bw, capacity, content)
+    consume_content_delivery(g, consumer, winner, bw, capacity)
+
+    if len(winner) > 0:
+        # update storage for LRU, if not on the same host
+        producer = winner[-1][1]
+        _ = g.node[producer]["storage"][content]
     return winner, price
