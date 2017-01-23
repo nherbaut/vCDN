@@ -50,19 +50,19 @@ vcdn_count = 100
 cache_size_vcdn = 15
 vcdn_capacity = 100
 cdn_capacity = 1000
-zipf_param = 2
+zipf_param = 1.1
 poisson_param = 0.1
-max_time_experiment = 2000
-content_duration=300
-refresh_delay = 20
-download_delay = 3
+max_time_experiment = 500
+content_duration=20
+refresh_delay = 50
+download_delay = 10
 
 
 # create the topology and the random state
 
 def load_exising_experiment(link_id):
     session = Session()
-    # first, if data is already present, try with it
+    # first, if data_sum is already present, try with it
     tenant = session.query(Tenant).filter(Tenant.name == link_id).one()
     su = session.query(Substrate).one()
     rs = RandomState(seed=5)
@@ -73,7 +73,7 @@ def load_exising_experiment(link_id):
 def create_new_experiment(link_id):
     session = Session()
     logging.info("Unexpected error:", sys.exc_info()[0])
-    logging.debug("Failed to read data from DB, reloading from file")
+    logging.debug("Failed to read data_sum from DB, reloading from file")
     if link_id == "dummy":
         rs, su = clean_and_create_experiment(("powerlaw", (2000, 2, 0.3, 1, 1000000000, 20, 200,)), seed=5)
     else:
@@ -127,7 +127,7 @@ def setup_servers(g, cdns, vcdns):
         g.node[vcdn]["type"] = "vCDN"
 
 
-# load topology data
+# load topology data_sum
 try:
     tenant, su, rs = load_exising_experiment(link_id)
 except:

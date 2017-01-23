@@ -6,6 +6,10 @@ e=pd.DataFrame.from_csv("eval.csv")
 e=pd.DataFrame(index=[pd.Timedelta(seconds=i)+pd.Timestamp('2012-05-01 00:00:00') for i in e.index],data=e.values,columns=list(e))
 e1M=e.resample("60s").sum().fillna(0)
 
+price=pd.DataFrame.from_csv("eval.csv")
+price=pd.DataFrame(index=[pd.Timedelta(seconds=i)+pd.Timestamp('2012-05-01 00:00:00') for i in price.index],data=price["price"].values,columns=["price"])
+price=price.resample("60s").bfill().fillna(0)
+
 #e1M["USER"].cumsum().plot()
 
 plt.plot(e1M.index,e1M["REQUEST"],)
@@ -18,6 +22,6 @@ plt.legend(["REQUESTS","HIT.CDN","HIT.VCDN"], loc='upper left')
 plt.show()
 
 
-plt.plot(e1M.index,e1M["price"],)
+plt.plot(price.index,price["price"],)
 plt.show()
 

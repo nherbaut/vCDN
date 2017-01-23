@@ -1,5 +1,5 @@
 from offline.discrete.utils import *
-from offline.discrete.Monitoring import Monitoring
+
 
 class User(object):
     def __init__(self, graph, servers, env, location, start_time, content_drawer):
@@ -15,7 +15,7 @@ class User(object):
         def consume_content(content, bw, cap):
             # logging.debug("[%s]\t%s \t consume content %s" % (self.env.now, self.location, str(content)))
             winner, price = create_content_delivery(self.env, graph, servers, content, location, bw, cap)
-            Monitoring.data["price"][env.now] = price
+            Monitoring.push_average("price", env.now, price)
             # logging.info(green("consumming %s from %s" % (content, location)))
             return winner
 
@@ -32,7 +32,7 @@ class User(object):
 
         try:
             content, bw, cap, duration = self.content_drawer()
-            Monitoring.push("REQUEST",self.env.now,1)
+            Monitoring.push("REQUEST", self.env.now, 1)
             Monitoring.push("USER", self.env.now, 1)
             winner = self.consume_content(content, bw, cap)
             yield self.env.timeout(duration)
