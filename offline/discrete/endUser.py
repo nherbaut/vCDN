@@ -51,7 +51,7 @@ class User(object):
             self.release_content(winner, bw, cap)
 
         except NoPeerAvailableException as e:
-            Monitoring.push("HIT.MISS", self.now, 1, self.location)
+            Monitoring.push("HIT.MISS", self.env.now, 1, self.location)
 
             # logging.info(rd("failed to fetch content %s from %s ") % (self.content, self.location))
             pass

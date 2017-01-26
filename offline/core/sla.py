@@ -14,6 +14,7 @@ tcp_win = 65535.0
 
 # http://nicky.vanforeest.com/probability/weightedRandomShuffling/weighted.html
 def weighted_shuffle(a, w, rs):
+    assert len(a)==len(w)
     r = np.empty_like(a)
     cumWeights = np.cumsum(w)
     for i in range(len(a)):
