@@ -2,22 +2,19 @@
 # run simulation for paper 5
 # import simpy
 # from offline.core.substrate import Substrate
-import logging
-import sys
 
-import numpy as np
 import pylru
 import simpy
 from numpy.random import RandomState
-from offline.discrete import Topo
+
 from offline.core.sla import generate_random_slas
 from offline.core.substrate import Substrate
+from offline.core.utils import printProgress
 from offline.discrete.ContentHistory import ContentHistory
 from offline.discrete.Contents import get_content_generator
-from offline.discrete.utils import *
 from offline.discrete.Generators import get_ticker
-from offline.discrete.Monitoring import Monitoring
 from offline.discrete.endUser import User
+from offline.discrete.utils import *
 from offline.discrete.utils import CDNStorage
 from offline.discrete.vCDN import vCDN
 from offline.time.persistence import Session, Tenant
@@ -43,21 +40,23 @@ root.addHandler(ch)
 link_id = "5511"
 # link_id = "dummy"
 cdn_count = 5
-client_count = 300
-vcdn_count = 100
-cache_size_vcdn = 300
-vcdn_capacity = 300
+client_count = 1000
+vcdn_count = 25
+cache_size_vcdn = 50
+vcdn_capacity = 100
 cdn_capacity = 1000
-zipf_param = 1.3
+zipf_param = 5
 poisson_param = 0.1
-max_time_experiment = 300
-content_duration = 60
-refresh_delay = 60
-download_delay = 20
+max_time_experiment = 5000
+content_duration = 900
+refresh_delay = 240
+download_delay = 180
 concurent_download = 5
-vcdn_quantile = 0.8
-cdn_quantile = 1
-consumer_quantile = 0.1
+vcdn_quantile = 0.3
+cdn_quantile = 0.8
+consumer_quantile = 0.3
+POPULAR_WINDOWS_SIZE = 500
+POPULAR_HISTORY_COUNT = 50
 
 
 # create the topology and the random state
@@ -159,7 +158,7 @@ with open(os.path.join("offline/data", "links", "operator-%s.links" % name)) as 
 # take the biggest connected subgraph
 g = max(list({sg: len(sg.nodes()) for sg in nx.connected_component_subgraphs(g)}.items()),
         key=operator.itemgetter(1))[0]
-Topo.g=g
+Topo.g = g
 for e0, e1 in g.edges():
     g.edge[e0][e1]["bandwidth"] = g.degree(e0) * g.degree(e1) * 100000000000000
 
@@ -187,7 +186,7 @@ consumers = get_nodes_by_weight(rs, g, client_count, quantile=consumer_quantile,
 # setup servers capacity, storage...
 setup_servers(g, cdns, vcdns)
 
-contentHistory = ContentHistory()
+contentHistory = ContentHistory(windows=POPULAR_WINDOWS_SIZE, count=POPULAR_HISTORY_COUNT)
 
 content_draw = get_content_generator(rs, zipf_param, contentHistory, 5000000, 1, content_duration)
 
@@ -208,7 +207,7 @@ while the_time < max_time_experiment:
     User(g, {"CDN": cdns, "VCDN": vcdns}, env, location, the_time, content_draw)
 
 for vcdn in vcdns:
-    vCDN(env, vcdn, g, contentHistory, refresh_delay=refresh_delay, download_delay=download_delay,
+    vCDN(rs,env, vcdn, g, contentHistory, refresh_delay=refresh_delay, download_delay=download_delay,
          concurent_download=concurent_download)
 
 
@@ -231,7 +230,17 @@ def capacity_vcdn_monitor():
 
 
 env.process(capacity_vcdn_monitor())
-env.run(until=max_time_experiment  +200)
+
+
+def progress_display():
+    while True:
+        yield env.timeout(30)
+        printProgress(env.now, max_time_experiment + 200)
+
+    pass
+
+
+env.process(progress_display())
+env.run(until=max_time_experiment + 200)
 
 Monitoring.getdf().to_csv("eval.csv")
-
