@@ -100,9 +100,13 @@ def create_content_delivery(env, g, servers, content, consumer, bw=5000000, capa
 
 
             peers_with_content_and_capacity = get_peers_with_capacity(g, peers_with_content, capacity)
-
             peers_with_content_and_capacity=list(peers_with_content_and_capacity)
             Monitoring.push_average("AVG.PEER_WITH_CONTENT_CAPACITY.%s" % key, env.now, len(peers_with_content_and_capacity))
+
+            peers_with_capacity = get_peers_with_capacity(g, peers, capacity)
+            peers_with_capacity=list(peers_with_capacity)
+            Monitoring.push_average("AVG.PEER_WITH_CAPACITY.%s" % key, env.now, len(peers_with_capacity))
+
 
             valid_path_prices = [(path, get_price_from_path(path)) for path in
                                  [p2p_get_shortest_path(consumer, server) for server in peers_with_content_and_capacity]
@@ -114,7 +118,7 @@ def create_content_delivery(env, g, servers, content, consumer, bw=5000000, capa
 
             Monitoring.push_average("AVG.PRICE.%s" % key, env.now, price)
             Monitoring.push_average("MIN.PRICE.%s" % key, env.now, min(valid_path_prices, key=lambda x: x[1])[1])
-            Monitoring.push_average("MAX.PRICE.%s" % key, env.now, min(valid_path_prices, key=lambda x: -x[1])[1])
+            Monitoring.push_average("MIN.PRICE.%s" % key, env.now, min(valid_path_prices, key=lambda x: -x[1])[1])
 
             best_prices[key] = min(valid_path_prices, key=lambda x: x[1])
         except:

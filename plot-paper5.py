@@ -1,6 +1,19 @@
 #!/usr/bin/env python3
+import pickle
+
 import matplotlib.pyplot as plt
 import pandas as pd
+
+from offline.core.utils import *
+
+
+def load_settings():
+    try:
+        with open("settings.pickle", "rb") as f:
+            return pickle.load(f)
+    except IOError as e:
+        print("no settings, starting from scartch")
+        return {}
 
 
 def plot_mean(labels):
@@ -19,6 +32,7 @@ def plot_mean(labels):
     plt.legend(prices_label, loc='upper left')
 
     plt.show()
+
 
 def plot_count(labels):
     e = pd.DataFrame.from_csv("eval.csv")
@@ -40,6 +54,44 @@ def plot_count(labels):
     plt.show()
 
 
-#plot_count(["REQUEST", "HIT.CDN", "HIT.VCDN"])
-plot_mean(["MAX.PRICE.VCDN","MAX.PRICE.CDN"])
+def choose_settings(settings):
+    io = ""
+    e = pd.DataFrame.from_csv("eval.csv")
+    e = sorted(list(e))
+    message = ""
+    while True:
+        # os.system('clear')
+        print("AVAILABLE ITEMS\n===============")
+        for index, item in enumerate(e):
+            print("[%d] %s" % (index, item))
 
+        print("%s" % red(message))
+        for index, item in enumerate(e):
+            if item in settings:
+                sys.stdout.write("[%s] %s\t"%(red(index),green(item)))
+        sys.stdout.write("\n")
+
+        choice = input()
+        message = ""
+
+        if choice == "go" or choice == "":
+            break
+        elif choice[0] == "r":
+            # remove
+            if e[int(choice[1:])] in settings:
+                del settings[e[int(choice[1:])]]
+            else:
+                message = "column not selected"
+        elif choice[0] == "a":
+            # add
+            settings[e[int(choice[1:])]] = True
+    with open("settings.pickle", "wb") as f:
+        pickle.dump(settings, f)
+    return settings
+
+
+settings = load_settings()
+choose_settings(settings)
+
+# plot_count(["REQUEST", "HIT.CDN", "HIT.VCDN"])
+plot_mean(settings.keys())

@@ -43,8 +43,8 @@ root.addHandler(ch)
 link_id = "5511"
 # link_id = "dummy"
 cdn_count = 5
-client_count = 1000
-vcdn_count = 200
+client_count = 300
+vcdn_count = 100
 cache_size_vcdn = 300
 vcdn_capacity = 300
 cdn_capacity = 1000
