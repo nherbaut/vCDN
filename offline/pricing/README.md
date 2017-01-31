@@ -10,5 +10,5 @@ DONC:
 CPU_VCDN 105
 CPU_VMG Variable
 
-prix CPU_VCDN= (5.88 per Hour * 24 * 365 / 12)/105=40 par unité (il faut 105 unité pour faire 1 vCDN)
+prix CPU_VCDN= (5.88 per Hour * 24 * 365 / 12)/105=40 par unité (il faut 105 unité pour faire 1 TE)
 prix CPU_VMG= $0.112 per Hour * 24 * 365 / 12 = 81.76 par unité.

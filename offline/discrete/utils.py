@@ -1,9 +1,10 @@
 import functools
 import logging
+import sys
 
 import networkx as nx
 import numpy as np
-import sys
+
 from offline.core.utils import red
 from offline.discrete import Topo
 from offline.discrete.Monitoring import Monitoring
@@ -54,8 +55,8 @@ def get_path_has_bandwidth(g, path, bw):
     return True
 
 
-def get_price_from_path(path):
-    return 2 + len(path)
+def get_price_from_path(path, price_mult):
+    return 2 + len(path) * price_mult
 
 
 @functools.lru_cache(maxsize=20000)
@@ -89,36 +90,48 @@ def release_content_delivery(env, g, consumer, winner, bw, capacity):
 
 
 def create_content_delivery(env, g, servers, content, consumer, bw=5000000, capacity=1):
-
     best_prices = {}
     for key, peers in servers.items():
         try:
-            peers_with_content = get_peers_with_content(g, peers, content)
 
-            peers_with_content=list(peers_with_content)
-            Monitoring.push_average("AVG.PEER_WITH_CONTENT.%s" % key, env.now, len(peers_with_content ))
+            if key == "CDN":
+                price_mult = 5
+            elif key == "VCDN":
+                price_mult = 1.3
+            elif key == "MUCDN":
+                price_mult = 1
 
+            peers_with_content = list(get_peers_with_content(g, peers, content))
+
+            Monitoring.push_average("AVG.PEER_WITH_CONTENT.%s" % key, env.now,
+                                    np.sum([g.node[peer].get("capacity", 0) for peer in peers_with_content]))
 
             peers_with_content_and_capacity = get_peers_with_capacity(g, peers_with_content, capacity)
-            peers_with_content_and_capacity=list(peers_with_content_and_capacity)
-            Monitoring.push_average("AVG.PEER_WITH_CONTENT_CAPACITY.%s" % key, env.now, len(peers_with_content_and_capacity))
+            peers_with_content_and_capacity = list(peers_with_content_and_capacity)
+            Monitoring.push_average("AVG.PEER_WITH_CONTENT_CAPACITY.%s" % key, env.now,
+                                    np.sum(
+                                        [g.node[peer].get("capacity", 0) for peer in peers_with_content_and_capacity]))
 
             peers_with_capacity = get_peers_with_capacity(g, peers, capacity)
-            peers_with_capacity=list(peers_with_capacity)
-            Monitoring.push_average("AVG.PEER_WITH_CAPACITY.%s" % key, env.now, len(peers_with_capacity))
+            peers_with_capacity = list(peers_with_capacity)
+            Monitoring.push_average("AVG.PEER_WITH_CAPACITY.%s" % key, env.now,
+                                    np.sum(
+                                        [g.node[peer].get("capacity", 0) for peer in peers_with_capacity]))
 
-
-            valid_path_prices = [(path, get_price_from_path(path)) for path in
+            valid_path_prices = [(path, get_price_from_path(path, price_mult)) for path in
                                  [p2p_get_shortest_path(consumer, server) for server in peers_with_content_and_capacity]
                                  if get_path_has_bandwidth(g, path, bw)]
-            if len(valid_path_prices)==0:
+            if len(valid_path_prices) == 0:
                 continue
 
-            price = np.mean([v for k, v in valid_path_prices])
+            average_price = np.mean([v for k, v in valid_path_prices])
 
-            Monitoring.push_average("AVG.PRICE.%s" % key, env.now, price)
+            Monitoring.push_average("AVG.PRICE.%s" % key, env.now, average_price)
             Monitoring.push_average("MIN.PRICE.%s" % key, env.now, min(valid_path_prices, key=lambda x: x[1])[1])
-            Monitoring.push_average("MIN.PRICE.%s" % key, env.now, min(valid_path_prices, key=lambda x: -x[1])[1])
+            Monitoring.push_average("MAX.PRICE.%s" % key, env.now, max(valid_path_prices, key=lambda x: x[1])[1])
+            Monitoring.push_average("MEDIAN.PRICE.%s" % key, env.now,
+                                    np.median([v[1] for v in valid_path_prices]))
+            # Monitoring.push_average("MEAN.PRICE.%s" % key, env.now, np.mean(valid_path_prices, key=lambda x: -x[1])[1])
 
             best_prices[key] = min(valid_path_prices, key=lambda x: x[1])
         except:
@@ -131,8 +144,8 @@ def create_content_delivery(env, g, servers, content, consumer, bw=5000000, capa
         logging.debug("content delivery %s" % (red("MISS")))
         raise NoPeerAvailableException("No peer available")
 
-    winner, price = min(valid_path_prices, key=lambda x: x[1])
-    Monitoring.push_average("AVG.PRICE.ALL", env.now, price)
+    winner, average_price = min(valid_path_prices, key=lambda x: x[1])
+    Monitoring.push_average("AVG.PRICE.ALL", env.now, average_price)
 
     consume_content_delivery(env, g, consumer, winner, bw, capacity)
 
@@ -140,7 +153,4 @@ def create_content_delivery(env, g, servers, content, consumer, bw=5000000, capa
         # update storage for LRU, if not on the same host
         producer = winner[-1][1]
         _ = g.node[producer]["storage"][content]
-    return winner, price
-
-
-
+    return winner, average_price

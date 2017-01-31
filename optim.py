@@ -54,7 +54,7 @@ parser = argparse.ArgumentParser(description='1 iteration for solver', epilog=
     """, formatter_class=RawTextHelpFormatter)
 parser.add_argument("--disable-embedding", dest='disable_embedding',
                     help="disable the embedding, which cause the topology to be rendrered alone", action='store_true')
-parser.add_argument('--sla_delay', help="delay toward vCDN, float in ms", default=30.0, type=float)
+parser.add_argument('--sla_delay', help="delay toward TE, float in ms", default=30.0, type=float)
 parser.add_argument('--start', metavar='S', type=str, nargs='+', help='a list of starters (eg. 0101 0202 0304)',
                     )
 parser.add_argument('--cdn', metavar='CDN', type=str, nargs='+', help='a list of CDN (eg. 0505)', )

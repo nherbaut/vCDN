@@ -1,5 +1,3 @@
-from offline.core.utils import *
-from offline.discrete.Monitoring import *
 from offline.discrete.utils import *
 
 
@@ -35,19 +33,16 @@ class User(object):
         try:
             content, bw, cap, duration = self.content_drawer()
 
-            Monitoring.push("USER", self.env.now, 1, self.location)
-            Monitoring.push("REQUEST", self.env.now, 1, self.location)
+            Monitoring.push("COUNT.REQUEST", self.env.now, 1, self.location)
             winner = self.consume_content(content, bw, cap)
 
-            if self.g.node[winner[-1][1]]["type"] == "vCDN":
-                logging.debug("content delivery by %s " % (green("vCDN")))
-                Monitoring.push("HIT.VCDN", self.env.now, 1, self.location)
-            else:
-                logging.debug("content delivery by %s " % (yellow("CDN")))
-                Monitoring.push("HIT.CDN", self.env.now, 1, self.location)
+            Monitoring.push("HIT.%s" % self.g.node[winner[-1][1]]["type"], self.env.now, 1)
 
             Monitoring.push("HIT.HIT", self.env.now, 1, self.location)
+            self.g.node[winner[-1][1]]["users"] += 1
             yield self.env.timeout(duration)
+            self.g.node[winner[-1][1]]["users"] -= 1
+
             self.release_content(winner, bw, cap)
 
         except NoPeerAvailableException as e:
@@ -55,4 +50,3 @@ class User(object):
 
             # logging.info(rd("failed to fetch content %s from %s ") % (self.content, self.location))
             pass
-        Monitoring.push("USER", self.env.now, -1, self.location)

@@ -92,7 +92,7 @@ class loadTopo(Topo):
                     self._link["s%s-s%s" % (node1, node2)] = self.addLink(node[1], "s%s" % node[0],
                                                                           port2=20000 + int(
                                                                               "%s" % re.findall('\d+', node[1])[0]))
-                elif "vCDN" in node[1]:
+                elif "TE" in node[1]:
                     self._hosts[node[1]] = self.addHost(node[1], cls=Docker, dimage="ubuntu:trusty")
 
                     for nodealt in nodesSol:

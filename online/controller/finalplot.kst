@@ -146,7 +146,7 @@
     </variables>
     <objects/>
     <relations>
-        <curve xvector="time (V87)" yvector="tx\_bytesps (V88)" color="#105010" alpha="255" headcolor="#105010" headalpha="255" barfillcolor="#105010" barfillalpha="255" haslines="true" linewidth="3" linestyle="0" haspoints="false" pointtype="0" pointdensity="0" pointsize="12" hasbars="false" ignoreautoscale="false" hashead="false" headtype="0" descriptiveNameIsManual="true" descriptiveName="vCDN" initialCNum="66"/>
+        <curve xvector="time (V87)" yvector="tx\_bytesps (V88)" color="#105010" alpha="255" headcolor="#105010" headalpha="255" barfillcolor="#105010" barfillalpha="255" haslines="true" linewidth="3" linestyle="0" haspoints="false" pointtype="0" pointdensity="0" pointsize="12" hasbars="false" ignoreautoscale="false" hashead="false" headtype="0" descriptiveNameIsManual="true" descriptiveName="TE" initialCNum="66"/>
         <curve xvector="time (V87)" yvector="tx\_bytesps (V89)" color="#0000aa" alpha="255" headcolor="#0000aa" headalpha="255" barfillcolor="#0000aa" barfillalpha="255" haslines="true" linewidth="3" linestyle="1" haspoints="false" pointtype="0" pointdensity="0" pointsize="12" hasbars="false" ignoreautoscale="false" hashead="false" headtype="0" descriptiveNameIsManual="true" descriptiveName="CDN" initialCNum="67"/>
         <curve xvector="time (V87)" yvector="stalled\_hd (V90)" color="#0a350a" alpha="255" headcolor="#0a350a" headalpha="255" barfillcolor="#0a350a" barfillalpha="255" haslines="true" linewidth="3" linestyle="0" haspoints="false" pointtype="0" pointdensity="0" pointsize="12" hasbars="true" ignoreautoscale="false" hashead="false" headtype="0" descriptiveNameIsManual="true" descriptiveName="HD sessions" initialCNum="68"/>
         <curve xvector="time (V87)" yvector="stalled\_sd (V91)" color="#ff0000" alpha="255" headcolor="#ff0000" headalpha="255" barfillcolor="#ff0000" barfillalpha="255" haslines="true" linewidth="3" linestyle="1" haspoints="false" pointtype="1" pointdensity="0" pointsize="12" hasbars="false" ignoreautoscale="false" hashead="false" headtype="-1" descriptiveNameIsManual="true" descriptiveName="SD Sessions" initialCNum="69"/>
@@ -245,7 +245,7 @@
                 </legend>
                 <cartesianrender name="Cartesian Plot" type="1">
                     <relation tag="CDN (C67)"/>
-                    <relation tag="vCDN (C66)"/>
+                    <relation tag="TE (C66)"/>
                 </cartesianrender>
                 <plotaxis id="xaxis" visible="true" log="false" reversed="false" autobaseoffset="true" baseoffset="false" forceoffsetmin="false" interpret="false" interpretation="1" display="4" displayformatstring="hh:mm:ss.zzz" majortickmode="5" minortickcount="5" autominortickcount="true" drawmajorticks="true" drawminorticks="true" drawmajorgridlines="true" drawminorgridlines="false" drawmajorgridlinecolor="#a0a0a4" drawminorgridlinecolor="#a0a0a4" drawmajorgridlinestyle="2" drawminorgridlinestyle="2" drawmajorgridlinewidth="1" drawminorgridlinewidth="1" significantdigits="9" rotation="0" zoommode="0" timezonename="GMT" timezoneoffset="0">
                     <plotmarkers xaxis="true" linecolor="#000000" linestyle="0" linewidth="1" curvemode="2"/>

@@ -53,7 +53,7 @@ def candelPlot(x, y, y1, sla_hi, sla_low):
     ax1.set_xticklabels([])
     ax1.set_xlabel("time")
     ax1.set_ylabel("cost in $")
-    ax1.set_title('Evolution of the cost of the vCDN service Embedding')
+    ax1.set_title('Evolution of the cost of the TE service Embedding')
     # ax1.get_xaxis().set_visible(False)
     plt.legend()
 

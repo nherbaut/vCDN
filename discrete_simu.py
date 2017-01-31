@@ -13,10 +13,10 @@ from offline.core.utils import printProgress
 from offline.discrete.ContentHistory import ContentHistory
 from offline.discrete.Contents import get_content_generator
 from offline.discrete.Generators import get_ticker
+from offline.discrete.TE import TE
 from offline.discrete.endUser import User
 from offline.discrete.utils import *
 from offline.discrete.utils import CDNStorage
-from offline.discrete.vCDN import vCDN
 from offline.time.persistence import Session, Tenant
 from offline.tools.ostep import clean_and_create_experiment
 
@@ -37,26 +37,49 @@ root.addHandler(ch)
 ################################################
 
 
-link_id = "5511"
-# link_id = "dummy"
-cdn_count = 5
-client_count = 1000
-vcdn_count = 25
-cache_size_vcdn = 50
-vcdn_capacity = 100
-cdn_capacity = 1000
-zipf_param = 5
+# link_id = "5511"
+link_id = "dummy"
+
+# CDN
+cdn_count = 3
+cdn_capacity = 2000
+cdn_quantile_up = 0.9
+cdn_quantile_down = 0.8
+
+# VCDN
+vcdn_count = 30
+vcdn_capacity = 200
+vcdn_quantile_up = 0.9
+vcdn_quantile_down = 0.4
+vcdn_cache_size = 1000
+vcdn_refresh_delay = 240
+vcdn_download_delay = 60
+vcdn_concurent_download = 5
+
+# muCDN
+mucdn_count = 1000
+mucdn_capacity = 6
+mucdn_quantile_up = 0.5
+mucdn_quantile_down = 0.0
+mucdn_cache_size = 100
+mucdn_refresh_delay = vcdn_refresh_delay
+mucdn_download_delay = vcdn_download_delay
+mucdn_concurent_download = 1
+
+# CLIENTS
+client_count = 1500
+consumer_quantile_up = 0.5
+consumer_quantile_down = 0
+
+# SIMULATION
+zipf_param = 1.1
 poisson_param = 0.1
-max_time_experiment = 5000
-content_duration = 900
-refresh_delay = 240
-download_delay = 180
-concurent_download = 5
-vcdn_quantile = 0.3
-cdn_quantile = 0.8
-consumer_quantile = 0.3
+max_time_experiment = 1000
+content_duration = 300
+
+# CONTENT
 POPULAR_WINDOWS_SIZE = 500
-POPULAR_HISTORY_COUNT = 50
+POPULAR_HISTORY_COUNT = 30
 
 
 # create the topology and the random state
@@ -76,8 +99,10 @@ def create_new_experiment(link_id):
     logging.info("Unexpected error:", sys.exc_info()[0])
     logging.debug("Failed to read data_sum from DB, reloading from file")
     if link_id == "dummy":
-        rs, su = clean_and_create_experiment(("powerlaw", (200, 2, 0.3, 1, 1000000000, 20, 200,)), seed=5)
+        print("powerlaw graph selecteds")
+        rs, su = clean_and_create_experiment(("powerlaw", (50, 2, 0.3, 1, 1000000000, 20, 200,)), seed=5)
     else:
+        print("links %s graph selected" % link_id)
         rs, su = clean_and_create_experiment(("links", (link_id,)), 5)
 
     tenant = Tenant(name=link_id)
@@ -114,18 +139,32 @@ def get_servers_from_sla(sla):
     return cdns, vcdns
 
 
-def setup_servers(g, cdns, vcdns):
+def setup_nodes(g):
     for cdn in cdns:
         g.node[cdn]["storage"] = CDNStorage()
-
+        g.node[cdn]["color"] = "#ff0000"
         g.node[cdn]["capacity"] = cdn_capacity
+        g.node[cdn]["size"] = 50
         g.node[cdn]["type"] = "CDN"
 
-    for vcdn in vcdns:
-        g.node[vcdn]["storage"] = pylru.lrucache(cache_size_vcdn)
+    for vcdn_node in vcdns:
+        g.node[vcdn_node]["storage"] = pylru.lrucache(vcdn_cache_size)
 
-        g.node[vcdn]["capacity"] = vcdn_capacity
-        g.node[vcdn]["type"] = "vCDN"
+        g.node[vcdn_node]["capacity"] = vcdn_capacity
+        g.node[vcdn_node]["type"] = "VCDN"
+        g.node[vcdn_node]["color"] = "#00ff00"
+        g.node[vcdn_node]["size"] = 20
+
+    for mucdn_node in mucdns:
+        g.node[mucdn_node]["storage"] = pylru.lrucache(mucdn_cache_size)
+        g.node[mucdn_node]["capacity"] = mucdn_capacity
+        g.node[mucdn_node]["size"] = 10
+        g.node[mucdn_node]["type"] = "MUCDN"
+        g.node[mucdn_node]["color"] = "#aaaaff"
+
+    for consumer in consumers:
+        g.node[consumer]["color"] = "#000000"
+        g.node[consumer]["size"] = 5
 
 
 # load topology data_sum
@@ -144,16 +183,23 @@ import operator
 import os
 import pandas as pd
 
-name = "5511"
 g = nx.Graph()
 # load all the links
-with open(os.path.join("offline/data", "links", "operator-%s.links" % name)) as f:
-    for line in f.read().split("\n"):
-        nodes = line.strip().split(" ")
-        while len(nodes) >= 2:
-            root = nodes.pop(0)
-            for node in nodes:
-                g.add_edge(root, node)
+
+if link_id == "dummy":
+    print("powerlaw graph selecteds")
+    _, su = clean_and_create_experiment(("powerlaw", (2000, 3, 0.5, 1, 1000000000, 20, 200,)), seed=6)
+    g = su.get_nxgraph()
+
+else:
+    print("links %s graph selected" % link_id)
+    with open(os.path.join("offline/data", "links", "operator-%s.links" % link_id)) as f:
+        for line in f.read().split("\n"):
+            nodes = line.strip().split(" ")
+            while len(nodes) >= 2:
+                root = nodes.pop(0)
+                for node in nodes:
+                    g.add_edge(root, node)
 
 # take the biggest connected subgraph
 g = max(list({sg: len(sg.nodes()) for sg in nx.connected_component_subgraphs(g)}.items()),
@@ -165,7 +211,22 @@ for e0, e1 in g.edges():
 rs = RandomState(seed=5)
 
 
-def get_nodes_by_weight(rs, g, count, quantile=1, weights="bandwidth", highest=True):
+def random_with_quantile(rs, g, count, quantile_up=1.0, quantile_down=0.0, forbidden=[]):
+    nodes_by_degree = g.degree()
+
+    nodes_df = pd.DataFrame(index=[x[0] for x in nodes_by_degree.items()], data=[x[1] for x in nodes_by_degree.items()])
+
+    nodes_df_quantile = nodes_df[
+
+        (nodes_df <= nodes_df.quantile(quantile_up)) & (nodes_df >= nodes_df.quantile(quantile_down))].dropna()
+    nodes_df_quantile = nodes_df_quantile.drop(forbidden, errors="ignore")
+
+    candidates = list(nodes_df_quantile.index)
+    rs.shuffle(candidates)
+    return candidates[0:count]
+
+
+def get_nodes_by_weight(rs, g, count, quantile=1.0, weights="bandwidth", highest=True, forbidden=[]):
     if highest:
         mult = -1
     else:
@@ -173,18 +234,42 @@ def get_nodes_by_weight(rs, g, count, quantile=1, weights="bandwidth", highest=T
     nodes_by_degree = g.degree()
 
     nodes_df = pd.DataFrame(index=[x[0] for x in nodes_by_degree.items()], data=[x[1] for x in nodes_by_degree.items()])
-    nodes_df_quantile = nodes_df[nodes_df < nodes_df.quantile(quantile)].dropna()
 
-    return [a for a, b in
-            sorted(nodes_df_quantile.to_dict()[0].items(), key=lambda x: mult * rs.uniform() * x[1])[0:count]]
+    nodes_df_quantile = nodes_df[nodes_df <= nodes_df.quantile(quantile)].dropna()
+    nodes_df_quantile = nodes_df_quantile.drop(forbidden, errors="ignore")
+
+    # return [a for a, b in             sorted(nodes_df_quantile.to_dict()[0].items(), key=lambda x: mult * rs.uniform() * x[1])[0:count]]
+    return rs.shuffle(nodes_df_quantile)
 
 
-cdns = get_nodes_by_weight(rs, g, cdn_count, quantile=cdn_quantile)
-vcdns = get_nodes_by_weight(rs, g, vcdn_count, quantile=vcdn_quantile)
-consumers = get_nodes_by_weight(rs, g, client_count, quantile=consumer_quantile, highest=False)
+assigned_nodes = []
+# cdns = get_nodes_by_weight(rs, g, cdn_count, quantile=cdn_quantile, forbidden=assigned_nodes)
+cdns = random_with_quantile(rs, g, cdn_count, quantile_up=cdn_quantile_up, quantile_down=cdn_quantile_down,
+                            forbidden=assigned_nodes)
+assigned_nodes += cdns
+# vcdns = get_nodes_by_weight(rs, g, vcdn_count, quantile=vcdn_quantile, forbidden=assigned_nodes)
+vcdns = random_with_quantile(rs, g, vcdn_count, quantile_up=vcdn_quantile_up, quantile_down=vcdn_quantile_down,
+                             forbidden=assigned_nodes)
+assigned_nodes += vcdns
+# mucdns = get_nodes_by_weight(rs, g, mucdn_count, quantile=mucdn_quantile, forbidden=assigned_nodes)
+mucdns = random_with_quantile(rs, g, mucdn_count, quantile_up=mucdn_quantile_up, quantile_down=mucdn_quantile_down,
+                              forbidden=assigned_nodes)
+assigned_nodes += mucdns
+# consumers = get_nodes_by_weight(rs, g, client_count, quantile=consumer_quantile, highest=False,forbidden = assigned_nodes)
+
+consumers = random_with_quantile(rs, g, client_count, quantile_up=consumer_quantile_up,
+                                 quantile_down=consumer_quantile_down, forbidden=assigned_nodes)
 
 # setup servers capacity, storage...
-setup_servers(g, cdns, vcdns)
+nx.set_node_attributes(g, 'color', "#bbbbbb")
+nx.set_node_attributes(g, 'size', 1)
+nx.set_node_attributes(g, 'users', 0)
+setup_nodes(g)
+
+#copied_graph = g.copy()
+#nx.set_node_attributes(copied_graph, 'storage', 0)
+#nx.write_graphml(copied_graph, path="graph.graphml")
+#print("graph saved in graphml")
 
 contentHistory = ContentHistory(windows=POPULAR_WINDOWS_SIZE, count=POPULAR_HISTORY_COUNT)
 
@@ -204,29 +289,49 @@ ticker = get_ticker(rs, poisson_param, )
 while the_time < max_time_experiment:
     location = rs.choice(consumers)
     the_time = ticker() + the_time
-    User(g, {"CDN": cdns, "VCDN": vcdns}, env, location, the_time, content_draw)
+    User(g, {"CDN": cdns, "VCDN": vcdns, "MUCDN": mucdns}, env, location, the_time, content_draw)
 
 for vcdn in vcdns:
-    vCDN(rs,env, vcdn, g, contentHistory, refresh_delay=refresh_delay, download_delay=download_delay,
-         concurent_download=concurent_download)
+    TE(rs, env, vcdn, g, contentHistory, refresh_delay=vcdn_refresh_delay, download_delay=vcdn_download_delay,
+       concurent_download=vcdn_concurent_download)
+
+for mucdn in mucdns:
+    TE(rs, env, mucdn, g, contentHistory, refresh_delay=mucdn_refresh_delay, download_delay=mucdn_download_delay,
+       concurent_download=mucdn_concurent_download)
 
 
 def capacity_vcdn_monitor():
     while True:
-        yield env.timeout(1)
+        yield env.timeout(5)
         res_cap_vcdn = []
+        res_cap_mucdn = []
         res_cap_cdn = []
-        res_storage = []
+        res_storage_vcdn = []
+        res_storage_mucdn = []
         for vcdn in vcdns:
             res_cap_vcdn.append(g.node[vcdn]["capacity"])
-            res_storage.append(len(list(g.node[vcdn]["storage"].keys())))
+            res_storage_vcdn.append(len(list(g.node[vcdn]["storage"].keys())))
+        for mucdn in mucdns:
+            res_cap_mucdn.append(g.node[mucdn]["capacity"])
+            res_storage_mucdn.append(len(list(g.node[mucdn]["storage"].keys())))
 
         for cdn in cdns:
             res_cap_cdn.append(g.node[cdn]["capacity"])
 
-        Monitoring.push_average("VCDN.CAP", env.now, np.sum(res_cap_vcdn))
-        Monitoring.push_average("VCDN.STORAGE", env.now, np.sum(res_storage))
-        Monitoring.push_average("CDN.CAP", env.now, np.sum(res_cap_cdn))
+        Monitoring.push_average("CAP.VCDN", env.now, np.sum(res_cap_vcdn))
+        Monitoring.push_average("STORAGE.VCDN", env.now, np.sum(res_storage_vcdn))
+
+        Monitoring.push_average("CAP.MUCDN", env.now, np.sum(res_cap_mucdn))
+        Monitoring.push_average("STORAGE.MUCDN", env.now, np.sum(res_storage_mucdn))
+
+        Monitoring.push_average("CAP.CDN", env.now, np.sum(res_cap_cdn))
+
+        Monitoring.push_average("AVG.USERS.ALL", env.now, np.sum([v[1].get("users", 0) for v in g.nodes(data=True)]))
+
+        for te_type in ["CDN", "VCDN", "MUCDN"]:
+            Monitoring.push_average("AVG.USERS.%s" % te_type, env.now,
+                                    np.sum([v[1].get("users", 0) for v in g.nodes(data=True) if
+                                            v[1].get("type", "client") == te_type]))
 
 
 env.process(capacity_vcdn_monitor())
@@ -235,12 +340,11 @@ env.process(capacity_vcdn_monitor())
 def progress_display():
     while True:
         yield env.timeout(30)
-        printProgress(env.now, max_time_experiment + 200)
+        printProgress(env.now, max_time_experiment + content_duration)
 
     pass
 
 
 env.process(progress_display())
-env.run(until=max_time_experiment + 200)
-
+env.run(until=max_time_experiment + content_duration)
 Monitoring.getdf().to_csv("eval.csv")

@@ -238,7 +238,7 @@ def plotsol(**kwargs):
                     color = "azure1"
                     shape="circle"
 
-                elif "vCDN".lower() in node[1].lower():
+                elif "TE".lower() in node[1].lower():
                     color = "azure3"
                     shape="circle"
                 elif "S" in node[1]:

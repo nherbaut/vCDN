@@ -85,7 +85,7 @@ def loadroutes(solutionsfile):
                 edge = [node[0], 20000 + int("%s" % re.findall('\d+', node[1])[0]), "*", node[1]]
                 if int(edge[0], 16) in switch:
                     switch[int(node[0], 16)].append(edge)
-            elif "vCDN" in node[1]:
+            elif "TE" in node[1]:
                 hostip[node[1]] = ip
                 hostmac[node[1]] = mac
                 edge = [node[0], 30000 + int("%s" % re.findall('\d+', node[1])[0]), "*", node[1]]

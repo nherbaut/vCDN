@@ -48,7 +48,7 @@ class ServiceTopoHeuristic(AbstractServiceTopo):
             service.add_edge(s, "VHG%d" % vmg_id, delay=sys.maxsize, bandwidth=0)
 
         # create vhg <-> vcdn edges
-        # here, each S "votes" for a vCDN and tell its VHG
+        # here, each S "votes" for a TE and tell its VHG
 
         score, cluster = get_node_clusters([x.topoNode.name for x in mapped_start_nodes], vcdn_count,substrate=substrate)
         for toponode_name, vCDN_id in list(cluster.items()):

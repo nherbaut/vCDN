@@ -28,7 +28,7 @@ parser.add_argument('--sla_count', type=int, help='number of sla to generate',
                     default=5)
 parser.add_argument('--seed', type=int, help='seed for random state generation',
                     default=0)
-parser.add_argument('--sla_delay', help="delay toward vCDN, float in ms", default=30.0, type=float)
+parser.add_argument('--sla_delay', help="delay toward TE, float in ms", default=30.0, type=float)
 parser.add_argument('--max_start', type=int, help='maximum number of starters',
                     default=1)
 parser.add_argument('--max_cdn', type=int, help='maximum number of CDNs',

@@ -15,7 +15,7 @@ parser.add_argument('--ithreshold', help="the number of run of the algo", defaul
 
 parser.add_argument('--seed', help="integer seed used for random number generation", default=114613154)
 parser.add_argument('--relaxVhg', help="boolean expression that allow the algo to add VHG", dest='relaxVhg', action='store_true')
-parser.add_argument('--relaxvCDN', help="boolean expression that allow the algo to add vCDN", dest='relaxvCDN', action='store_true')
+parser.add_argument('--relaxvCDN', help="boolean expression that allow the algo to add TE", dest='relaxvCDN', action='store_true')
 parser.add_argument('--name', help="name of the experiment", default="unamed experiment")
 parser.add_argument('--smart-disable', dest='smart_ass', action='store_false')
 parser.add_argument('--unsorted-sla', dest='unsorted_sla', action='store_true')

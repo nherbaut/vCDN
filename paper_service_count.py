@@ -52,7 +52,7 @@ parser = argparse.ArgumentParser(description='1 iteration for solver', epilog=
     """, formatter_class=RawTextHelpFormatter)
 parser.add_argument("--disable-embedding", dest='disable_embedding',
                     help="disable the embedding, which cause the topology to be rendrered alone", action='store_true')
-parser.add_argument('--sla_delay', help="delay toward vCDN, float in ms", default=30.0, type=float)
+parser.add_argument('--sla_delay', help="delay toward TE, float in ms", default=30.0, type=float)
 parser.add_argument('--max_start', type=int)
 
 parser.add_argument('--max_cdn', type=int)

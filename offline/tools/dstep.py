@@ -31,7 +31,7 @@ parser.add_argument( "--just-topo", dest='just_topo', action='store_true')
 
 parser.add_argument('--vhg', help="the number of failure until the algorithm stops", default=1,type=int)
 parser.add_argument('--vcdn', help="number of VCDN", default=1,type=int)
-parser.add_argument('--sla_delay', help="delay toward vCDN", default=30.0,type=float)
+parser.add_argument('--sla_delay', help="delay toward TE", default=30.0,type=float)
 parser.add_argument('--start', metavar='S', type=str, nargs='+',
                     help='a list of starters')
 parser.add_argument('--cdn', metavar='CDN', type=str, nargs='+',

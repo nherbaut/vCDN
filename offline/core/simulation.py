@@ -21,7 +21,7 @@ def do_simu(**kwargs):
     :param sla_count: how many sla to generate?
     :param rejected_threshold:  stop after X rejection
     :param iteration_threshold:  stop after Y iteration
-    :param smart_ass: use heuristics to groups S to VHG and vCDN to VHG
+    :param smart_ass: use heuristics to groups S to VHG and TE to VHG
     :param sorted: use sorted SLA
     :return: a list containing each step results
     '''

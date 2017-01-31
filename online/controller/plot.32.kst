@@ -129,7 +129,7 @@
                 <plotlabel id="numberlabel" visible="true" overridetext="" autolabel="true" font="Ubuntu,11,-1,5,50,0,0,0,0,0" fontscale="11.1554175279993" fontcolor="#000000" fontuseglobal="true"/>
                 <projectionrect x="1.902879" y="-0.05" width="0.2" height="2.1"/>
             </plot>
-            <plot tiedxzoom="false" tiedyzoom="false" leftlabelvisible="true" bottomlabelvisible="true" rightlabelvisible="true" toplabelvisible="true" globalfont="Ubuntu,12,-1,5,50,0,0,0,0,0" globalfontscale="11.2" globalfontcolor="#000000" showlegend="true" hidebottomaxislabel="false" hidetopaxislabel="false" hideleftaxislabel="false" hiderightaxislabel="false" descriptiveNameIsManual="true" descriptiveName="CDN and vCDN virtual route consumed Bytes per s" initialPlotNum="34" name="Plot">
+            <plot tiedxzoom="false" tiedyzoom="false" leftlabelvisible="true" bottomlabelvisible="true" rightlabelvisible="true" toplabelvisible="true" globalfont="Ubuntu,12,-1,5,50,0,0,0,0,0" globalfontscale="11.2" globalfontcolor="#000000" showlegend="true" hidebottomaxislabel="false" hidetopaxislabel="false" hideleftaxislabel="false" hiderightaxislabel="false" descriptiveNameIsManual="true" descriptiveName="CDN and TE virtual route consumed Bytes per s" initialPlotNum="34" name="Plot">
                 <position x="680.4552" y="113.498"/>
                 <rect x="-677.5269" y="-110.5165" width="1355.0538" height="221.033"/>
                 <relativesize width="0.9949" height="0.3299" centerx="0.4996" centery="0.1694" posx="0.00215000000000003" posy="0.00444999999999997"/>
@@ -162,7 +162,7 @@
                 </plotaxis>
                 <plotlabel id="leftlabel" visible="true" overridetext="tx\_bytesps" autolabel="true" font="Ubuntu,12,-1,5,50,0,0,0,0,0" fontscale="11.2" fontcolor="#000000" fontuseglobal="true"/>
                 <plotlabel id="rightlabel" visible="true" overridetext="" autolabel="true" font="Ubuntu,12,-1,5,50,0,0,0,0,0" fontscale="11.2" fontcolor="#000000" fontuseglobal="true"/>
-                <plotlabel id="toplabel" visible="true" overridetext="CDN and vCDN virtual route consumed Bytes per s" autolabel="false" font="Ubuntu,12,-1,5,50,0,0,0,0,0" fontscale="11.2" fontcolor="#000000" fontuseglobal="true"/>
+                <plotlabel id="toplabel" visible="true" overridetext="CDN and TE virtual route consumed Bytes per s" autolabel="false" font="Ubuntu,12,-1,5,50,0,0,0,0,0" fontscale="11.2" fontcolor="#000000" fontuseglobal="true"/>
                 <plotlabel id="bottomlabel" visible="true" overridetext="time" autolabel="true" font="Ubuntu,12,-1,5,50,0,0,0,0,0" fontscale="11.2" fontcolor="#000000" fontuseglobal="true"/>
                 <plotlabel id="numberlabel" visible="true" overridetext="" autolabel="false" font="Ubuntu,12,-1,5,50,0,0,0,0,0" fontscale="11.2" fontcolor="#000000" fontuseglobal="true"/>
                 <projectionrect x="-0.1" y="-0.1" width="0.2" height="0.2"/>
