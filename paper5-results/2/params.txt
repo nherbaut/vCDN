@@ -1,0 +1,44 @@
+link_id = "5511"
+#link_id = "dummy"
+
+# CDN
+cdn_count = 6
+cdn_capacity = 500
+cdn_quantile_up = 0.9
+cdn_quantile_down = 0.8
+
+# VCDN
+vcdn_count = 100
+vcdn_capacity = 30
+vcdn_quantile_up = 0.9
+vcdn_quantile_down = 0.4
+vcdn_cache_size = 1000
+vcdn_refresh_delay = 240
+vcdn_download_delay = 60
+vcdn_concurent_download = 30
+
+# muCDN
+mucdn_count = 500
+mucdn_capacity = 4
+mucdn_quantile_up = 0.5
+mucdn_quantile_down = 0.0
+mucdn_cache_size = 30
+mucdn_refresh_delay = 240
+mucdn_download_delay = 100
+mucdn_concurent_download = 1
+
+# CLIENTS
+client_count = 1500
+consumer_quantile_up = 0.5
+consumer_quantile_down = 0
+
+# SIMULATION
+zipf_param = 1.4
+poisson_param = 0.1
+max_time_experiment = 1500
+content_duration = 200
+
+# CONTENT
+POPULAR_WINDOWS_SIZE = 500
+POPULAR_HISTORY_COUNT = 30
+
