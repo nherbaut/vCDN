@@ -95,9 +95,9 @@ def create_content_delivery(env, g, servers, content, consumer, bw=5000000, capa
         try:
 
             if key == "CDN":
-                price_mult = 5
+                price_mult = 2
             elif key == "VCDN":
-                price_mult = 1.3
+                price_mult = 1
             elif key == "MUCDN":
                 price_mult = 1
 
@@ -105,6 +105,9 @@ def create_content_delivery(env, g, servers, content, consumer, bw=5000000, capa
 
             Monitoring.push_average("AVG.PEER_WITH_CONTENT.%s" % key, env.now,
                                     np.sum([g.node[peer].get("capacity", 0) for peer in peers_with_content]))
+
+            Monitoring.push_average("AVG.PEER_WITH_CONTENT.RATIO.%s" % key, env.now,
+                                    len([g.node[peer] for peer in peers_with_content])/len(peers))
 
             peers_with_content_and_capacity = get_peers_with_capacity(g, peers_with_content, capacity)
             peers_with_content_and_capacity = list(peers_with_content_and_capacity)
@@ -144,8 +147,8 @@ def create_content_delivery(env, g, servers, content, consumer, bw=5000000, capa
         logging.debug("content delivery %s" % (red("MISS")))
         raise NoPeerAvailableException("No peer available")
 
-    winner, average_price = min(valid_path_prices, key=lambda x: x[1])
-    Monitoring.push_average("AVG.PRICE.ALL", env.now, average_price)
+    winner, min_price_all = min(valid_path_prices, key=lambda x: x[1])
+    Monitoring.push_average("MIN.PRICE.ALL", env.now, min_price_all)
 
     consume_content_delivery(env, g, consumer, winner, bw, capacity)
 

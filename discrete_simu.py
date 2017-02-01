@@ -5,6 +5,7 @@
 
 import pylru
 import simpy
+import os
 from numpy.random import RandomState
 
 from offline.core.sla import generate_random_slas
@@ -37,33 +38,33 @@ root.addHandler(ch)
 ################################################
 
 
-# link_id = "5511"
-link_id = "dummy"
+link_id = "5511"
+#link_id = "dummy"
 
 # CDN
-cdn_count = 3
-cdn_capacity = 2000
+cdn_count = 6
+cdn_capacity = 500
 cdn_quantile_up = 0.9
 cdn_quantile_down = 0.8
 
 # VCDN
-vcdn_count = 30
-vcdn_capacity = 200
+vcdn_count = 100
+vcdn_capacity = 30
 vcdn_quantile_up = 0.9
 vcdn_quantile_down = 0.4
 vcdn_cache_size = 1000
-vcdn_refresh_delay = 240
-vcdn_download_delay = 60
-vcdn_concurent_download = 5
+vcdn_refresh_delay = 60
+vcdn_download_delay = 15
+vcdn_concurent_download = 10
 
 # muCDN
-mucdn_count = 1000
+mucdn_count = 500
 mucdn_capacity = 6
 mucdn_quantile_up = 0.5
 mucdn_quantile_down = 0.0
 mucdn_cache_size = 100
-mucdn_refresh_delay = vcdn_refresh_delay
-mucdn_download_delay = vcdn_download_delay
+mucdn_refresh_delay = 60
+mucdn_download_delay = 45
 mucdn_concurent_download = 1
 
 # CLIENTS
@@ -72,9 +73,9 @@ consumer_quantile_up = 0.5
 consumer_quantile_down = 0
 
 # SIMULATION
-zipf_param = 1.1
+zipf_param = 1.4
 poisson_param = 0.1
-max_time_experiment = 1000
+max_time_experiment = 500
 content_duration = 300
 
 # CONTENT
@@ -100,7 +101,7 @@ def create_new_experiment(link_id):
     logging.debug("Failed to read data_sum from DB, reloading from file")
     if link_id == "dummy":
         print("powerlaw graph selecteds")
-        rs, su = clean_and_create_experiment(("powerlaw", (50, 2, 0.3, 1, 1000000000, 20, 200,)), seed=5)
+        rs, su = clean_and_create_experiment(("powerlaw", (50, 2, 0.3, 1, 500000000, 20, 200,)), seed=5)
     else:
         print("links %s graph selected" % link_id)
         rs, su = clean_and_create_experiment(("links", (link_id,)), 5)
@@ -216,9 +217,7 @@ def random_with_quantile(rs, g, count, quantile_up=1.0, quantile_down=0.0, forbi
 
     nodes_df = pd.DataFrame(index=[x[0] for x in nodes_by_degree.items()], data=[x[1] for x in nodes_by_degree.items()])
 
-    nodes_df_quantile = nodes_df[
-
-        (nodes_df <= nodes_df.quantile(quantile_up)) & (nodes_df >= nodes_df.quantile(quantile_down))].dropna()
+    nodes_df_quantile = nodes_df[(nodes_df <= nodes_df.quantile(quantile_up)) & (nodes_df >= nodes_df.quantile(quantile_down))].dropna()
     nodes_df_quantile = nodes_df_quantile.drop(forbidden, errors="ignore")
 
     candidates = list(nodes_df_quantile.index)
@@ -302,7 +301,7 @@ for mucdn in mucdns:
 
 def capacity_vcdn_monitor():
     while True:
-        yield env.timeout(5)
+        yield env.timeout(11)
         res_cap_vcdn = []
         res_cap_mucdn = []
         res_cap_cdn = []
@@ -348,3 +347,4 @@ def progress_display():
 env.process(progress_display())
 env.run(until=max_time_experiment + content_duration)
 Monitoring.getdf().to_csv("eval.csv")
+os.system("say 'it is over, thanks for waiting'")

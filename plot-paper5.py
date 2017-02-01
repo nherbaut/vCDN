@@ -32,7 +32,7 @@ try:
         price = price[prices_label]
         price = pd.DataFrame(index=[pd.Timedelta(seconds=i) + pd.Timestamp('2012-05-01 00:00:00') for i in price.index],
                              data=price[prices_label].values, columns=prices_label)
-        price = price.resample(settings["sampling"]).bfill().fillna(method="bfill").dropna()
+        price = price.resample(settings["sampling"]).mean().fillna(method="bfill").dropna()
 
         fig, ax1 = plt.subplots()
         for label in prices_label:

@@ -1,8 +1,10 @@
 import collections
 import logging
-from offline.core.utils import green
+
 import numpy as np
 import pandas as pd
+
+from offline.core.utils import green
 
 
 class Monitoring:
@@ -16,10 +18,10 @@ class Monitoring:
         return pd.DataFrame.from_dict(data)
 
     @classmethod
-    def push(cls, column, index, data,opt=""):
-        logging.debug("[%s][%s][%s]=%s" % (column, index, green(opt),data))
-        cls.data_sum[column][index] = cls.data_sum[column][index] + data
+    def push(cls, column, index, data, opt=""):
+        logging.debug("[%s][%s][%s]=%s" % (column, "%.2f" % index, green(opt), data))
+        cls.data_sum[column]["%.2f" % index] +=  data
 
     @classmethod
     def push_average(cls, column, index, data):
-        cls.data_avg[column][index].append(data)
+        cls.data_avg[column]["%.2f" % index].append(data)

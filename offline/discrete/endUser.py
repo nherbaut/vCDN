@@ -15,7 +15,6 @@ class User(object):
         def consume_content(content, bw, cap):
             # logging.debug("[%s]\t%s \t consume content %s" % (self.env.now, self.location, str(content)))
             winner, price = create_content_delivery(self.env, graph, servers, content, location, bw, cap)
-            Monitoring.push_average("price", env.now, price)
             # logging.info(green("consumming %s from %s" % (content, location)))
             return winner
 
