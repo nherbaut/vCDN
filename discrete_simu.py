@@ -53,18 +53,18 @@ vcdn_capacity = 30
 vcdn_quantile_up = 0.9
 vcdn_quantile_down = 0.4
 vcdn_cache_size = 1000
-vcdn_refresh_delay = 60
-vcdn_download_delay = 15
-vcdn_concurent_download = 10
+vcdn_refresh_delay = 240
+vcdn_download_delay = 60
+vcdn_concurent_download = 30
 
 # muCDN
 mucdn_count = 500
-mucdn_capacity = 6
+mucdn_capacity = 4
 mucdn_quantile_up = 0.5
 mucdn_quantile_down = 0.0
-mucdn_cache_size = 100
-mucdn_refresh_delay = 60
-mucdn_download_delay = 45
+mucdn_cache_size = 30
+mucdn_refresh_delay = 240
+mucdn_download_delay = 100
 mucdn_concurent_download = 1
 
 # CLIENTS
@@ -75,12 +75,14 @@ consumer_quantile_down = 0
 # SIMULATION
 zipf_param = 1.4
 poisson_param = 0.1
-max_time_experiment = 500
-content_duration = 300
+max_time_experiment = 1500
+content_duration = 200
 
 # CONTENT
 POPULAR_WINDOWS_SIZE = 500
 POPULAR_HISTORY_COUNT = 30
+
+
 
 
 # create the topology and the random state
@@ -341,10 +343,12 @@ def progress_display():
         yield env.timeout(30)
         printProgress(env.now, max_time_experiment + content_duration)
 
+
     pass
 
 
 env.process(progress_display())
 env.run(until=max_time_experiment + content_duration)
 Monitoring.getdf().to_csv("eval.csv")
+print("\n%s" % str(p2p_get_shortest_path.cache_info()))
 os.system("say 'it is over, thanks for waiting'")

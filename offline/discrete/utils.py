@@ -59,7 +59,7 @@ def get_price_from_path(path, price_mult):
     return 2 + len(path) * price_mult
 
 
-@functools.lru_cache(maxsize=20000)
+@functools.lru_cache(maxsize=None)
 def p2p_get_shortest_path(peer1, peer2):
     g = Topo.g
     iterim_nodes = nx.shortest_path(g, peer1, peer2)
@@ -95,9 +95,9 @@ def create_content_delivery(env, g, servers, content, consumer, bw=5000000, capa
         try:
 
             if key == "CDN":
-                price_mult = 2
+                price_mult = 1.5
             elif key == "VCDN":
-                price_mult = 1
+                price_mult = 0.8
             elif key == "MUCDN":
                 price_mult = 1
 

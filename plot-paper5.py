@@ -3,7 +3,12 @@ import collections
 import os
 import pickle
 
+import matplotlib.dates as dates
+import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
+
+myFmt = mdates.DateFormatter('%S.%f')
+
 import numpy as np
 import pandas as pd
 
@@ -33,14 +38,27 @@ try:
         price = pd.DataFrame(index=[pd.Timedelta(seconds=i) + pd.Timestamp('2012-05-01 00:00:00') for i in price.index],
                              data=price[prices_label].values, columns=prices_label)
         price = price.resample(settings["sampling"]).mean().fillna(method="bfill").dropna()
+        price = price[:-settings["trim"]]
 
         fig, ax1 = plt.subplots()
         for label in prices_label:
             ax1.plot(price.index, price[label], )
 
-        ax1.set_ylim([0, np.max(price[labels].values) * 1.1])
-        ax1.legend(prices_label, loc='best')
+        if "ylim" not in settings:
+            ax1.set_ylim([0, np.max(price[labels].values) * 1.1])
+        else:
+            amin, amax = settings["ylim"]
+            ax1.set_ylim([amin, amax])
 
+
+        ax1.xaxis.set_major_formatter(dates.DateFormatter('%M'))
+        ax1.legend(prices_label, loc='best')
+        ax1.set_xlabel(settings["xlabel"])
+        ax1.set_ylabel(settings["ylabel"])
+        ax1.grid(True)
+
+        if "file_name" in settings:
+            plt.savefig(settings["file_name"], transparent=False, dpi=300)
         plt.show()
 
 
@@ -54,6 +72,7 @@ try:
                          data=e[data].values,
                          columns=data)
         eval_resampled = e.resample(settings["sampling"]).sum().fillna(0)
+        eval_resampled = eval_resampled[:-settings["trim"]]
 
         # e1_m["USER"].cumsum().plot()
 
@@ -61,7 +80,15 @@ try:
         for d in data:
             ax1.plot(eval_resampled.index, eval_resampled[d], )
 
-        ax1.set_ylim([np.min(eval_resampled[labels].values), np.max(eval_resampled[labels].values) * 1.1])
+        if "ylim" not in settings:
+            ax1.set_ylim([np.min(eval_resampled[labels].values), np.max(eval_resampled[labels].values) * 1.1])
+        else:
+            amin, amax = settings["ylim"]
+            ax1.set_ylim([amin, amax])
+
+        ax1.xaxis.set_major_formatter(dates.DateFormatter('%M'))
+        ax1.set_xlabel(settings["xlabel"])
+        ax1.set_ylabel(settings["ylabel"])
         ax1.legend(data, loc='best')
 
         ax1.grid(True)
@@ -121,6 +148,22 @@ try:
                 settings["sampling"] = choice[1:]
             elif choice == "cc":
                 settings["columns"].clear()
+            elif choice[0] == "X":
+                settings["xlabel"] = choice[1:]
+            elif choice[0] == "Y":
+                settings["ylabel"] = choice[1:]
+            elif choice[0:4] == "trim":
+                settings["trim"] = int(choice[4:])
+            elif choice[0] == "e":
+                file_name = choice[2:]
+                settings["file_name"] = file_name
+            elif choice[0:4] == "ylim":
+                if choice[5:] == "off":
+                    del settings["ylim"]
+                else:
+                    x, y = choice[5:].split(" ")
+                    settings["ylim"] = (float(x), float(y))
+
             elif choice == "help":
                 print(
                     "mv = value, ma = average, a1 = add 1 to the list, r1 = remove 1 from the list, s 60s = sampling of 60 s. Press return to proceed")
