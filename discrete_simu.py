@@ -3,11 +3,9 @@
 # import simpy
 # from offline.core.substrate import Substrate
 
-import pylru
 import simpy
-import os
 from numpy.random import RandomState
-
+import pylru
 from offline.core.sla import generate_random_slas
 from offline.core.substrate import Substrate
 from offline.core.utils import printProgress
@@ -38,8 +36,8 @@ root.addHandler(ch)
 ################################################
 
 
-link_id = "5511"
-#link_id = "dummy"
+link_id = "3320"
+# link_id = "dummy"
 
 # CDN
 cdn_count = 6
@@ -69,20 +67,18 @@ mucdn_concurent_download = 1
 
 # CLIENTS
 client_count = 1500
-consumer_quantile_up = 0.5
-consumer_quantile_down = 0
+consumer_quantile_up = 0.8
+consumer_quantile_down = 0.0
 
 # SIMULATION
 zipf_param = 1.4
-poisson_param = 0.1
-max_time_experiment = 1500
+poisson_param = 1
+max_time_experiment = 500
 content_duration = 200
 
 # CONTENT
 POPULAR_WINDOWS_SIZE = 500
 POPULAR_HISTORY_COUNT = 30
-
-
 
 
 # create the topology and the random state
@@ -152,7 +148,7 @@ def setup_nodes(g):
 
     for vcdn_node in vcdns:
         g.node[vcdn_node]["storage"] = pylru.lrucache(vcdn_cache_size)
-
+        #g.node[vcdn_node]["storage"] = CDNStorage()
         g.node[vcdn_node]["capacity"] = vcdn_capacity
         g.node[vcdn_node]["type"] = "VCDN"
         g.node[vcdn_node]["color"] = "#00ff00"
@@ -160,6 +156,7 @@ def setup_nodes(g):
 
     for mucdn_node in mucdns:
         g.node[mucdn_node]["storage"] = pylru.lrucache(mucdn_cache_size)
+        #g.node[mucdn_node]["storage"] = CDNStorage()
         g.node[mucdn_node]["capacity"] = mucdn_capacity
         g.node[mucdn_node]["size"] = 10
         g.node[mucdn_node]["type"] = "MUCDN"
@@ -168,6 +165,7 @@ def setup_nodes(g):
     for consumer in consumers:
         g.node[consumer]["color"] = "#000000"
         g.node[consumer]["size"] = 5
+        g.node[mucdn_node]["type"] = "CONSUMER"
 
 
 # load topology data_sum
@@ -219,7 +217,8 @@ def random_with_quantile(rs, g, count, quantile_up=1.0, quantile_down=0.0, forbi
 
     nodes_df = pd.DataFrame(index=[x[0] for x in nodes_by_degree.items()], data=[x[1] for x in nodes_by_degree.items()])
 
-    nodes_df_quantile = nodes_df[(nodes_df <= nodes_df.quantile(quantile_up)) & (nodes_df >= nodes_df.quantile(quantile_down))].dropna()
+    nodes_df_quantile = nodes_df[
+        (nodes_df <= nodes_df.quantile(quantile_up)) & (nodes_df >= nodes_df.quantile(quantile_down))].dropna()
     nodes_df_quantile = nodes_df_quantile.drop(forbidden, errors="ignore")
 
     candidates = list(nodes_df_quantile.index)
@@ -261,16 +260,19 @@ assigned_nodes += mucdns
 consumers = random_with_quantile(rs, g, client_count, quantile_up=consumer_quantile_up,
                                  quantile_down=consumer_quantile_down, forbidden=assigned_nodes)
 
+print("cdn %d\tvcdn %d\tmucdn %d\t clients %d" % (len(cdns), len(vcdns), len(mucdns), len(consumers)))
+
 # setup servers capacity, storage...
 nx.set_node_attributes(g, 'color', "#bbbbbb")
 nx.set_node_attributes(g, 'size', 1)
 nx.set_node_attributes(g, 'users', 0)
 setup_nodes(g)
 
-#copied_graph = g.copy()
-#nx.set_node_attributes(copied_graph, 'storage', 0)
-#nx.write_graphml(copied_graph, path="graph.graphml")
-#print("graph saved in graphml")
+# copied_graph = g.copy()
+#nx.set_node_attributes(g, 'storage', 0)
+#nx.write_graphml(g, path="graph.graphml")
+#exit(-1)
+# print("graph saved in graphml")
 
 contentHistory = ContentHistory(windows=POPULAR_WINDOWS_SIZE, count=POPULAR_HISTORY_COUNT)
 
@@ -342,7 +344,6 @@ def progress_display():
     while True:
         yield env.timeout(30)
         printProgress(env.now, max_time_experiment + content_duration)
-
 
     pass
 

@@ -92,6 +92,8 @@ def release_content_delivery(env, g, consumer, winner, bw, capacity):
 def create_content_delivery(env, g, servers, content, consumer, bw=5000000, capacity=1):
     best_prices = {}
     for key, peers in servers.items():
+        if len(peers)==0:
+            continue
         try:
 
             if key == "CDN":
