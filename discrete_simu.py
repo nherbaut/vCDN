@@ -36,8 +36,8 @@ root.addHandler(ch)
 ################################################
 
 
-link_id = "3320"
-# link_id = "dummy"
+link_id = "5511"
+#link_id = "dummy"
 
 # CDN
 cdn_count = 6
@@ -67,18 +67,19 @@ mucdn_concurent_download = 1
 
 # CLIENTS
 client_count = 1500
-consumer_quantile_up = 0.8
-consumer_quantile_down = 0.0
+consumer_quantile_up = 0.5
+consumer_quantile_down = 0
 
 # SIMULATION
-zipf_param = 1.4
-poisson_param = 1
-max_time_experiment = 500
+zipf_param = 1.2
+poisson_param = 0.1
+max_time_experiment = 2000
 content_duration = 200
 
 # CONTENT
 POPULAR_WINDOWS_SIZE = 500
 POPULAR_HISTORY_COUNT = 30
+
 
 
 # create the topology and the random state
@@ -274,7 +275,7 @@ setup_nodes(g)
 #exit(-1)
 # print("graph saved in graphml")
 
-contentHistory = ContentHistory(windows=POPULAR_WINDOWS_SIZE, count=POPULAR_HISTORY_COUNT)
+:= ContentHistory(windows=POPULAR_WINDOWS_SIZE, count=POPULAR_HISTORY_COUNT)
 
 content_draw = get_content_generator(rs, zipf_param, contentHistory, 5000000, 1, content_duration)
 

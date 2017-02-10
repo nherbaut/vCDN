@@ -97,9 +97,9 @@ def create_content_delivery(env, g, servers, content, consumer, bw=5000000, capa
         try:
 
             if key == "CDN":
-                price_mult = 1.5
+                price_mult = 1.3
             elif key == "VCDN":
-                price_mult = 0.8
+                price_mult = 1
             elif key == "MUCDN":
                 price_mult = 1
 

@@ -3,12 +3,22 @@ import argparse
 import collections
 import os
 import pickle
-
+import matplotlib
 import matplotlib.dates as dates
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
-
+import itertools
+marker = itertools.cycle( matplotlib.markers.MarkerStyle.filled_markers[3:])
 myFmt = mdates.DateFormatter('%S.%f')
+
+from matplotlib.font_manager import FontProperties
+
+
+font = {'family' : 'normal',
+        'weight' : 'bold',
+        'size'   : 22}
+
+matplotlib.rc('font', **font)
 
 import numpy as np
 import pandas as pd
@@ -48,8 +58,8 @@ try:
         price = price[:-settings.get("trim", 1)]
 
         fig, ax1 = plt.subplots()
-        for label in prices_label:
-            ax1.plot(price.index, price[label], )
+        for label in sorted(prices_label):
+            ax1.plot(price.index, price[label],marker=next(marker),lw=3,ms=10)
 
         if "ylim" not in settings:
             ax1.set_ylim([0, np.max(price[labels].values) * 1.1])
@@ -88,8 +98,8 @@ try:
         # e1_m["USER"].cumsum().plot()
 
         fig, ax1 = plt.subplots()
-        for d in data:
-            ax1.plot(eval_resampled.index, eval_resampled[d], )
+        for d in sorted(data):
+            ax1.plot(eval_resampled.index, eval_resampled[d], marker=next(marker),lw=3,ms=10)
 
         if "ylim" not in settings:
             ax1.set_ylim([np.min(eval_resampled[labels].values), np.max(eval_resampled[labels].values) * 1.1])
