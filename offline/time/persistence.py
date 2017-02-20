@@ -120,8 +120,8 @@ class EdgeMapping(Base):
 
 
 #engine = create_engine('sqlite:///%s/res.db' % RESULTS_FOLDER, echo=True)
-#engine = create_engine('sqlite:///%s/res.db' % RESULTS_FOLDER)
-engine = create_engine('mysql+mysqldb://root:root@localhost/paper4', )
+engine = create_engine('sqlite:///%s/res.db' % RESULTS_FOLDER)
+#engine = create_engine('mysql+mysqldb://root:root@localhost/paper4', )
 session_factory = sessionmaker(bind=engine, autocommit=True)
 Session = scoped_session(session_factory)
 

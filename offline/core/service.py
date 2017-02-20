@@ -269,6 +269,7 @@ class Service(Base):
         session.add(self)
         session.flush()
         if use_heuristic:
+
             # create temp mapping for vhg<->vcdn hints
             assert self.id is not None
             self.__solve(path=str(self.id), reopt=False)
@@ -276,7 +277,7 @@ class Service(Base):
 
             if self.mapping is not None:
                 self.topo = list(ServiceTopoHeuristic(sla=self.merged_sla, vhg_count=vhg_count, vcdn_count=vcdn_count,
-                                                 hint_node_mappings=self.mapping.node_mappings).getTopos())[0]
+                                                      hint_node_mappings=self.mapping.node_mappings).getTopos())[0]
 
                 # add the CDN Edges to the graph
                 for sla in [self.merged_sla]:
@@ -300,18 +301,19 @@ class Service(Base):
 
                 self.__solve(path=str(self.id), use_heuristic=use_heuristic, reopt=True)
         else:
+            return
             self.__solve(path=str(self.id), use_heuristic=use_heuristic, reopt=False)
 
         session.flush()
 
-    def __solve(self, path=".", use_heuristic=True,reopt=False):
+    def __solve(self, path=".", use_heuristic=True, reopt=False):
         """
         Solve the service according to specs
         :return: nothing, service.mapping may be initialized with an actual possible mapping
         """
         session = Session()
         if len(self.slas) > 0:
-            solve(self, self.slas[0].substrate, path, use_heuristic,reopt)
+            solve(self, self.slas[0].substrate, path, use_heuristic, reopt)
             if self.mapping is not None:
                 session.add(self.mapping)
 

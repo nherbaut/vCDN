@@ -1,7 +1,6 @@
 import collections
 import copy
 import sys
-
 import networkx as nx
 from networkx import shortest_path
 
@@ -15,14 +14,12 @@ class IsomorphicServiceException(BaseException):
 
 
 class ServiceTopoFullGenerator(AbstractServiceTopo):
-    def __init__(self, sla, vhg_count, vcdn_count, hint_node_mappings=None,disable_isomorph_check=False):
+    def __init__(self, sla, vhg_count, vcdn_count, hint_node_mappings=None, disable_isomorph_check=False):
         self.disable_isomorph_check = disable_isomorph_check
         super(ServiceTopoFullGenerator, self).__init__(sla, vhg_count, vcdn_count, hint_node_mappings)
 
-
     def compute_service_topo(self, substrate, mapped_start_nodes, mapped_cdn_nodes, vhg_count, vcdn_count, delay,
                              hint_node_mappings=None):
-
 
         vhg_count = min(len(mapped_start_nodes), vhg_count)
         vcdn_count = min(vcdn_count, vhg_count)
@@ -62,8 +59,6 @@ class ServiceTopoFullGenerator(AbstractServiceTopo):
                 edges_sets.append(elt_copy)
 
         services = []
-
-
 
         for t in edges_sets:
             try:
@@ -121,9 +116,7 @@ class ServiceTopoFullGenerator(AbstractServiceTopo):
             except IsomorphicServiceException as e:
                 pass
 
-        #sys.stdout.write("\n%d/%d possible services for vhg=%d, vcdn=%d, s=%d, cdn=%d\n" % (            len(res),len(edges_sets),vhg_count, vcdn_count, len(mapped_start_nodes), len(mapped_cdn_nodes)))
-
-
+                # sys.stdout.write("\n%d/%d possible services for vhg=%d, vcdn=%d, s=%d, cdn=%d\n" % (            len(res),len(edges_sets),vhg_count, vcdn_count, len(mapped_start_nodes), len(mapped_cdn_nodes)))
 
 
 def equal_nodes(node1, node2):

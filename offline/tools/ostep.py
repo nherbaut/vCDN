@@ -98,7 +98,7 @@ def create_sla(starts, cdns, sourcebw, topo=None, su=None, rs=None, seed=0):
 
 
 def generate_candidates_param(sla, vhg_count=None, vcdn_count=None,
-                              automatic=True, use_heuristic=True, disable_isomorph_check=False):
+                              automatic=True, use_heuristic=True, disable_isomorph_check=True):
     pool = ThreadPool(multiprocessing.cpu_count() - 1)
 
     topoContainers=[]
@@ -136,16 +136,11 @@ def optimize_sla(sla, vhg_count=None, vcdn_count=None,
     # print("%d param to optimize" % len(candidates_param))
     pool = ThreadPool(multiprocessing.cpu_count() - 1)
     # sys.stdout.write("\n\t Embedding services:%d\n" % len(candidates_param))
-    services = []
-    while True:
-        services_slice = pool.map(embbed_service, itertools.islice(candidates_param, 10))
-        if services_slice:
-            services.extend(services_slice)
-            time.sleep(0.0005)
-        else:
-            break
 
-    # services = [embbed_service(param) for param in candidates_param]
+    #services = pool.map(embbed_service, candidates_param)
+
+
+    services = [embbed_service(param) for param in candidates_param]
     sys.stdout.write(" done!\n")
 
     services = filter(lambda x: x.mapping is not None, services)
