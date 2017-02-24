@@ -118,8 +118,6 @@ class Substrate(Base):
 
         edges_file = os.path.join(RESULTS_FOLDER, path, "substrate.edges.data")
         nodes_file = os.path.join(RESULTS_FOLDER, path, "substrate.nodes.data")
-        edges = self.edges
-        nodesdict = self.nodes
         with open(edges_file, 'w') as f:
             for edge in sorted(self.edges, key=lambda x: x.node_1.name):
                 f.write("%s\n" % edge)

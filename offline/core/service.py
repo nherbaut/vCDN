@@ -11,7 +11,7 @@ from sqlalchemy.orm import relationship
 
 from offline.core.service_topo_heuristic import ServiceTopoHeuristic
 from ..core.sla import Sla, SlaNodeSpec
-from ..core.solver import solve
+from ..core.solver import Solver
 from ..time.persistence import ServiceNode, ServiceEdge, Base, service_to_sla
 from ..time.persistence import Session
 
@@ -207,8 +207,8 @@ class Service(Base):
             for vcdn_count in range(1, min(vhg_count, max_vcdn_count) + 1):
                 thread_param.append(([sla.id for sla in slas], vhg_count, vcdn_count, use_heuristic))
 
-        # services = threadpool.map(f, thread_param)
-        services = [f(x) for x in thread_param]
+        services = threadpool.map(f, thread_param)
+        # services = [f(x) for x in thread_param]
         services = session.query(Service).filter(Service.id.in_(services)).all()
 
         for service in services:
@@ -237,7 +237,7 @@ class Service(Base):
         return best_service
 
     def __init__(self, topo_instance, slasIDS, serviceSpecFactory=ServiceSpecFactory, vhg_count=1, vcdn_count=1,
-                 use_heuristic=True,solve=True):
+                 use_heuristic=True, solve=True, solver=Solver()):
         session = Session()
 
         self.slas = session.query(Sla).filter(Sla.id.in_(slasIDS)).all()
@@ -246,6 +246,7 @@ class Service(Base):
         self.merged_sla = self.get_merged_sla(self.slas)
         self.serviceSpecFactory = serviceSpecFactory
         self.topo = topo_instance
+        self.solver = solver
 
         for node, cpu, bw in self.topo.getServiceNodes():
             node = ServiceNode(name=node, cpu=cpu, sla_id=self.merged_sla.id, bw=bw)
@@ -276,7 +277,7 @@ class Service(Base):
 
             if self.mapping is not None:
                 self.topo = list(ServiceTopoHeuristic(sla=self.merged_sla, vhg_count=vhg_count, vcdn_count=vcdn_count,
-                                                 hint_node_mappings=self.mapping.node_mappings).getTopos())[0]
+                                                      hint_node_mappings=self.mapping.node_mappings).getTopos())[0]
 
                 # add the CDN Edges to the graph
                 for sla in [self.merged_sla]:
@@ -297,7 +298,7 @@ class Service(Base):
 
                 session.delete(self.mapping)
                 session.flush()
-                if solve: #to perf measurements purposes, we should alway solve...
+                if solve:  # to perf measurements purposes, we should alway solve...
                     self.__solve(path=str(self.id), use_heuristic=use_heuristic, reopt=True)
 
         else:
@@ -305,14 +306,14 @@ class Service(Base):
 
         session.flush()
 
-    def __solve(self, path=".", use_heuristic=True,reopt=False):
+    def __solve(self, path=".", use_heuristic=True, reopt=False):
         """
         Solve the service according to specs
         :return: nothing, service.mapping may be initialized with an actual possible mapping
         """
         session = Session()
         if len(self.slas) > 0:
-            solve(self, self.slas[0].substrate, path, use_heuristic,reopt)
+            self.solver.solve(self,self.slas[0].substrate, path, use_heuristic, reopt)
             if self.mapping is not None:
                 session.add(self.mapping)
 
@@ -326,7 +327,7 @@ class Service(Base):
         self.sla.max_cdn_to_use = 0
         self.sla.sla_node_specs = [x for x in self.sla.sla_node_specs if x.type == "cdn"]
 
-        mapping = solve(self)
+        mapping = self.solver.solve(self)
         if mapping is None:
             vhg_hints = None
         else:
