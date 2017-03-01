@@ -2,7 +2,6 @@ import os
 import re
 import subprocess
 
-
 from jinja2 import Environment, PackageLoader
 from sqlalchemy import or_, and_
 from sqlalchemy.orm.exc import NoResultFound
@@ -139,6 +138,93 @@ class Solver(object):
 
             mapping = Mapping(node_mappings=nodesSols, edge_mappings=edgesSol, objective_function=objective_function)
             return mapping
+
+
+    @classmethod
+    def cleanup(cls):
+        for f in [os.path.join(RESULTS_FOLDER, "service.edges.data"),
+                  os.path.join(RESULTS_FOLDER, "service.path.data"),
+                  os.path.join(RESULTS_FOLDER, "service.path.delay.data"),
+                  os.path.join(RESULTS_FOLDER, "service.nodes.data"),
+                  os.path.join(RESULTS_FOLDER, "CDN.nodes.data"),
+                  os.path.join(RESULTS_FOLDER, "starters.nodes.data"),
+                  os.path.join(RESULTS_FOLDER, "cdnmax.data"),
+                  os.path.join(RESULTS_FOLDER, "VHG.nodes.data"),
+                  os.path.join(RESULTS_FOLDER, "VCDN.nodes.data")]:
+            if os.path.isfile(f):
+                os.remove(f)
+
+    def write_service_topology(self, topo, path="."):
+
+        if not os.path.exists(os.path.join(RESULTS_FOLDER, path)):
+            os.makedirs(os.path.join(RESULTS_FOLDER, path))
+
+        id = "default"
+        mode = "w"
+        # slas = self.slas
+        slas = [self.sla]
+
+        # write info on the edge
+        with open(os.path.join(RESULTS_FOLDER, path, "service.edges.data"), mode) as f:
+            for sla in slas:
+                postfix = "%d_%d" % (id, sla.id)
+                for start, end, bw in topo.dump_edges():
+                    f.write("%s\t\t%s_%s\t\t%lf\n" % (("%s_%s" % (start, postfix)).ljust(20), end, postfix, bw))
+
+        with open(os.path.join(RESULTS_FOLDER, path, "service.nodes.data"), mode) as f:
+            for sla in slas:
+                postfix = "%d_%d" % (id, sla.id)
+
+                for snode_id, cpu, bw in topo.getServiceNodes():
+                    f.write("%s\t\t%lf\t\t%lf\n" % (("%s_%s" % (snode_id, postfix)).ljust(20), cpu, bw))
+                    # sys.stdout.write("%s_%s %lf\n" % (snode_id, postfix, cpu))
+
+
+                    # write constraints on CDN placement
+        with open(os.path.join(RESULTS_FOLDER, path, "CDN.nodes.data"), mode) as f:
+            for sla in slas:
+                postfix = "%d_%d" % (id, sla.id)
+                self.merged_sla.get_cdn_nodes()
+                for node, mapping, bw in topo.get_CDN():
+                    f.write("%s_%s %s\n" % (node, postfix, mapping))
+
+        # write constraints on starter placement
+        with open(os.path.join(RESULTS_FOLDER, path, "starters.nodes.data"), mode) as f:
+            for sla in slas:
+                postfix = "%d_%d" % (id, sla.id)
+                for s, topo, bw in topo.get_Starters():
+                    f.write("%s_%s %s %lf\n" % (s, postfix, topo, bw))
+
+        # write the names of the VHG Nodes
+        with open(os.path.join(RESULTS_FOLDER, path, "VHG.nodes.data"), mode) as f:
+            for sla in slas:
+                postfix = "%d_%d" % (id, sla.id)
+                for vhg in topo.get_vhg():
+                    f.write("%s_%s\n" % (vhg, postfix))
+
+        # write the names of the VCDN nodes
+        with open(os.path.join(RESULTS_FOLDER, path, "VCDN.nodes.data"), mode) as f:
+            for sla in slas:
+                postfix = "%d_%d" % (id, sla.id)
+                for vcdn in topo.get_vcdn():
+                    f.write("%s_%s\n" % (vcdn, postfix))
+
+                    # write path to associate e2e delay
+
+        with open(os.path.join(RESULTS_FOLDER, path, "service.path.delay.data"), "w") as f:
+            for sla in slas:
+                postfix = "%d_%d" % (id, sla.id)
+
+                for apath in topo.dump_delay_paths():
+                    f.write("%s_%s %lf\n" % (apath, postfix, topo.delay))
+
+        # write e2e delay constraint
+        with open(os.path.join(RESULTS_FOLDER, path, "service.path.data"), "w") as f:
+            for sla in slas:
+                postfix = "%d_%d" % (id, sla.id)
+
+                for apath, s1, s2 in topo.dump_delay_routes():
+                    f.write("%s_%s %s_%s %s_%s\n" % (apath, postfix, s1, postfix, s2, postfix))
 
     def solve(self, service, substrate, path, use_heuristic=True, reopt=False):
         session = Session()

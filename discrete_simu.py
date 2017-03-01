@@ -17,7 +17,7 @@ from offline.discrete.endUser import User
 from offline.discrete.utils import *
 from offline.discrete.utils import CDNStorage
 from offline.time.persistence import Session, Tenant
-from offline.tools.ostep import clean_and_create_experiment
+from offline.tools.api import clean_and_create_experiment
 
 ################################################
 ############ SETUP LOGGING######################

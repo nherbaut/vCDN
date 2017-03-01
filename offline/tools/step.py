@@ -43,7 +43,7 @@ parser.add_argument('--vcdn', help="number of VCDN", default=None)
 parser.add_argument('--s', help="number of starter", default=1, type=int)
 parser.add_argument('--cdn', help="number of cdn", default=1, type=int)
 parser.add_argument('--reuse', help="Start from a new substrate", dest='reuse', action='store_true')
-parser.add_argument('--topo', help="specify topo to use", default=('grid', (5,5)), type=valid_topo)
+parser.add_argument('--service_graph', help="specify service_graph to use", default=('grid', (5,5)), type=valid_topo)
 parser.add_argument('--spvhg-disable', help="Disable grouping vhg by shortest path", dest='spvhg_disable',
                     action='store_true')
 

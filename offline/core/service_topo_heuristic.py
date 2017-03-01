@@ -7,20 +7,28 @@ import networkx as nx
 from networkx import shortest_path
 
 from offline.core.combinatorial import get_node_clusters, get_vhg_cdn_mapping
-from offline.core.service_topo import AbstractServiceTopo, get_nodes_by_type
-from offline.core.topo_instance import TopoInstance
+from offline.core.service_topo import AbstractServiceTopoGenerator, get_nodes_by_type
+from offline.core.topo_instance import ServiceGraph
 from offline.pricing.generator import get_vmg_calculator, get_vcdn_calculator
 
 
-class ServiceTopoHeuristic(AbstractServiceTopo):
-    def __init__(self, sla, vhg_count, vcdn_count, hint_node_mappings=None):
-        super(ServiceTopoHeuristic, self).__init__(sla, vhg_count, vcdn_count, hint_node_mappings)
+class HeuristicServiceTopoGenerator(AbstractServiceTopoGenerator):
+    def __init__(self, sla, vhg_count, vcdn_count, solver):
+        super(HeuristicServiceTopoGenerator, self).__init__(sla, vhg_count, vcdn_count)
+        self.solver = solver
 
     def compute_service_topo(self, substrate, mapped_start_nodes, mapped_cdn_nodes, vhg_count, vcdn_count, delay,
                              hint_node_mappings=None):
 
-        vhg_count = min(len(mapped_start_nodes), vhg_count )
-        vcdn_count = min(vcdn_count, vhg_count)
+        if vhg_count is None:
+            vhg_count = len(mapped_start_nodes)
+        else:
+            vhg_count = min(len(mapped_start_nodes), vhg_count)
+
+        if vcdn_count is None:
+            vcdn_count = vhg_count
+        else:
+            vcdn_count = min(vcdn_count, vhg_count)
 
         vmg_calc = get_vmg_calculator()
         vcdn_calc = get_vcdn_calculator()
@@ -32,17 +40,16 @@ class ServiceTopoHeuristic(AbstractServiceTopo):
         for i in range(1, vcdn_count + 1):
             service.add_node("VCDN%d" % i, type="VCDN", cpu=0, delay=delay, ratio=0.35, bandwidth=0)
 
-
         for index, cdn in enumerate(mapped_cdn_nodes, start=1):
             service.add_node("CDN%d" % index, type="CDN", cpu=0, ratio=0.65, name="CDN%d" % index, bandwidth=0,
-                                   mapping=cdn.topoNode.name)
+                             mapping=cdn.topoNode.name)
 
         for key, slaNodeSpec in enumerate(mapped_start_nodes, start=1):
             service.add_node("S%d" % key, cpu=0, type="S", mapping=slaNodeSpec.topoNode.name, bandwidth=0)
 
         # create s<-> vhg edges
         score, cluster = get_node_clusters([x.topoNode.name for x in mapped_start_nodes], vhg_count,
-                                                       substrate=substrate)
+                                           substrate=substrate)
         for toponode_name, vmg_id in list(cluster.items()):
             s = [n[0] for n in service.nodes(data=True) if n[1].get("mapping", None) == toponode_name][0]
             service.add_edge(s, "VHG%d" % vmg_id, delay=sys.maxsize, bandwidth=0)
@@ -50,7 +57,8 @@ class ServiceTopoHeuristic(AbstractServiceTopo):
         # create vhg <-> vcdn edges
         # here, each S "votes" for a TE and tell its VHG
 
-        score, cluster = get_node_clusters([x.topoNode.name for x in mapped_start_nodes], vcdn_count,substrate=substrate)
+        score, cluster = get_node_clusters([x.topoNode.name for x in mapped_start_nodes], vcdn_count,
+                                           substrate=substrate)
         for toponode_name, vCDN_id in list(cluster.items()):
             # get the S from the toponode_id
             s = [n[0] for n in service.nodes(data=True) if n[1].get("mapping", None) == toponode_name][0]
@@ -97,9 +105,9 @@ class ServiceTopoHeuristic(AbstractServiceTopo):
                                "VHG" in nmapping.service_node.name]
                 cdn_mapping = [(nm.topoNode.name, "CDN%d" % index) for index, nm in
                                enumerate(mapped_cdn_nodes, start=1)]
-                for vhg, cdn in list(get_vhg_cdn_mapping(vhg_mapping, cdn_mapping,substrate).items()):
+                for vhg, cdn in list(get_vhg_cdn_mapping(vhg_mapping, cdn_mapping, substrate).items()):
                     if vhg in service.node:
-                        service.add_edge(vhg, cdn, bandwidth=0,)
+                        service.add_edge(vhg, cdn, bandwidth=0, )
 
         except:
             traceback.print_exc()
@@ -114,4 +122,4 @@ class ServiceTopoHeuristic(AbstractServiceTopo):
         for vhg in get_nodes_by_type("VCDN", service):
             service.node[vhg]["cpu"] = vcdn_calc(service.node[vhg]["bandwidth"])
 
-        yield TopoInstance(service, delay_path, delay_route, delay)
+        yield ServiceGraph(service, delay_path, delay_route, delay)

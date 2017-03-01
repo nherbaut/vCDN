@@ -16,8 +16,8 @@ mutex = Lock()
 def shortest_path(node1, node2):
     '''
 
-    :param node1: a name of a topo node
-    :param node2: a name of a topo node
+    :param node1: a name of a service_graph node
+    :param node2: a name of a service_graph node
     :return: the shortest_path length
     '''
     # print("%s %s" % (node1,node2))

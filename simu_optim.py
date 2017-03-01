@@ -6,8 +6,8 @@ import os
 
 from offline.core.sla import generate_random_slas
 from offline.time.persistence import Tenant, Session
-from offline.tools.ostep import clean_and_create_experiment
-from offline.tools.ostep import optimize_sla
+from offline.tools.api import clean_and_create_experiment
+from offline.tools.api import optimize_sla
 
 
 def unpack(first, *rest):
@@ -42,7 +42,7 @@ parser.add_argument('--vcdnratio', help="the share of source traffic toward vcdn
                     type=float)
 parser.add_argument('--sourcebw', help="cumulated source bw from every source (default 100 bits) ", default=100000000,
                     type=int)
-parser.add_argument('--topo', help="specify topo to use", default=('grid', ["5", "5", "100000000", "10", "200"]),
+parser.add_argument('--service_graph', help="specify service_graph to use", default=('grid', ["5", "5", "100000000", "10", "200"]),
                     type=valid_topo)
 parser.add_argument('--disable-heuristic', dest="disable_heuristic", action="store_true")
 parser.add_argument('--dest_folder', help="destination folder for restults", default=RESULTS_FOLDER)
@@ -96,7 +96,7 @@ for sla in slas:
 
 
 '''
-service, count_embedding = create_sla(args.start, args.cdn, args.sourcebw, args.topo, 0,
+service, count_embedding = create_sla(args.start, args.cdn, args.sourcebw, args.service_graph, 0,
                                                                     vhg_count=args.vhg, vcdn_count=args.vcdn,
                                                                     automatic=args.auto,
                                                                     use_heuristic=not args.disable_heuristic)

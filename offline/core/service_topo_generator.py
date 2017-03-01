@@ -5,8 +5,8 @@ import sys
 import networkx as nx
 from networkx import shortest_path
 
-from offline.core.service_topo import AbstractServiceTopo, get_all_possible_edges, get_nodes_by_type
-from offline.core.topo_instance import TopoInstance
+from offline.core.service_topo import AbstractServiceTopoGenerator, get_all_possible_edges, get_nodes_by_type
+from offline.core.topo_instance import ServiceGraph
 from offline.pricing.generator import get_vmg_calculator, get_vcdn_calculator
 
 
@@ -14,10 +14,10 @@ class IsomorphicServiceException(BaseException):
     pass
 
 
-class ServiceTopoFullGenerator(AbstractServiceTopo):
+class FullServiceTopoGenerator(AbstractServiceTopoGenerator):
     def __init__(self, sla, vhg_count, vcdn_count, hint_node_mappings=None,disable_isomorph_check=False):
         self.disable_isomorph_check = disable_isomorph_check
-        super(ServiceTopoFullGenerator, self).__init__(sla, vhg_count, vcdn_count, hint_node_mappings)
+        super(FullServiceTopoGenerator, self).__init__(sla, vhg_count, vcdn_count, hint_node_mappings)
 
 
     def compute_service_topo(self, substrate, mapped_start_nodes, mapped_cdn_nodes, vhg_count, vcdn_count, delay,
@@ -120,14 +120,14 @@ class ServiceTopoFullGenerator(AbstractServiceTopo):
                         except:
                             continue
                 # logging.debug("so far, %d services" % len(services))
-                res.append(TopoInstance(serviceT, delay_path, delay_route, delay))
+                res.append(ServiceGraph(serviceT, delay_path, delay_route, delay))
 
 
             except IsomorphicServiceException as e:
                 pass
 
         #sys.stdout.write("\n%d/%d possible services for vhg=%d, vcdn=%d, s=%d, cdn=%d\n" % (            len(res),len(edges_sets),vhg_count, vcdn_count, len(mapped_start_nodes), len(mapped_cdn_nodes)))
-        #for line in sorted([",".join(sorted([n for n in serviceT.servicetopo.nodes()])) + "\t" + ",".join(sorted(["%s-%s" % (e[0], e[1]) for e in serviceT.servicetopo.edges()])) for serviceT in res]):
+        #for line in sorted([",".join(sorted([n for n in serviceT.nx_service_graph.nodes()])) + "\t" + ",".join(sorted(["%s-%s" % (e[0], e[1]) for e in serviceT.nx_service_graph.edges()])) for serviceT in res]):
         #    print line
         return res
 

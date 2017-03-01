@@ -183,7 +183,7 @@ def plotsol(**kwargs):
                         edgesSol.append(matches[0])
                         continue
         except IOError:
-            print("no solution found, displaying topo only")
+            print("no solution found, displaying service_graph only")
 
 
     with open(os.path.join(RESULTS_FOLDER,"substrate.edges.data"), 'r') as f:

@@ -35,7 +35,7 @@ class SimpleMonitor(route.MWCController):
         self.datapaths = {}
         self.totals = {}
         self.slices = {}
-        # self.bwstats = BandwidthStats(self.topo)
+        # self.bwstats = BandwidthStats(self.service_graph)
         self.monitor_thread = hub.spawn(self._monitor)
 
         self.rpcStart()

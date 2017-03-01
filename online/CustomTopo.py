@@ -15,7 +15,7 @@ class MyTopo(Topo):
     "Simple topology example."
 
     def __init__(self):
-        "Create custom topo."
+        "Create custom service_graph."
 
         # Initialize topology
         Topo.__init__(self)

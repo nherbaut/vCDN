@@ -19,7 +19,7 @@ class loadTopo(Topo):
     "Simple topology example."
 
     def __init__(self, edges_file, nodes_file, CDNfile, startersfile, solutionsfile,service_edges):
-        "Create custom topo."
+        "Create custom service_graph."
 
         # Initialize topology
         Topo.__init__(self)

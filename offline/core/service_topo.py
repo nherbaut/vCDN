@@ -1,7 +1,7 @@
 import copy
 
 
-class AbstractServiceTopo(object):
+class AbstractServiceTopoGenerator(object):
     def __init__(self, sla, vhg_count, vcdn_count, hint_node_mappings=None):
         self.mapped_start_nodes = sla.get_start_nodes()
         self.mapped_cdn_nodes = sla.get_cdn_nodes()
@@ -10,8 +10,6 @@ class AbstractServiceTopo(object):
         self.vhg_count = vhg_count
         self.vcdn_count = vcdn_count
         self.hint_node_mappings = hint_node_mappings
-
-
 
     def getTopos(self):
         res = list(self.compute_service_topo(

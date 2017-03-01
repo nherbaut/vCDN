@@ -5,15 +5,13 @@ import base64
 import json
 import logging
 import os
-import re
 import shutil
 import subprocess
 import sys
 from argparse import RawTextHelpFormatter
 
-import offline.core.sla
 from offline.time.plottingDB import plotsol_from_db
-from offline.tools.ostep import clean_and_create_experiment, optimize_sla, create_sla
+from offline.tools.api import clean_and_create_experiment, optimize_sla, create_sla, generate_sla_nodes
 
 root = logging.getLogger()
 root.setLevel(logging.DEBUG)
@@ -68,7 +66,8 @@ parser.add_argument('--vcdnratio', help="the share of source traffic toward vcdn
                     type=float)
 parser.add_argument('--sourcebw', help="cumulated source bw from every source (default 100 bits) ", default=10000,
                     type=float)
-parser.add_argument('--topo', help="specify topo to use", default=('grid', ["5", "5", "100000000", "10", "200"]),
+parser.add_argument('--topo', help="specify service_graph to use",
+                    default=('grid', ["5", "5", "100000000", "10", "200"]),
                     type=valid_topo)
 
 parser.add_argument('--plot', dest="plot", action="store_true")
@@ -94,12 +93,12 @@ if args.disable_embedding:
         plotsol_from_db(service_link_linewidth=5, net=True, substrate=su)
         subprocess.Popen(
             ["neato", os.path.join(RESULTS_FOLDER, "./substrate.dot"), "-Tsvg", "-o",
-             os.path.join(args.dest_folder, "topo.svg")]).wait()
+             os.path.join(args.dest_folder, "service_graph.svg")]).wait()
         source_path = os.path.normpath(os.path.join(RESULTS_FOLDER, "./substrate.dot"))
         dest_path = os.path.normpath(os.path.join(args.dest_folder, "substrate.dot"))
         if source_path != dest_path:
             shutil.copy(os.path.join(RESULTS_FOLDER, "./substrate.dot"), )
-        subprocess.Popen(["eog", os.path.join(args.dest_folder, "topo.svg")]).wait()
+        subprocess.Popen(["eog", os.path.join(args.dest_folder, "service_graph.svg")]).wait()
 
 
 
@@ -113,30 +112,7 @@ else:
 
     rs, su = clean_and_create_experiment(args.topo, args.seed)
 
-    start_nodes = None
-    if len(args.start) == 1:
-        match = re.findall("RAND\(([0-9]+),([0-9]+)\)", args.start[0])
-        if len(match) == 1:
-            nodes_by_bw = su.get_nodes_by_bw()
-            start_nodes = offline.core.sla.weighted_shuffle(list(nodes_by_bw.keys()), list(nodes_by_bw.values()), rs)[
-                          -rs.randint(int(match[0][0]), int(match[0][1]) + 1):]
-            logging.debug("random start nodes: %s" % " ".join(start_nodes))
-
-    cdn_nodes = None
-    if len(args.cdn) == 1:
-        match = re.findall("RAND\(([0-9]+),([0-9]+)\)", args.cdn[0])
-        if len(match) == 1:
-            nodes_by_degree = su.get_nodes_by_degree()
-
-            cdn_nodes = offline.core.sla.weighted_shuffle(list(nodes_by_degree.keys()), [30-i for i in list(nodes_by_degree.values())], rs)[
-                        :rs.randint(int(match[0][0]), int(match[0][1]) + 1)]
-            logging.debug("random cdn nodes: %s" % " ".join(cdn_nodes))
-
-    if start_nodes is None:
-        start_nodes = args.start
-
-    if cdn_nodes is None:
-        cdn_nodes = args.cdn
+    start_nodes, cdn_nodes = generate_sla_nodes(su, args.start, args.cdn, rs)
 
     sla = create_sla(start_nodes, cdn_nodes, args.sourcebw, su=su, rs=rs)
     service, count_embedding = optimize_sla(sla, vhg_count=args.vhg,
@@ -167,7 +143,8 @@ else:
                 f.write("%d,%d\n" % (service.vhg_count, service.vcdn_count))
 
             print(("Successfull mapping w price: \t %lf in \t %d embedding \t winner is %d (%d,%d)" % (
-                service.mapping.objective_function, count_embedding, service.id, service.vhg_count, service.vcdn_count)))
+                service.mapping.objective_function, count_embedding, service.id, service.vhg_count,
+                service.vcdn_count)))
 
         if args.plot:
             dest_folder = os.path.join(RESULTS_FOLDER, str(service.id))
@@ -175,8 +152,8 @@ else:
                             dest_folder=dest_folder)
             subprocess.Popen(
                 ["neato", os.path.join(dest_folder, "./substrate.dot"), "-Tsvg", "-o",
-                 os.path.join(args.dest_folder, "topo.svg")]).wait()
-            subprocess.Popen(["eog", os.path.join(args.dest_folder, "topo.svg")]).wait()
+                 os.path.join(args.dest_folder, "service_graph.svg")]).wait()
+            subprocess.Popen(["eog", os.path.join(args.dest_folder, "service_graph.svg")]).wait()
 
             shutil.copy(os.path.join(dest_folder, "./substrate.dot"), os.path.join(args.dest_folder, "substrate.dot"))
         exit(0)
