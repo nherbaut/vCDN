@@ -8,12 +8,12 @@ from multiprocessing.pool import ThreadPool
 
 from numpy.random import RandomState
 
+from ..core.ilpsolver import ILPSolver
 from ..core.service import Service
 from ..core.service_topo_generator import FullServiceTopoGenerator
 from ..core.service_topo_heuristic import HeuristicServiceTopoGenerator
 from ..core.sla import Sla, SlaNodeSpec
 from ..core.sla import weighted_shuffle
-from ..core.solver import Solver
 from ..core.substrate import Substrate
 from ..time.persistence import Session, Base, engine, drop_all, Tenant, Node
 
@@ -81,7 +81,7 @@ def clean_and_create_experiment(topo=('file', ('Geant2012.graphml', '10000')), s
 def embbed_service(args):
     service_graph, sla = args
     session = Session()
-    service = Service(service_graph, sla, solver=Solver())
+    service = Service(service_graph, sla, solver=ILPSolver())
 
     session.add(service)
     session.flush()
@@ -182,8 +182,8 @@ class ServiceGraphGeneratorFactory:
 
 
 def optimize_sla(sla, vhg_count=None, vcdn_count=None,
-                 automatic=True, use_heuristic=True, random_edges=False, rs=None, isomorph_check=True,
-                 max_vhg_count=None, max_vcdn_count=None, solver=Solver()):
+                 automatic=True, use_heuristic=True, isomorph_check=True,
+                 max_vhg_count=10, max_vcdn_count=100, solver=ILPSolver()):
     factory = ServiceGraphGeneratorFactory(sla, automatic, vhg_count=vhg_count, vcdn_count=vcdn_count)
     if use_heuristic:
         generators = factory.get_reduced_class_generator(solver=solver, max_vhg_count=max_vhg_count,
@@ -212,7 +212,8 @@ def optimize_sla(sla, vhg_count=None, vcdn_count=None,
 
     for service in services:
         logging.debug(
-            "%d %lf %d %d" % (service.id, service.mapping.objective_function, service.vhg_count, service.vcdn_count))
+            "%d %lf %d %d" % (service.id, service.mapping.objective_function, service.service_graph.get_vhg_count(),
+                              service.service_graph.get_vcdn_count()))
 
     if len(services) > 0:
         winner = services[0]

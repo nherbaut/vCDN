@@ -8,7 +8,7 @@ from . import utils
 from .result import ResultItem
 from .service import Service
 from .sla import generate_random_slas
-from .solver import solve
+from .ilpsolver import solve
 
 
 @utils.timed

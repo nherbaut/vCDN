@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from offline.core.solver import Solver
+from offline.core.ilpsolver import ILPSolver
 from offline.tools.api import *
 
 
@@ -26,5 +26,5 @@ class TestServiceGraphGeneratorFactory(TestCase):
         start_nodes, cdn_nodes = generate_sla_nodes(su, ["RAND(4,4)"], ["RAND(2,2)"], rs)
         sla = create_sla(start_nodes, cdn_nodes, 10000000, su=su, rs=rs)
         factory = ServiceGraphGeneratorFactory(sla)
-        generators = factory.get_reduced_class_generator(Solver())
+        generators = factory.get_reduced_class_generator(ILPSolver())
         self.assertEqual(sum([len(generator.getTopos()) for generator in generators]), 10)

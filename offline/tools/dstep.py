@@ -11,7 +11,7 @@ import numpy as np
 
 from ..core.service import Service
 from ..core.sla import generate_random_slas
-from ..core.solver import solve
+from ..core.ilpsolver import solve
 from ..core.substrate import Substrate, RESULTS_FOLDER
 from offline.core.sla import Sla
 GEANT_PATH=os.path.join(os.path.dirname(os.path.realpath(__file__)),'../data/Geant2012.graphml')

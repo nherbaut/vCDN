@@ -6,21 +6,13 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import scoped_session
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.schema import Table
-import shutil
-import os
-import sys
-
-
 
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
 
 Base = declarative_base()
 
-service_to_sla = Table('service_to_sla', Base.metadata,
-                       Column('service_id', Integer, ForeignKey('Service.id')),
-                       Column('sla_id', Integer, ForeignKey('Sla.id'))
-                       )
+
+# service_to_sla = Table('service_to_sla', Base.metadata,Column('service_id', Integer, ForeignKey('Service.id')),Column('sla_id', Integer, ForeignKey('Sla.id')))
 
 
 class Tenant(Base):
@@ -33,7 +25,7 @@ class Tenant(Base):
 class Node(Base):
     __tablename__ = "Node"
     id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String(16),)
+    name = Column(String(16), )
     cpu_capacity = Column(Float, )
 
     def __str__(self):
@@ -123,12 +115,12 @@ class EdgeMapping(Base):
                    start_service_node_id=edgeMapping.start_service_node_id,
                    end_service_node_id=edgeMapping.end_service_node_id)
 
+
 if not os.path.exists(RESULTS_FOLDER):
     os.makedirs(RESULTS_FOLDER)
 
-
-#engine = create_engine('sqlite:///%s/res.db' % RESULTS_FOLDER, echo=True)
-#engine = create_engine('sqlite:///%s/res.db' % RESULTS_FOLDER)
+# engine = create_engine('sqlite:///%s/res.db' % RESULTS_FOLDER, echo=True)
+# engine = create_engine('sqlite:///%s/res.db' % RESULTS_FOLDER)
 engine = create_engine('mysql+mysqldb://root:root@127.0.0.1/paper4', )
 session_factory = sessionmaker(bind=engine, autocommit=True)
 Session = scoped_session(session_factory)

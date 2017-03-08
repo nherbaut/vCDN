@@ -16,20 +16,15 @@ PRICING_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../p
 env = Environment(loader=PackageLoader("offline", 'optim'))
 template_optim = env.get_template('optim.zpl.tpl')
 # template_optim_slow = env.get_template('optim-slow.zpl.tpl')
-template_optim_slow = env.get_template('optim.zpl.tpl')
 template_optim_debug = env.get_template('batch-debug.sh')
 
 
-class Solver(object):
-    def __solve_inplace(self, allow_violations=False, path=".", use_heuristic=True, reopt=False):
+class ILPSolver(object):
+    def __solve_inplace(self, service_id, sla_id, path="."):
         '''
         __solve without rewriting intermedia files
         :return: a mapping
         '''
-        if use_heuristic:
-            optim_template = template_optim
-        else:
-            optim_template = template_optim_slow
 
         session = Session()
         if not os.path.exists(os.path.join(RESULTS_FOLDER, path)):
@@ -37,38 +32,19 @@ class Solver(object):
 
         # copy template to target folder
         with open(os.path.join(RESULTS_FOLDER, path, "optim.zpl"), "w") as f:
-            f.write(optim_template.render(dir=os.path.join(RESULTS_FOLDER, path), pricing_dir=PRICING_FOLDER))
+            f.write(template_optim.render(dir=os.path.join(RESULTS_FOLDER, path), pricing_dir=PRICING_FOLDER))
 
-        with open(os.path.join(RESULTS_FOLDER, path, "debug.sh"), "w") as f:
-            f.write(template_optim_debug.render(dir=os.path.join(RESULTS_FOLDER, path), pricing_dir=PRICING_FOLDER))
+        # with open(os.path.join(RESULTS_FOLDER, path, "debug.sh"), "w") as f:
+        #    f.write(template_optim_debug.render(dir=os.path.join(RESULTS_FOLDER, path), pricing_dir=PRICING_FOLDER))
+        # os.chmod(os.path.join(RESULTS_FOLDER, path, "debug.sh"), 0o711)
+        subprocess.call(["scip", "-c", "read %s" % os.path.join(RESULTS_FOLDER, path, "optim.zpl"), "-c",
+                         "read %s" % os.path.join(RESULTS_FOLDER, path, "solutions.data sol"), "-c",
+                         "set reoptimization enable true", "-c", "optimize ", "-c",
+                         "write solution %s" % (os.path.join(RESULTS_FOLDER, path, "solutions.data")), "-c",
+                         "q"],
+                        stdout=open(os.devnull, 'wb')
+                        )
 
-        os.chmod(os.path.join(RESULTS_FOLDER, path, "debug.sh"), 0o711)
-
-        violations = []
-        if not allow_violations:
-            if not reopt:  # run the optim without CDNs
-                # print "optimize"
-                subprocess.call(
-                    ["scip", "-c", "read %s" % os.path.join(RESULTS_FOLDER, path, "optim.zpl"), "-c", "optimize ", "-c",
-                     "write solution %s" % (os.path.join(RESULTS_FOLDER, path, "solutions.data")), "-c", "q"],
-                    stdout=open(os.devnull, 'wb')
-                )
-            else:  # run the optim with CDN using reoptim
-                # print "re-optimize"
-                subprocess.call(["scip", "-c", "read %s" % os.path.join(RESULTS_FOLDER, path, "optim.zpl"), "-c",
-                                 "read %s" % os.path.join(RESULTS_FOLDER, path, "solutions.data sol"), "-c",
-                                 "set reoptimization enable true", "-c", "optimize ", "-c",
-                                 "write solution %s" % (os.path.join(RESULTS_FOLDER, path, "solutions.data")), "-c",
-                                 "q"],
-                                stdout=open(os.devnull, 'wb')
-                                )
-
-        else:
-            subprocess.call(
-                ["scip", "-c", "read %s" % os.path.join(RESULTS_FOLDER, path, "optim.zpl"), "-c", "optimize ", "-c",
-                 "write solution %s" % (os.path.join(RESULTS_FOLDER, path, "solutions.data")), "-c", "q"],
-                stdout=open(os.devnull, 'wb')
-            )
         # plotting.plotsol()
         # os.subprocess.call(["cat", "./substrate.dot", "|", "dot", "-Tpdf", "-osol.pdf"])
         with open(os.path.join(RESULTS_FOLDER, path, "solutions.data"), "r") as sol:
@@ -77,8 +53,8 @@ class Solver(object):
                 return None
 
             data = data.split("\n")
-            nodesSols = []
-            edgesSol = []
+            nodes_sols = []
+            edges_sol = []
             objective_function = None
             for line in data:
 
@@ -87,15 +63,14 @@ class Solver(object):
                 if (len(matches) > 0):
                     try:
                         node = session.query(Node).filter(Node.name == matches[0][0]).one()
-                        snode_id, service_id, sla_id = matches[0][1].split("_")
-                        value = matches[0][2]
+                        snode_id = matches[0][1]
                         service_node_id = session.query("ServiceNode.id").filter(
                             and_(ServiceNode.sla_id == sla_id, ServiceNode.service_id == service_id,
                                  ServiceNode.name == snode_id)).one()[0]
                         nodeMapping = NodeMapping(node_id=node.id, service_node_id=service_node_id,
                                                   service_id=service_id,
                                                   sla_id=sla_id)
-                        nodesSols.append(nodeMapping)
+                        nodes_sols.append(nodeMapping)
 
                         continue
                     except NoResultFound as e:
@@ -105,8 +80,6 @@ class Solver(object):
                 matches = re.findall("^y\$(.*)\$(.*)\$(.*)\$([^ \t]+) +([^ \t]+)", line)
                 if (len(matches) > 0):
                     node_1, node_2, snode_1, snode_2, value = matches[0]
-                    snode_1, service_id, sla_id = snode_1.split("_")
-                    snode_2, service_id, sla_id = snode_2.split("_")
 
                     node_1 = session.query(Node).filter(Node.name == node_1).one()
                     node_2 = session.query(Node).filter(Node.name == node_2).one()
@@ -124,21 +97,14 @@ class Solver(object):
                              ServiceEdge.service_id == service_id, ServiceEdge.sla_id == sla_id)).one()[0]
 
                     edgeMapping = EdgeMapping(edge_id=edge.id, serviceEdge_id=sedge_id)
-                    edgesSol.append(edgeMapping)
+                    edges_sol.append(edgeMapping)
 
                 matches = re.findall("^objective value: *([0-9\.]*)$", line)
                 if (len(matches) > 0):
                     objective_function = float(matches[0])
                     continue
-
-                matches = re.findall("^(.*)_master", line)
-                if (len(matches) > 0):
-                    violations.append(matches[0])
-                    continue
-
-            mapping = Mapping(node_mappings=nodesSols, edge_mappings=edgesSol, objective_function=objective_function)
+            mapping = Mapping(node_mappings=nodes_sols, edge_mappings=edges_sol, objective_function=objective_function)
             return mapping
-
 
     @classmethod
     def cleanup(cls):
@@ -154,84 +120,66 @@ class Solver(object):
             if os.path.isfile(f):
                 os.remove(f)
 
-    def write_service_topology(self, topo, path="."):
+    def write_service_topology(self, service, path="."):
 
         if not os.path.exists(os.path.join(RESULTS_FOLDER, path)):
             os.makedirs(os.path.join(RESULTS_FOLDER, path))
 
-        id = "default"
+        service_graph = service.service_graph
+
         mode = "w"
-        # slas = self.slas
-        slas = [self.sla]
 
         # write info on the edge
         with open(os.path.join(RESULTS_FOLDER, path, "service.edges.data"), mode) as f:
-            for sla in slas:
-                postfix = "%d_%d" % (id, sla.id)
-                for start, end, bw in topo.dump_edges():
-                    f.write("%s\t\t%s_%s\t\t%lf\n" % (("%s_%s" % (start, postfix)).ljust(20), end, postfix, bw))
+            for start, end, bw in service_graph.dump_edges():
+                f.write("%s\t\t%s\t\t%lf\n" % (start.ljust(20), end, bw))
 
         with open(os.path.join(RESULTS_FOLDER, path, "service.nodes.data"), mode) as f:
-            for sla in slas:
-                postfix = "%d_%d" % (id, sla.id)
-
-                for snode_id, cpu, bw in topo.getServiceNodes():
-                    f.write("%s\t\t%lf\t\t%lf\n" % (("%s_%s" % (snode_id, postfix)).ljust(20), cpu, bw))
-                    # sys.stdout.write("%s_%s %lf\n" % (snode_id, postfix, cpu))
+            for snode_id, cpu, bw in service_graph.getServiceNodes():
+                f.write("%s\t\t%lf\t\t%lf\n" % (str(snode_id).ljust(20), cpu, bw))
 
 
-                    # write constraints on CDN placement
+
+                # write constraints on CDN placement
         with open(os.path.join(RESULTS_FOLDER, path, "CDN.nodes.data"), mode) as f:
-            for sla in slas:
-                postfix = "%d_%d" % (id, sla.id)
-                self.merged_sla.get_cdn_nodes()
-                for node, mapping, bw in topo.get_CDN():
-                    f.write("%s_%s %s\n" % (node, postfix, mapping))
+            for node, mapping, bw in service_graph.get_CDN():
+                f.write("%s %s\n" % (node, mapping))
 
         # write constraints on starter placement
         with open(os.path.join(RESULTS_FOLDER, path, "starters.nodes.data"), mode) as f:
-            for sla in slas:
-                postfix = "%d_%d" % (id, sla.id)
-                for s, topo, bw in topo.get_Starters():
-                    f.write("%s_%s %s %lf\n" % (s, postfix, topo, bw))
+            for s, mapping, bw in service_graph.get_Starters():
+                f.write("%s %s %lf\n" % (s, mapping, bw))
 
         # write the names of the VHG Nodes
         with open(os.path.join(RESULTS_FOLDER, path, "VHG.nodes.data"), mode) as f:
-            for sla in slas:
-                postfix = "%d_%d" % (id, sla.id)
-                for vhg in topo.get_vhg():
-                    f.write("%s_%s\n" % (vhg, postfix))
+            for vhg in service_graph.get_vhg():
+                f.write("%s\n" % vhg)
 
         # write the names of the VCDN nodes
         with open(os.path.join(RESULTS_FOLDER, path, "VCDN.nodes.data"), mode) as f:
-            for sla in slas:
-                postfix = "%d_%d" % (id, sla.id)
-                for vcdn in topo.get_vcdn():
-                    f.write("%s_%s\n" % (vcdn, postfix))
+            for vcdn in service_graph.get_vcdn():
+                f.write("%s\n" % (vcdn))
 
-                    # write path to associate e2e delay
+                # write path to associate e2e delay
 
         with open(os.path.join(RESULTS_FOLDER, path, "service.path.delay.data"), "w") as f:
-            for sla in slas:
-                postfix = "%d_%d" % (id, sla.id)
 
-                for apath in topo.dump_delay_paths():
-                    f.write("%s_%s %lf\n" % (apath, postfix, topo.delay))
+            for apath in service_graph.dump_delay_paths():
+                f.write("%s %lf\n" % (apath, service_graph.delay))
 
         # write e2e delay constraint
         with open(os.path.join(RESULTS_FOLDER, path, "service.path.data"), "w") as f:
-            for sla in slas:
-                postfix = "%d_%d" % (id, sla.id)
 
-                for apath, s1, s2 in topo.dump_delay_routes():
-                    f.write("%s_%s %s_%s %s_%s\n" % (apath, postfix, s1, postfix, s2, postfix))
+            for apath, s1, s2 in service_graph.dump_delay_routes():
+                f.write("%s %s %s\n" % (apath, s1, s2))
 
-    def solve(self, service, substrate, path, use_heuristic=True, reopt=False):
+    def solve(self, service, substrate):
+        path = str(service.id)
         session = Session()
-        service.write(path)
+        self.write_service_topology(service, path=path)
         substrate.write(path)
         session.flush()
-        mapping = self.__solve_inplace(path=path, use_heuristic=use_heuristic, reopt=reopt)
+        mapping = self.__solve_inplace(service_id=service.id, sla_id=service.sla_id, path=path, )
 
         service.mapping = mapping
         if mapping is not None:

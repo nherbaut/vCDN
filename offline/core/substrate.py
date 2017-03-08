@@ -5,6 +5,7 @@ from itertools import tee
 
 import networkx as nx
 import numpy.random
+from sqlalchemy.schema import Table
 from haversine import haversine
 from networkx.readwrite import json_graph
 from pygraphml import GraphMLParser

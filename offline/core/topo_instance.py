@@ -12,6 +12,12 @@ class ServiceGraph:
                              hint_node_mappings=None):
         raise NotImplementedError("Must override methodB")
 
+    def get_vhg_count(self):
+        return len(self.get_vhg())
+
+    def get_vcdn_count(self):
+        return len(self.get_vcdn())
+
     def get_vhg(self):
         return get_nodes_by_type("VHG", self.nx_service_graph)
 

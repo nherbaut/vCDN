@@ -9,7 +9,7 @@ import numpy as np
 
 from ..core.service import Service
 from ..core.sla import generate_random_slas
-from ..core.solver import solve
+from ..core.ilpsolver import solve
 from ..core.substrate import Substrate
 from ..time.persistence import Session, Base, engine, drop_all, Tenant
 RESULTS_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')

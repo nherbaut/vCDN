@@ -10,9 +10,9 @@ from sqlalchemy import and_
 from sqlalchemy.orm import relationship
 
 from offline.core.service_topo_heuristic import HeuristicServiceTopoGenerator
+from ..core.ilpsolver import ILPSolver
 from ..core.sla import Sla, SlaNodeSpec
-from ..core.solver import Solver
-from ..time.persistence import ServiceNode, ServiceEdge, Base, service_to_sla
+from ..time.persistence import ServiceNode, ServiceEdge, Base
 from ..time.persistence import Session
 
 OPTIM_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../optim')
@@ -46,8 +46,8 @@ class Service(Base):
     sla_id = Column(Integer, ForeignKey("Sla.id"))
     serviceNodes = relationship("ServiceNode", cascade="all")
     serviceEdges = relationship("ServiceEdge", cascade="all")
-    slas = relationship("Sla", secondary=service_to_sla, back_populates="services", cascade="save-update")
-    sla = relationship("Sla", foreign_keys=[sla_id], cascade="all")
+    # slas = relationship("Sla", secondary=service_to_sla, back_populates="services", cascade="save-update")
+    sla = relationship("Sla", foreign_keys=[sla_id], back_populates="services", cascade="save-update")
     mapping = relationship("Mapping", uselist=False, cascade="all", back_populates="service")
 
     def __str__(self):
@@ -145,12 +145,15 @@ class Service(Base):
 
         return best_service
 
-    def __init__(self, service_graph, sla, solver=Solver()):
+    def __init__(self, service_graph, sla, solver=ILPSolver()):
         session = Session()
-        self.sla=sla
+        self.sla = sla
         self.service_graph = service_graph
         self.solver = solver
+        session.add(self)
+        session.flush()
 
+        # copy stuff from the service_graph down to the Service itself for solving
         for node, cpu, bw in self.service_graph.getServiceNodes():
             node = ServiceNode(name=node, cpu=cpu, sla_id=self.sla.id, bw=bw)
             session.add(node)
@@ -183,13 +186,12 @@ class Service(Base):
         :return: nothing, service.mapping may be initialized with an actual possible mapping
         """
         session = Session()
-        if len(self.slas) > 0:
-            self.solver.solve(self, self.slas[0].substrate, path, reopt)
-            if self.mapping is not None:
-                session.add(self.mapping)
 
-            else:
-                logging.warning("mapping failed for slas %s" % (" ".join(str(sla.id) for sla in self.slas)))
+        self.solver.solve(self, self.sla.substrate)
+        if self.mapping is not None:
+            session.add(self.mapping)
+        else:
+            logging.warning("mapping failed for slas %s" % (" ".join(str(sla.id) for sla in self.slas)))
 
     def __compute_vhg_vcdn_assignment__(self):
 

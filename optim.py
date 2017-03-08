@@ -140,11 +140,11 @@ else:
         else:
             with open(os.path.join(args.dest_folder, "price.data"), "w") as f:
                 f.write("%lf\n" % service.mapping.objective_function)
-                f.write("%d,%d\n" % (service.vhg_count, service.vcdn_count))
+                f.write("%d,%d\n" % (service.service_graph.get_vhg_count(), service.service_graph.get_vcdn_count()))
 
             print(("Successfull mapping w price: \t %lf in \t %d embedding \t winner is %d (%d,%d)" % (
-                service.mapping.objective_function, count_embedding, service.id, service.vhg_count,
-                service.vcdn_count)))
+                service.mapping.objective_function, count_embedding, service.id, service.service_graph.get_vhg_count(),
+                service.service_graph.get_vcdn_count())))
 
         if args.plot:
             dest_folder = os.path.join(RESULTS_FOLDER, str(service.id))

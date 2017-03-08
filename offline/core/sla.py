@@ -7,7 +7,7 @@ from sqlalchemy import Column, Integer, DateTime, Float, ForeignKey, String, Pic
 from sqlalchemy.orm import relationship
 
 from ..time.persistence import Node
-from ..time.persistence import Session, Base, service_to_sla
+from ..time.persistence import Session, Base
 
 tcp_win = 65535.0
 
@@ -54,7 +54,7 @@ class Sla(Base):
     tenant = relationship("Tenant", cascade="all")
 
     sla_node_specs = relationship("SlaNodeSpec", cascade="all, delete-orphan")
-    services = relationship("Service", secondary=service_to_sla, back_populates="slas", cascade="save-update")
+    services = relationship("Service", back_populates="sla", cascade="save-update")
 
     substrate_id = Column(Integer, ForeignKey("Substrate.id"))
     substrate = relationship("Substrate", cascade="save-update")
