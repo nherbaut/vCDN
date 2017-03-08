@@ -110,23 +110,6 @@ class Substrate(Base):
         self.nodes = nodes
         self.edges_init = sorted(edges, key=lambda x: "%s%s" % (str(x.node_1), str(x.node_2)))
 
-    def write(self, path="."):
-
-        assert path != "."
-
-        if not os.path.exists(os.path.join(RESULTS_FOLDER, path)):
-            os.makedirs(os.path.join(RESULTS_FOLDER, path))
-
-        edges_file = os.path.join(RESULTS_FOLDER, path, "substrate.edges.data")
-        nodes_file = os.path.join(RESULTS_FOLDER, path, "substrate.nodes.data")
-        with open(edges_file, 'w') as f:
-            for edge in sorted(self.edges, key=lambda x: x.node_1.name):
-                f.write("%s\n" % edge)
-
-        with open(nodes_file, 'w') as f:
-            for node in sorted(self.nodes, key=lambda x: x.name):
-                f.write("%s\n" % node)
-
     @classmethod
     def __fromSpec(cls, args):
         width, height, bw, delay, cpu = args

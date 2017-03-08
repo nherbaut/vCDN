@@ -107,7 +107,6 @@ def create_sla(starts, cdns, sourcebw, topo=None, su=None, rs=None, seed=0):
     for s in cdns:
         assert s in nodes_names, "%s not in %s" % (s, nodes_names)
 
-    su.write(RESULTS_FOLDER)
     session.add(su)
     session.flush()
 
@@ -194,7 +193,7 @@ def optimize_sla(sla, vhg_count=None, vcdn_count=None,
         else:
             generators = factory.get_full_class_generator()
 
-    candidates_param = [(topo, sla) for generator in generators for topo in generator.getTopos()]
+    candidates_param = [(topo, sla) for generator in generators for topo in generator.get_service_topologies() ]
     logging.debug("%d candidate " % len(candidates_param))
 
     # sys.stdout.write("\n\t Service to embed :%d\n" % len(candidates_param))

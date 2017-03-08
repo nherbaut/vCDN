@@ -20,7 +20,8 @@ template_optim_debug = env.get_template('batch-debug.sh')
 
 
 class ILPSolver(object):
-    def __solve_inplace(self, service_id, sla_id, path="."):
+    @classmethod
+    def __solve_ILP(cls, service_id, path):
         '''
         __solve without rewriting intermedia files
         :return: a mapping
@@ -65,11 +66,10 @@ class ILPSolver(object):
                         node = session.query(Node).filter(Node.name == matches[0][0]).one()
                         snode_id = matches[0][1]
                         service_node_id = session.query("ServiceNode.id").filter(
-                            and_(ServiceNode.sla_id == sla_id, ServiceNode.service_id == service_id,
+                            and_(ServiceNode.service_id == service_id,
                                  ServiceNode.name == snode_id)).one()[0]
                         nodeMapping = NodeMapping(node_id=node.id, service_node_id=service_node_id,
-                                                  service_id=service_id,
-                                                  sla_id=sla_id)
+                                                  service_id=service_id)
                         nodes_sols.append(nodeMapping)
 
                         continue
@@ -87,17 +87,15 @@ class ILPSolver(object):
                     edge = session.query(Edge).filter(or_(and_(Edge.node_1 == node_1, Edge.node_2 == node_2),
                                                           and_(Edge.node_1 == node_2, Edge.node_2 == node_1))).one()
                     snode_1 = session.query(ServiceNode).filter(
-                        and_(ServiceNode.sla_id == sla_id, ServiceNode.service_id == service_id,
-                             ServiceNode.name == snode_1)).one()
+                        and_(ServiceNode.service_id == service_id, ServiceNode.name == snode_1)).one()
                     snode_2 = session.query(ServiceNode).filter(
-                        and_(ServiceNode.sla_id == sla_id, ServiceNode.service_id == service_id,
-                             ServiceNode.name == snode_2)).one()
+                        and_(ServiceNode.service_id == service_id, ServiceNode.name == snode_2)).one()
                     sedge_id = session.query(ServiceEdge.id).filter(
                         and_(ServiceEdge.node_1_id == snode_1.id, ServiceEdge.node_2_id == snode_2.id,
-                             ServiceEdge.service_id == service_id, ServiceEdge.sla_id == sla_id)).one()[0]
+                             ServiceEdge.service_id == service_id)).one()[0]
 
-                    edgeMapping = EdgeMapping(edge_id=edge.id, serviceEdge_id=sedge_id)
-                    edges_sol.append(edgeMapping)
+                    edge_mapping = EdgeMapping(edge_id=edge.id, serviceEdge_id=sedge_id)
+                    edges_sol.append(edge_mapping)
 
                 matches = re.findall("^objective value: *([0-9\.]*)$", line)
                 if (len(matches) > 0):
@@ -120,12 +118,28 @@ class ILPSolver(object):
             if os.path.isfile(f):
                 os.remove(f)
 
-    def write_service_topology(self, service, path="."):
+    @classmethod
+    def write_substrate_topology(cls, substrate, path):
+        assert path != "."
 
         if not os.path.exists(os.path.join(RESULTS_FOLDER, path)):
             os.makedirs(os.path.join(RESULTS_FOLDER, path))
 
-        service_graph = service.service_graph
+        edges_file = os.path.join(RESULTS_FOLDER, path, "substrate.edges.data")
+        nodes_file = os.path.join(RESULTS_FOLDER, path, "substrate.nodes.data")
+        with open(edges_file, 'w') as f:
+            for edge in sorted(substrate.edges, key=lambda x: x.node_1.name):
+                f.write("%s\n" % edge)
+
+        with open(nodes_file, 'w') as f:
+            for node in sorted(substrate.nodes, key=lambda x: x.name):
+                f.write("%s\n" % node)
+
+    @classmethod
+    def write_service_topology(cls, service_graph, path):
+
+        if not os.path.exists(os.path.join(RESULTS_FOLDER, path)):
+            os.makedirs(os.path.join(RESULTS_FOLDER, path))
 
         mode = "w"
 
@@ -137,8 +151,6 @@ class ILPSolver(object):
         with open(os.path.join(RESULTS_FOLDER, path, "service.nodes.data"), mode) as f:
             for snode_id, cpu, bw in service_graph.getServiceNodes():
                 f.write("%s\t\t%lf\t\t%lf\n" % (str(snode_id).ljust(20), cpu, bw))
-
-
 
                 # write constraints on CDN placement
         with open(os.path.join(RESULTS_FOLDER, path, "CDN.nodes.data"), mode) as f:
@@ -174,15 +186,24 @@ class ILPSolver(object):
                 f.write("%s %s %s\n" % (apath, s1, s2))
 
     def solve(self, service, substrate):
+        '''
+        try to map the provided service on the substrate
+        :param service:
+        :param substrate:
+        :return: a mapping or None in case of Failure
+        '''
         path = str(service.id)
         session = Session()
-        self.write_service_topology(service, path=path)
-        substrate.write(path)
-        session.flush()
-        mapping = self.__solve_inplace(service_id=service.id, sla_id=service.sla_id, path=path, )
+        ILPSolver.write_substrate_topology(substrate, path=path)
+        ILPSolver.write_service_topology(service.service_graph, path=path)
+        mapping = self.__solve_ILP(service_id=service.id, path=path)
 
-        service.mapping = mapping
         if mapping is not None:
+            service.mapping = mapping
+            session.add(service)
             mapping.substrate = substrate
+            mapping.service = service
             session.add(mapping)
-        session.flush()
+            session.add(service)
+            session.flush()
+        return mapping

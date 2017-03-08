@@ -153,6 +153,7 @@ class Service(Base):
         session.add(self)
         session.flush()
 
+        #print("%s"%self.service_graph)
         # copy stuff from the service_graph down to the Service itself for solving
         for node, cpu, bw in self.service_graph.getServiceNodes():
             node = ServiceNode(name=node, cpu=cpu, sla_id=self.sla.id, bw=bw)
@@ -176,11 +177,11 @@ class Service(Base):
         session.add(self)
         session.flush()
 
-        self.__solve(path=str(self.id))
+        self.__solve()
 
         session.flush()
 
-    def __solve(self, path=".", use_heuristic=True, reopt=False):
+    def __solve(self):
         """
         Solve the service according to specs
         :return: nothing, service.mapping may be initialized with an actual possible mapping

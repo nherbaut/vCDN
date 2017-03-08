@@ -8,6 +8,10 @@ class ServiceGraph:
         self.delay_routes = delay_routes
         self.delay = delay
 
+    def __str__(self):
+        return "%s"%self.nx_service_graph.edge
+
+
     def compute_service_topo(self, substrate, mapped_start_nodes, mapped_cdn_nodes, vhg_count, vcdn_count, delay,
                              hint_node_mappings=None):
         raise NotImplementedError("Must override methodB")

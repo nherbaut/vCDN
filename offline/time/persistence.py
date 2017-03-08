@@ -86,14 +86,11 @@ class NodeMapping(Base):
     __tablename__ = "NodeMapping"
     id = Column(Integer, primary_key=True, autoincrement=True)
     node_id = Column(Integer, ForeignKey('Node.id'))
-    sla_id = Column(Integer, ForeignKey('Sla.id'))
     service_node_id = Column(Integer, ForeignKey('ServiceNode.id'))
     service_id = Column(Integer, ForeignKey('Service.id'))
     mapping_id = Column(Integer, ForeignKey('Mapping.id'))
-
     mapping = relationship("Mapping", cascade="save-update")
     service = relationship("Service", cascade="save-update")
-    sla = relationship("Sla", cascade="save-update")
     service_node = relationship('ServiceNode', cascade="save-update")
     node = relationship('Node', cascade="save-update")
 

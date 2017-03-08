@@ -10,6 +10,7 @@ from offline.core.combinatorial import get_node_clusters, get_vhg_cdn_mapping
 from offline.core.service_topo import AbstractServiceTopoGenerator, get_nodes_by_type
 from offline.core.topo_instance import ServiceGraph
 from offline.pricing.generator import get_vmg_calculator, get_vcdn_calculator
+from offline.time.persistence import Session
 
 
 class HeuristicServiceTopoGenerator(AbstractServiceTopoGenerator):
@@ -17,9 +18,37 @@ class HeuristicServiceTopoGenerator(AbstractServiceTopoGenerator):
         super(HeuristicServiceTopoGenerator, self).__init__(sla, vhg_count, vcdn_count)
         self.solver = solver
 
-    def compute_service_topo(self, substrate, mapped_start_nodes, mapped_cdn_nodes, vhg_count, vcdn_count, delay,
-                             hint_node_mappings=None):
+    def compute_service_topos(self, substrate, mapped_start_nodes, mapped_cdn_nodes, vhg_count, vcdn_count, delay):
 
+        session = Session()
+        service_graphs_partial = self.__compute_service_topos(substrate, mapped_start_nodes, mapped_cdn_nodes,
+                                                              vhg_count,
+                                                              vcdn_count, delay,
+                                                              None)
+
+        for service_graph_partial in service_graphs_partial:
+            from offline.core.service import Service
+            dummy_service = Service(service_graph_partial, self.sla, self.solver)
+            session.add(dummy_service)
+            session.flush()
+            mapping = self.solver.solve(service=dummy_service, substrate=substrate)
+            if mapping is not None:
+                yield self.__compute_service_topos(substrate, mapped_start_nodes, mapped_cdn_nodes, vhg_count,
+                                                   vcdn_count, delay, mapping.node_mappings)
+
+    def __compute_service_topos(self, substrate, mapped_start_nodes, mapped_cdn_nodes, vhg_count, vcdn_count, delay,
+                                hint_node_mappings=None):
+        '''
+
+        :param substrate:
+        :param mapped_start_nodes:
+        :param mapped_cdn_nodes:
+        :param vhg_count:
+        :param vcdn_count:
+        :param delay:
+        :param hint_node_mappings:
+        :return: a service_graph ServiceGraph that contains the service to embed
+        '''
         if vhg_count is None:
             vhg_count = len(mapped_start_nodes)
         else:

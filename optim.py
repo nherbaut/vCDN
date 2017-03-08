@@ -81,7 +81,7 @@ args = parser.parse_args()
 if args.disable_embedding:
     rs, su = clean_and_create_experiment(args.topo, 0)
 
-    su.write(RESULTS_FOLDER)
+
     if args.json:
         topo = su.get_json()
         if args.b64:

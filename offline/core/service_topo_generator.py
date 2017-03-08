@@ -1,6 +1,5 @@
 import collections
 import copy
-import sys
 
 import networkx as nx
 from networkx import shortest_path
@@ -15,17 +14,13 @@ class IsomorphicServiceException(BaseException):
 
 
 class FullServiceTopoGenerator(AbstractServiceTopoGenerator):
-    def __init__(self, sla, vhg_count, vcdn_count, hint_node_mappings=None,disable_isomorph_check=False):
+    def __init__(self, sla, vhg_count, vcdn_count, hint_node_mappings=None, disable_isomorph_check=False):
         self.disable_isomorph_check = disable_isomorph_check
         super(FullServiceTopoGenerator, self).__init__(sla, vhg_count, vcdn_count, hint_node_mappings)
 
+    def compute_service_topos(self, substrate, mapped_start_nodes, mapped_cdn_nodes, vhg_count, vcdn_count, delay):
 
-    def compute_service_topo(self, substrate, mapped_start_nodes, mapped_cdn_nodes, vhg_count, vcdn_count, delay,
-                             hint_node_mappings=None):
-
-
-        res=[]
-
+        accepted_service_graphs = []
 
         vhg_count = min(len(mapped_start_nodes), vhg_count)
         vcdn_count = min(vcdn_count, vhg_count)
@@ -66,52 +61,50 @@ class FullServiceTopoGenerator(AbstractServiceTopoGenerator):
 
         services = []
 
-
-
         for t in edges_sets:
             try:
-                serviceT = copy.deepcopy(service_graph)
+                service_graph_clone = copy.deepcopy(service_graph)
                 for edge in t:
-                    serviceT.add_edge(edge[0], edge[1])
+                    service_graph_clone.add_edge(edge[0], edge[1])
 
-                for node, degree in list(serviceT.degree().items()):
+                for node, degree in list(service_graph_clone.degree().items()):
                     if degree == 0:
-                        serviceT.remove_node(node)
+                        service_graph_clone.remove_node(node)
 
                 str_rep = "-".join(
-                    sorted(["%s_%s" % (t[0], t[1].get("mapping", "NA")) for t in serviceT.nodes(data=True)]))
+                    sorted(["%s_%s" % (t[0], t[1].get("mapping", "NA")) for t in service_graph_clone.nodes(data=True)]))
                 # print str_rep
-                #sys.stdout.write("o")
-                #sys.stdout.flush()
+                # sys.stdout.write("o")
+                # sys.stdout.flush()
                 if not self.disable_isomorph_check:
                     for s in services:
                         if "-".join(sorted(
                                 ["%s_%s" % (t[0], t[1].get("mapping", "NA")) for t in s.nodes(data=True)])) == str_rep:
-                            if nx.is_isomorphic(s, serviceT, equal_nodes):
-                                #sys.stdout.write("\b")
-                                #sys.stdout.flush()
+                            if nx.is_isomorphic(s, service_graph_clone, equal_nodes):
+                                # sys.stdout.write("\b")
+                                # sys.stdout.flush()
                                 raise IsomorphicServiceException()
 
-                #sys.stdout.write("\bO")
-                #sys.stdout.flush()
+                # sys.stdout.write("\bO")
+                # sys.stdout.flush()
 
-                services.insert(0, serviceT)
+                services.insert(0, service_graph_clone)
 
-                self.propagate_bandwidth(serviceT, mapped_start_nodes=mapped_start_nodes)
+                self.propagate_bandwidth(service_graph_clone, mapped_start_nodes=mapped_start_nodes)
 
                 # assign CPU according to Bandwidth
-                for vhg in get_nodes_by_type("VHG", serviceT):
-                    serviceT.node[vhg]["cpu"] = vmg_calc(serviceT.node[vhg]["bandwidth"])
+                for vhg in get_nodes_by_type("VHG", service_graph_clone):
+                    service_graph_clone.node[vhg]["cpu"] = vmg_calc(service_graph_clone.node[vhg]["bandwidth"])
 
-                for vhg in get_nodes_by_type("VCDN", serviceT):
-                    serviceT.node[vhg]["cpu"] = vcdn_calc(serviceT.node[vhg]["bandwidth"])
+                for vhg in get_nodes_by_type("VCDN", service_graph_clone):
+                    service_graph_clone.node[vhg]["cpu"] = vcdn_calc(service_graph_clone.node[vhg]["bandwidth"])
 
                 delay_path = {}
                 delay_route = collections.defaultdict(lambda: [])
-                for vcdn in get_nodes_by_type("VCDN", serviceT):
-                    for s in get_nodes_by_type("S", serviceT):
+                for vcdn in get_nodes_by_type("VCDN", service_graph_clone):
+                    for s in get_nodes_by_type("S", service_graph_clone):
                         try:
-                            sp = shortest_path(serviceT, s, vcdn)
+                            sp = shortest_path(service_graph_clone, s, vcdn)
                             key = "_".join(sp)
                             delay_path[key] = delay
                             for i in range(len(sp) - 1):
@@ -120,18 +113,12 @@ class FullServiceTopoGenerator(AbstractServiceTopoGenerator):
                         except:
                             continue
                 # logging.debug("so far, %d services" % len(services))
-                res.append(ServiceGraph(serviceT, delay_path, delay_route, delay))
 
+                accepted_service_graphs.append(service_graph_clone)
+                yield [ServiceGraph(service_graph_clone, delay_path, delay_route, delay)]
 
             except IsomorphicServiceException as e:
                 pass
-
-        #sys.stdout.write("\n%d/%d possible services for vhg=%d, vcdn=%d, s=%d, cdn=%d\n" % (            len(res),len(edges_sets),vhg_count, vcdn_count, len(mapped_start_nodes), len(mapped_cdn_nodes)))
-        #for line in sorted([",".join(sorted([n for n in serviceT.nx_service_graph.nodes()])) + "\t" + ",".join(sorted(["%s-%s" % (e[0], e[1]) for e in serviceT.nx_service_graph.edges()])) for serviceT in res]):
-        #    print line
-        return res
-
-
 
 
 def equal_nodes(node1, node2):
@@ -144,8 +131,6 @@ def equal_nodes(node1, node2):
 
     if (node1["name"] == node2["name"]) or ((node1["type"] == node2["type"]) and (
                     node1["type"] == "VHG" or node1["type"] == "VCDN")):
-        #print("%s is equal to %s" % (node1["name"], node2["name"]))
         return True
     else:
-        #print("%s is NOT equal to %s" % (node1["name"], node2["name"]))
         return False

@@ -18,7 +18,7 @@ class Mapping(Base):
     __tablename__ = 'Mapping'
     id = Column(Integer, primary_key=True, autoincrement=True)
 
-    service_id = Column(Integer, ForeignKey('Service.id'), nullable=False)
+    service_id = Column(Integer, ForeignKey('Service.id'), nullable=True)
     substrate_id = Column(Integer, ForeignKey('Substrate.id'))
     service = relationship("Service", cascade="save-update", back_populates="mapping")
 
