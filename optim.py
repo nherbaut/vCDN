@@ -79,7 +79,7 @@ parser.add_argument('--base64', help='display json results in base64', dest="b64
 args = parser.parse_args()
 
 if args.disable_embedding:
-    rs, su = clean_and_create_experiment(args.topo, 0)
+    rs, su = clean_and_create_experiment(args.topo, args.seed)
 
 
     if args.json:
