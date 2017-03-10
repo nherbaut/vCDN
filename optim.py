@@ -11,7 +11,7 @@ import sys
 from argparse import RawTextHelpFormatter
 
 from offline.time.plottingDB import plotsol_from_db
-from offline.tools.api import clean_and_create_experiment, optimize_sla, create_sla, generate_sla_nodes
+from offline.tools.api import clean_and_create_experiment, create_sla, generate_sla_nodes, optimize_sla_benchmark
 
 # LOGGING CONFIGURATION
 root = logging.getLogger()
@@ -23,8 +23,8 @@ ch.setFormatter(formatter)
 root.addHandler(ch)
 
 
-def compute_mapping(substrate_topology, start_mapped_nodes, cdn_mapped_nodes, service_bandwidth_demand, vhg_count,
-                    vcdn_count, is_automatic_mode, disable_heuristic, seed):
+def handle_embedding(substrate_topology, start_mapped_nodes, cdn_mapped_nodes, service_bandwidth_demand, vhg_count,
+                     vcdn_count, is_automatic_mode, disable_heuristic, seed):
     '''
 
     :param substrate_topology:
@@ -45,14 +45,15 @@ def compute_mapping(substrate_topology, start_mapped_nodes, cdn_mapped_nodes, se
     start_nodes, cdn_nodes = generate_sla_nodes(su, start_mapped_nodes, cdn_mapped_nodes, rs)
 
     # from the mapped node, generate the SLA
-    sla = create_sla(start_nodes, cdn_nodes, service_bandwidth_demand, su=su, rs=rs)
+    sla = create_sla(start_nodes, cdn_nodes, service_bandwidth_demand, su=su)
 
     # compute the best mapping
-    service, count_embedding = optimize_sla(sla, vhg_count=vhg_count,
-                                            vcdn_count=vcdn_count,
-                                            automatic=is_automatic_mode, use_heuristic=not disable_heuristic)
+    winner_service, count_embedding = optimize_sla_benchmark(sla, vhg_count=vhg_count,
+                                                             vcdn_count=vcdn_count,
+                                                             automatic=is_automatic_mode,
+                                                             use_heuristic=not disable_heuristic)
 
-    return service, count_embedding
+    return winner_service, count_embedding
 
 
 def handle_no_embedding(topo, seed, dest_folder, is_json_requested, is_plot_requested):
@@ -145,9 +146,9 @@ if args.disable_embedding:
                         is_plot_requested=args.plot)
 else:
 
-    service, count_candidates = compute_mapping(args.topo, args.start, args.cdn, args.sourcebw, args.vhg, args.vcdn,
-                                                args.auto,
-                                                args.disable_heuristic, args.seed)
+    service, count_candidates = handle_embedding(args.topo, args.start, args.cdn, args.sourcebw, args.vhg, args.vcdn,
+                                                 args.auto,
+                                                 args.disable_heuristic, args.seed)
     # if a mapping is available
     if service.mapping is not None:
         if args.json:

@@ -34,11 +34,17 @@ class ServiceGraph:
     def get_cdn(self):
         return get_nodes_by_type("CDN", self.nx_service_graph)
 
-    def get_Starters(self):
+    def get_starters(self):
+        return get_nodes_by_type("S", self.nx_service_graph)
+
+    def set_node_mapping(self,service_node_name,phyisical_node_name):
+        self.nx_service_graph.node[service_node_name]["mapping"]=phyisical_node_name
+
+    def get_starters_data(self):
         return [(s, self.nx_service_graph.node[s]["mapping"], self.nx_service_graph.node[s]["bandwidth"]) for s in
                 get_nodes_by_type("S", self.nx_service_graph)]
 
-    def get_CDN(self):
+    def get_CDN_data(self):
         return [(s, self.nx_service_graph.node[s]["mapping"], self.nx_service_graph.node[s]["bandwidth"]) for s in
                 get_nodes_by_type("CDN", self.nx_service_graph)]
 
@@ -91,7 +97,7 @@ class ServiceGraph:
         '''
         res = []
         for path in self.delay_paths:
-            res.append(path)
+            res.append((path, self.delay))
 
         return res
 
@@ -105,5 +111,18 @@ class ServiceGraph:
         for path, segments in list(self.delay_routes.items()):
             for segment in segments:
                 res.append((path, segment[0], segment[1]))
+
+        return res
+
+    def dump_delay_edge_dict(self):
+        '''
+        for each edge on the service graph, gives a delay such that the e2e delay can be achieved
+        :return: {(sn1,sn2):delay}
+        '''
+        res = dict()
+        for path2, delay in self.dump_delay_paths():
+            hops = [(sn1, sn2) for path, sn1, sn2 in self.dump_delay_routes() if path == path2]
+            for sn11, sn22 in hops:
+                res[(sn11, sn22)] = min(delay / len(hops), res.get((sn11, sn22), 999999))
 
         return res

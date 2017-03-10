@@ -206,7 +206,7 @@ class Service(Base):
         """
         self.solver.solve(self, self.sla.substrate)
         if self.mapping is None:
-            logging.warning("mapping failed for slas %s" % (" ".join(str(sla.id) for sla in self.slas)))
+            logging.warning("mapping failed for sla %s" % self.sla.id)
 
     def __compute_vhg_vcdn_assignment__(self):
 

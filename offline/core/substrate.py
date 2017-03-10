@@ -133,22 +133,26 @@ class Substrate(Base):
             raise ValueError("not a valid topology spec %s" % str(specs))
 
     @classmethod
-    def from_service_graph(cls, g):
+    def from_service_graph(cls, service_graph):
 
-        nodes = [Node(name=str(n), cpu_capacity=n["cpu"]) for n in g.nodes()]
+        g = service_graph.nx_service_graph
+        nodes = [Node(name=str(n[0]), cpu_capacity=n[1]["cpu"]) for n in g.nodes(data=True)]
+        hops_delays_dict = service_graph.dump_delay_edge_dict()
 
         edges = [Edge
-                 (node_1=next(node for node in nodes if node.name == str(e[0])),
-                  node_2=next(node for node in nodes if node.name == str(e[1])),
-                  bandwidth=e["bw"],
-                  delay=e["delay"]
-                  )
-                 for e in g.edges()
+                 (node_1=next(node for node in nodes if node.name == str(node1)),
+                  node_2=next(node for node in nodes if node.name == str(node2)),
+                  bandwidth=data["bandwidth"],
+                  delay=hops_delays_dict.get((str(node1), str(node2)), 0))
+                 for node1, node2, data in g.edges(data=True)
                  ]
 
+        session=Session()
         session.add_all(edges)
         session.add_all(nodes)
         session.flush()
+
+        return cls(edges, nodes)
 
     @classmethod
     def fromLinks(cls, specs):

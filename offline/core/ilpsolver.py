@@ -7,7 +7,7 @@ from jinja2 import Environment, PackageLoader
 from sqlalchemy.orm.exc import NoResultFound
 
 from ..core.mapping import Mapping
-from ..time.persistence import Session, NodeMapping, EdgeMapping, Node
+from ..time.persistence import Session, NodeMapping, EdgeMapping
 
 OPTIM_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../optim')
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
@@ -35,6 +35,12 @@ class ILPSolver(object):
         # copy template to target folder
         with open(os.path.join(RESULTS_FOLDER, path, "optim.zpl"), "w") as f:
             f.write(template_optim.render(dir=os.path.join(RESULTS_FOLDER, path), pricing_dir=PRICING_FOLDER))
+
+        # debug script
+        with open(os.path.join(RESULTS_FOLDER, path, "debug.sh"), "w") as f:
+            f.write(template_optim_debug.render(dir=os.path.join(RESULTS_FOLDER, path), pricing_dir=PRICING_FOLDER))
+
+        os.chmod(os.path.join(RESULTS_FOLDER, path, "debug.sh"), 0o711)
 
         # with open(os.path.join(RESULTS_FOLDER, path, "debug.sh"), "w") as f:
         #    f.write(template_optim_debug.render(dir=os.path.join(RESULTS_FOLDER, path), pricing_dir=PRICING_FOLDER))
@@ -64,7 +70,8 @@ class ILPSolver(object):
                 matches = re.findall("^x\$(.*)\$([^ \t]+) +([^ \t]+)", line)
                 if (len(matches) > 0):
                     try:
-                        node = session.query(Node).filter(Node.name == matches[0][0]).one()
+                        node = next(x for x in service.sla.substrate.nodes if x.name == matches[0][0])
+
                         snode_id = matches[0][1]
                         service_node = next(x for x in service.serviceNodes if x.name == snode_id)
 
@@ -151,12 +158,12 @@ class ILPSolver(object):
 
                 # write constraints on CDN placement
         with open(os.path.join(RESULTS_FOLDER, path, "CDN.nodes.data"), mode) as f:
-            for node, mapping, bw in service_graph.get_CDN():
+            for node, mapping, bw in service_graph.get_CDN_data():
                 f.write("%s %s\n" % (node, mapping))
 
         # write constraints on starter placement
         with open(os.path.join(RESULTS_FOLDER, path, "starters.nodes.data"), mode) as f:
-            for s, mapping, bw in service_graph.get_Starters():
+            for s, mapping, bw in service_graph.get_starters_data():
                 f.write("%s %s %lf\n" % (s, mapping, bw))
 
         # write the names of the VHG Nodes
@@ -173,8 +180,8 @@ class ILPSolver(object):
 
         with open(os.path.join(RESULTS_FOLDER, path, "service.path.delay.data"), "w") as f:
 
-            for apath in service_graph.dump_delay_paths():
-                f.write("%s %lf\n" % (apath, service_graph.delay))
+            for apath, delay in service_graph.dump_delay_paths():
+                f.write("%s %lf\n" % (apath, delay))
 
         # write e2e delay constraint
         with open(os.path.join(RESULTS_FOLDER, path, "service.path.data"), "w") as f:
@@ -189,7 +196,7 @@ class ILPSolver(object):
         :param substrate:
         :return: a mapping or None in case of Failure
         '''
-        path = str(int(round(time.time() * 1000)))
+        path = os.path.join("ILP", str(int(round(time.time() * 1000))))
 
         ILPSolver.write_substrate_topology(substrate, path=path)
         ILPSolver.write_service_topology(service.service_graph, path=path)

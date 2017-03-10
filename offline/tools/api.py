@@ -8,11 +8,12 @@ from multiprocessing.pool import ThreadPool
 
 import numpy as np
 from numpy.random import RandomState
+from sqlalchemy.orm.session import make_transient
 
-from ..core.ilpsolver import ILPSolver
-from ..core.service import Service
 from ..core.full_service_gaph_generator import FullServiceGraphGenerator
+from ..core.ilpsolver import ILPSolver
 from ..core.reduced_service_graph_generator import HeuristicServiceGraphGenerator
+from ..core.service import Service
 from ..core.sla import Sla, SlaNodeSpec
 from ..core.sla import weighted_shuffle
 from ..core.substrate import Substrate
@@ -83,20 +84,18 @@ def clean_and_create_experiment(topo=('file', ('Geant2012.graphml', '10000')), s
 
 def embbed_service(args):
     session = Session()
-
     service_graph, sla_id = args
     sla = session.query(Sla).filter(Sla.id == sla_id).one()
     service = Service(service_graph, sla, solver=ILPSolver())
     service.solve()
     global candidate_count
     candidate_count += 1
-
     return service
 
 
-def create_sla(starts, cdns, sourcebw, topo=None, su=None, rs=None, seed=0):
+def create_sla(starts, cdns, sourcebw, topo=None, su=None, seed=0):
     if su is None:
-        rs, su = clean_and_create_experiment(topo, seed)
+        _, su = clean_and_create_experiment(topo, seed)
 
     nodes_names = [n.name for n in su.nodes]
     session = Session()
@@ -136,6 +135,10 @@ def create_sla(starts, cdns, sourcebw, topo=None, su=None, rs=None, seed=0):
 
 
 class ServiceGraphGeneratorFactory:
+    '''
+    A factory to ease the creation of servie graph
+    '''
+
     def __init__(self, sla, automatic=True, vhg_count=None, vcdn_count=None):
         self.sla = sla
         self.automatic = automatic
@@ -222,3 +225,63 @@ def optimize_sla(sla, vhg_count=None, vcdn_count=None,
         return winner, candidate_count
     else:
         raise ValueError("failed to compute valide mapping")
+
+
+def create_adhoc_sla(sla, service_graph):
+    session = Session()
+    su = Substrate.from_service_graph(service_graph)
+    for mapped_node in service_graph.get_cdn()+service_graph.get_starters():
+        service_graph.set_node_mapping(mapped_node,mapped_node)
+    session.add(su)
+    session.expunge(sla)
+    make_transient(sla)
+    sla.substrate = su
+    sla.id = None
+    session.add(sla)
+    session.flush()
+
+    return sla
+
+
+def optimize_sla_benchmark(sla, vhg_count=None, vcdn_count=None,
+                           automatic=True, use_heuristic=True, isomorph_check=True,
+                           max_vhg_count=10, max_vcdn_count=100, solver=ILPSolver()):
+    factory = ServiceGraphGeneratorFactory(sla, automatic, vhg_count=vhg_count, vcdn_count=vcdn_count)
+    if use_heuristic:
+        generators = factory.get_reduced_class_generator(solver=solver, max_vhg_count=max_vhg_count,
+                                                         max_vcdn_count=max_vcdn_count)
+    else:
+        if isomorph_check:
+            generators = factory.get_full_class_generator_filtered()
+        else:
+            generators = factory.get_full_class_generator()
+
+    candidates_param = [(topo, sla.id) for generator in generators for topo in generator.get_service_topologies()]
+
+    #candidates_param = [(topo, create_adhoc_sla(sla, topo).id) for topo, sla in candidates_param]
+    #candidates_param = [(topo, create_adhoc_sla(sla,topo).id) for generator in generators for topo in generator.get_service_topologies()]
+    logging.debug("%d candidate " % len(candidates_param))
+
+    # sys.stdout.write("\n\t Service to embed :%d\n" % len(candidates_param))
+
+    # print("%d param to optimize" % len(candidates_param))
+    # pool = ThreadPool(multiprocessing.cpu_count() - 1)
+    # sys.stdout.write("\n\t Embedding services:%d\n" % len(candidates_param))
+    # services = pool.map(embbed_service, candidates_param)
+
+    services = [embbed_service(param) for param in candidates_param]
+    # sys.stdout.write(" done!\n")
+
+    services = [x for x in services if x.mapping is not None]
+    services = sorted(services, key=lambda x: x.mapping.objective_function, )
+
+    for service in services:
+        logging.debug(
+            "%d %lf %d %d" % (service.id, service.mapping.objective_function, service.service_graph.get_vhg_count(),
+                              service.service_graph.get_vcdn_count()))
+
+    if len(services) > 0:
+        winner = services[0]
+        return winner, candidate_count
+    else:
+        raise ValueError("failed to compute valid mapping")
