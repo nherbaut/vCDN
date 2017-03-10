@@ -5,10 +5,10 @@ from itertools import tee
 
 import networkx as nx
 import numpy.random
-from sqlalchemy.schema import Table
 from haversine import haversine
 from networkx.readwrite import json_graph
 from pygraphml import GraphMLParser
+from sqlalchemy.schema import Table
 
 from ..time.persistence import *
 
@@ -133,10 +133,22 @@ class Substrate(Base):
             raise ValueError("not a valid topology spec %s" % str(specs))
 
     @classmethod
-    def __fromJson(cls, specs):
-        json = specs
+    def from_service_graph(cls, g):
 
-        json_graph
+        nodes = [Node(name=str(n), cpu_capacity=n["cpu"]) for n in g.nodes()]
+
+        edges = [Edge
+                 (node_1=next(node for node in nodes if node.name == str(e[0])),
+                  node_2=next(node for node in nodes if node.name == str(e[1])),
+                  bandwidth=e["bw"],
+                  delay=e["delay"]
+                  )
+                 for e in g.edges()
+                 ]
+
+        session.add_all(edges)
+        session.add_all(nodes)
+        session.flush()
 
     @classmethod
     def fromLinks(cls, specs):

@@ -9,13 +9,14 @@ import shutil
 import subprocess
 import sys
 from argparse import RawTextHelpFormatter
+import shutil
 
 from offline.time.plottingDB import plotsol_from_db
 from offline.tools.api import clean_and_create_experiment, optimize_sla, create_sla, generate_sla_nodes
 
+#LOGGING CONFIGURATION
 root = logging.getLogger()
 root.setLevel(logging.DEBUG)
-
 ch = logging.StreamHandler(sys.stderr)
 ch.setLevel(logging.DEBUG)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -23,13 +24,37 @@ ch.setFormatter(formatter)
 root.addHandler(ch)
 
 
+def handle_no_embedding(topo, seed, dest_folder, is_json_requested, is_plot_requested):
+    rs, su = clean_and_create_experiment(topo, seed)
+
+    if is_json_requested: #dumps json to stdout (base64 encoded)
+        topo = su.get_json()
+        if args.b64:
+            sys.stdout.write(base64.b64encode(json.dumps(topo)))
+        else:
+            sys.stdout.write(json.dumps(topo))
+        sys.stdout.flush()
+
+    if is_plot_requested: #display the plot with external image viewer
+        plotsol_from_db(service_link_linewidth=5, net=True, substrate=su)
+        subprocess.Popen(
+            ["neato", os.path.join(RESULTS_FOLDER, "./substrate.dot"), "-Tsvg", "-o",
+             os.path.join(args.dest_folder, "service_graph.svg")]).wait()
+        source_path = os.path.normpath(os.path.join(RESULTS_FOLDER, "./substrate.dot"))
+        dest_path = os.path.normpath(os.path.join(dest_folder, "substrate.dot"))
+        if source_path != dest_path:
+            shutil.copy(os.path.join(RESULTS_FOLDER, "./substrate.dot"), )
+        subprocess.Popen(["eog", os.path.join(dest_folder, "service_graph.svg")]).wait()
+
+
+# utility function for params
 def unpack(first, *rest):
     return first, rest
 
 
 def valid_topo(topo_spec):
     name, spec = unpack(*topo_spec.split(","))
-    return (name, spec)
+    return name, spec
 
 
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'offline/results')
@@ -78,31 +103,10 @@ parser.add_argument('--base64', help='display json results in base64', dest="b64
 
 args = parser.parse_args()
 
+# no embedding ==> just senting the topology infos
 if args.disable_embedding:
-    rs, su = clean_and_create_experiment(args.topo, args.seed)
-
-
-    if args.json:
-        topo = su.get_json()
-        if args.b64:
-            sys.stdout.write(base64.b64encode(json.dumps(topo)))
-        else:
-            sys.stdout.write(json.dumps(topo))
-        sys.stdout.flush()
-    if args.plot:
-        plotsol_from_db(service_link_linewidth=5, net=True, substrate=su)
-        subprocess.Popen(
-            ["neato", os.path.join(RESULTS_FOLDER, "./substrate.dot"), "-Tsvg", "-o",
-             os.path.join(args.dest_folder, "service_graph.svg")]).wait()
-        source_path = os.path.normpath(os.path.join(RESULTS_FOLDER, "./substrate.dot"))
-        dest_path = os.path.normpath(os.path.join(args.dest_folder, "substrate.dot"))
-        if source_path != dest_path:
-            shutil.copy(os.path.join(RESULTS_FOLDER, "./substrate.dot"), )
-        subprocess.Popen(["eog", os.path.join(args.dest_folder, "service_graph.svg")]).wait()
-
-
-
-
+    handle_no_embedding(args.topo, args.seed, args.dest_folder, is_json_requested=args.json,
+                        is_plot_requested=args.plot)
 else:
 
     if args.auto is False and (args.vhg is None or args.vcdn is None):
@@ -110,20 +114,23 @@ else:
     elif args.auto is True and (args.vhg is not None or args.vcdn is not None):
         parser.error("can't specify vhg count of vcdn count in --auto mode")
 
+    # get the random generator and the substrate
     rs, su = clean_and_create_experiment(args.topo, args.seed)
 
+    # generate the mapped nodes according to the stubstrate and the args
     start_nodes, cdn_nodes = generate_sla_nodes(su, args.start, args.cdn, rs)
 
+    # from the mapped node, generate the SLA
     sla = create_sla(start_nodes, cdn_nodes, args.sourcebw, su=su, rs=rs)
+
+    # compute the best mapping
     service, count_embedding = optimize_sla(sla, vhg_count=args.vhg,
                                             vcdn_count=args.vcdn,
                                             automatic=args.auto, use_heuristic=not args.disable_heuristic)
-
-
+    # if a mapping is available
     if service.mapping is not None:
-
         if args.json:
-            output = {}
+            output = dict()
             output["price"] = {'total_price': service.mapping.objective_function, "vhg_count": service.vhg_count,
                                "vcdn_count": service.vcdn_count}
             output["mapping"] = service.mapping.to_json()
@@ -144,18 +151,23 @@ else:
                 service.service_graph.get_vcdn_count())))
 
         if args.plot:
-            dest_folder = os.path.join(RESULTS_FOLDER, str(service.id))
+            plot_folder=os.path.join(RESULTS_FOLDER, "plot")
+            #cleanup plot folder
+            if os.path.exists(plot_folder):
+                shutil.rmtree(plot_folder)
+            os.makedirs(plot_folder)
+            print("%s"%plot_folder)
+
+
             plotsol_from_db(service_link_linewidth=5, net=False, service=service,
-                            dest_folder=dest_folder)
+                            dest_folder=plot_folder)
             subprocess.Popen(
-                ["neato", os.path.join(dest_folder, "./substrate.dot"), "-Tsvg", "-o",
+                ["neato", os.path.join(plot_folder, "./substrate.dot"), "-Tsvg", "-o",
                  os.path.join(args.dest_folder, "service_graph.svg")]).wait()
             subprocess.Popen(["eog", os.path.join(args.dest_folder, "service_graph.svg")]).wait()
 
-            shutil.copy(os.path.join(dest_folder, "./substrate.dot"), os.path.join(args.dest_folder, "substrate.dot"))
+            shutil.copy(os.path.join(plot_folder, "./substrate.dot"), os.path.join(args.dest_folder, "substrate.dot"))
         exit(0)
-
-
     else:
         if args.json:
             sys.stdout.write(base64.b64encode(json.dumps({"msg": "failed to compute any mapping"})))
@@ -165,3 +177,6 @@ else:
         else:
             print("failed to compute mapping")
             exit(-1)
+
+
+

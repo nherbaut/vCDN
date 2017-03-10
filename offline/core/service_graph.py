@@ -1,5 +1,6 @@
 from offline.core.service_graph_generator import get_nodes_by_type
 
+
 class ServiceGraph:
     '''
     thin wrapper around a nx graph that implement custom service graph features
@@ -10,15 +11,6 @@ class ServiceGraph:
         self.delay_paths = delay_path
         self.delay_routes = delay_routes
         self.delay = delay
-
-    def to_substrate(self):
-        '''
-        generate a detached substrate object that perfectly fit this service graph
-        :return:
-        '''
-
-
-
 
     def __str__(self):
         return "%s" % self.nx_service_graph.edge

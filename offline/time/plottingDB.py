@@ -143,17 +143,15 @@ def plot_results_bw(res, min_plot, max_plot, id):
 
 
 def plotsol_from_db(**kwargs):
-    edges = []
-    nodesdict = {}
     cdn_candidates = []
     starters_candiates = []
-    nodesSol = []
-    edgesSol = []
+    nodes_sol = []
+    edges_sol = []
     net = kwargs["net"]
     service = kwargs.get("service", None)
     dest_folder = kwargs.get("dest_folder", RESULTS_FOLDER)
     if service is not None:
-        su = service.slas[0].substrate
+        su = service.sla.substrate
     else:
         su = kwargs["substrate"]
 
@@ -164,8 +162,8 @@ def plotsol_from_db(**kwargs):
 
         cdn_candidates = mapping.dump_cdn_node_mapping()
         starters_candiates = mapping.dump_starter_node_mapping()
-        nodesSol = mapping.dump_node_mapping()
-        edgesSol = mapping.dump_edge_mapping()
+        nodes_sol = mapping.dump_node_mapping()
+        edges_sol = mapping.dump_edge_mapping()
 
     edges = [(edge.node_1.name, edge.node_2.name, edge.bandwidth, edge.delay) for edge in su.edges]
 
@@ -173,9 +171,6 @@ def plotsol_from_db(**kwargs):
 
     with open(os.path.join(dest_folder, "substrate.dot"), 'w') as f:
         f.write("graph{rankdir=LR;overlap = voronoi;\n\n\n\n subgraph{\n\n\n")
-        # f.write("graph{rankdir=LR;\n\n\n\n subgraph{\n\n\n")
-
-
 
         for node in list(nodesdict.items()):
             if node[0] in starters_candiates:
@@ -190,7 +185,7 @@ def plotsol_from_db(**kwargs):
         for edge in edges:
             f.write("\"%s\"--\"%s\" [penwidth=\"%d\",fontsize=15,len=2,label=\" \" id=\"%s--%s\",delay=%s,bw=%lf];\n " % (edge[0], edge[1], 3,edge[0], edge[1],edge[3],edge[2]))
 
-        for node in nodesSol:
+        for node in nodes_sol:
             if "S0" not in node[1]:
                 f.write("\"%s\"--\"%s\" [color=blue,len=1.5,label=\" \"  ];\n" % node)
                 name = node[1]
@@ -213,7 +208,7 @@ def plotsol_from_db(**kwargs):
         f.write("}")
 
         f.write("\nsubgraph{\n edge[color=chartreuse,weight=0];\n")
-        for edge in edgesSol:
+        for edge in edges_sol:
             if "S0" not in edge[2]:
                 f.write("\"%s\"--\"%s\" [ style=dashed,label=\"%s&#8594;%s\",fontcolor=blue3 ,fontsize=12,penwidth=%d];\n " % (
                     edge + (kwargs["service_link_linewidth"],)))
