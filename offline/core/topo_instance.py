@@ -2,6 +2,10 @@ from offline.core.service_topo import get_nodes_by_type
 
 
 class ServiceGraph:
+    '''
+    thin wrapper around a nx graph that implement custom service graph features
+    '''
+
     def __init__(self, nx_service_graph, delay_path, delay_routes, delay):
         self.nx_service_graph = nx_service_graph
         self.delay_paths = delay_path
@@ -9,8 +13,7 @@ class ServiceGraph:
         self.delay = delay
 
     def __str__(self):
-        return "%s"%self.nx_service_graph.edge
-
+        return "%s" % self.nx_service_graph.edge
 
     def compute_service_topo(self, substrate, mapped_start_nodes, mapped_cdn_nodes, vhg_count, vcdn_count, delay,
                              hint_node_mappings=None):
@@ -39,11 +42,11 @@ class ServiceGraph:
         return [(s, self.nx_service_graph.node[s]["mapping"], self.nx_service_graph.node[s]["bandwidth"]) for s in
                 get_nodes_by_type("CDN", self.nx_service_graph)]
 
-    def getServiceNodes(self):
+    def get_service_nodes(self):
         for node in self.nx_service_graph.nodes(data=True):
             yield node[0], node[1].get("cpu", 0), node[1].get("bandwidth", 0)
 
-    def getServiceCDNNodes(self):
+    def get_service_cdn_nodes(self):
         cdns = self.get_cdn()
         for node in self.nx_service_graph.nodes(data=True):
             if node[0] in cdns:
@@ -60,7 +63,7 @@ class ServiceGraph:
                 res.append((start, end, edge.get("bandwidth", 0)))
         return res
 
-    def getServiceCDNEdges(self):
+    def get_service_CDN_edges(self):
         '''
 
         :return: start, end, edge["bandwidth"]
@@ -71,7 +74,7 @@ class ServiceGraph:
                 edge = self.nx_service_graph[start][end]
                 yield start, end, edge.get("bandwidth", 0)
 
-    def getServiceEdges(self):
+    def get_service_edges(self):
         '''
 
         :return: start, end, edge["bandwidth"]

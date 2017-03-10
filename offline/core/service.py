@@ -5,6 +5,43 @@ import sys
 from collections import Counter
 from multiprocessing.pool import ThreadPool
 
+import traceback
+from multiprocessing.pool import Pool
+import multiprocessing
+
+# Shortcut to multiprocessing's logger
+def error(msg, *args):
+    return multiprocessing.get_logger().error(msg, *args)
+
+class LogExceptions(object):
+    def __init__(self, callable):
+        self.__callable = callable
+
+    def __call__(self, *args, **kwargs):
+        try:
+            result = self.__callable(*args, **kwargs)
+
+        except Exception as e:
+            # Here we add some debugging help. If multiprocessing's
+            # debugging is on, it will arrange to log the traceback
+            error(traceback.format_exc())
+            # Re-raise the original exception so the Pool worker can
+            # clean up
+            raise
+
+        # It was fine, give a normal answer
+        return result
+
+class LoggingPool(ThreadPool):
+    def map(self, func, iterable, chunksize=None):
+        '''
+        Equivalent of `map()` builtin
+        '''
+        assert self._state == RUN
+        print("coucoucoucou")
+        return ThreadPool.map_async(self,LogExceptions(func), iterable, chunksize).get()
+
+
 from sqlalchemy import Column, Integer, ForeignKey
 from sqlalchemy import and_
 from sqlalchemy.orm import relationship
@@ -24,7 +61,8 @@ def f(x):
     slasIDS, vhg_count, vcdn_count, use_heuristic = x
     service = Service(slasIDS=slasIDS, serviceSpecFactory=ServiceSpecFactory, vhg_count=vhg_count,
                       vcdn_count=vcdn_count, use_heuristic=use_heuristic)
-    session.add(service)
+
+    # session.add(service)
     return service.id
 
 
@@ -99,7 +137,7 @@ class Service(Base):
     def get_optimal(cls, slas, max_vhg_count=10, max_vcdn_count=10,
                     threads=multiprocessing.cpu_count() - 1, remove_service=True, use_heuristic=True):
         session = Session()
-        threadpool = ThreadPool(threads)
+        threadpool = LoggingPool(threads)
         thread_param = []
 
         max_vhg_count = min(max_vhg_count,
@@ -146,40 +184,39 @@ class Service(Base):
         return best_service
 
     def __init__(self, service_graph, sla, solver=ILPSolver()):
+        print("toptop")
         session = Session()
+
         self.sla = sla
         self.service_graph = service_graph
         self.solver = solver
         session.add(self)
         session.flush()
 
-        #print("%s"%self.service_graph)
+        # print("%s"%self.service_graph)
         # copy stuff from the service_graph down to the Service itself for solving
-        for node, cpu, bw in self.service_graph.getServiceNodes():
-            node = ServiceNode(name=node, cpu=cpu, sla_id=self.sla.id, bw=bw)
-            session.add(node)
-            self.serviceNodes.append(node)
-
-        for node_1, node_2, bandwidth in self.service_graph.getServiceEdges():
+        for node, cpu, bw in self.service_graph.get_service_nodes():
+            assert self.id is not None
+            snode = ServiceNode(name=node, cpu=cpu, sla_id=self.sla.id, bw=bw, service_id=self.id)
+            session.add(snode)
+        for node_1, node_2, bandwidth in self.service_graph.get_service_edges():
             snode_1 = session.query(ServiceNode).filter(
                 and_(ServiceNode.sla_id == self.sla.id, ServiceNode.service_id == self.id,
                      ServiceNode.name == node_1)).one()
-
             snode_2 = session.query(ServiceNode).filter(
                 and_(ServiceNode.sla_id == self.sla.id, ServiceNode.service_id == self.id,
                      ServiceNode.name == node_2)).one()
 
-            sedge = ServiceEdge(node_1=snode_1, node_2=snode_2, bandwidth=bandwidth, sla_id=self.sla.id)
+            sedge = ServiceEdge(node_1=snode_1, node_2=snode_2, bandwidth=bandwidth, sla_id=self.sla.id,
+                                service_id=self.id)
             session.add(sedge)
-            self.serviceEdges.append(sedge)
-        session.flush()
 
-        session.add(self)
         session.flush()
 
         self.__solve()
 
         session.flush()
+        print("~toptop")
 
     def __solve(self):
         """

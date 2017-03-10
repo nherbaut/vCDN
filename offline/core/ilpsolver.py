@@ -28,6 +28,7 @@ class ILPSolver(object):
         '''
 
         session = Session()
+
         if not os.path.exists(os.path.join(RESULTS_FOLDER, path)):
             os.makedirs(os.path.join(RESULTS_FOLDER, path))
 
@@ -149,7 +150,7 @@ class ILPSolver(object):
                 f.write("%s\t\t%s\t\t%lf\n" % (start.ljust(20), end, bw))
 
         with open(os.path.join(RESULTS_FOLDER, path, "service.nodes.data"), mode) as f:
-            for snode_id, cpu, bw in service_graph.getServiceNodes():
+            for snode_id, cpu, bw in service_graph.get_service_nodes():
                 f.write("%s\t\t%lf\t\t%lf\n" % (str(snode_id).ljust(20), cpu, bw))
 
                 # write constraints on CDN placement
@@ -194,16 +195,18 @@ class ILPSolver(object):
         '''
         path = str(service.id)
         session = Session()
+
         ILPSolver.write_substrate_topology(substrate, path=path)
         ILPSolver.write_service_topology(service.service_graph, path=path)
         mapping = self.__solve_ILP(service_id=service.id, path=path)
 
         if mapping is not None:
             service.mapping = mapping
-            session.add(service)
+            #session.add(service)
             mapping.substrate = substrate
             mapping.service = service
             session.add(mapping)
-            session.add(service)
+            #session.add(service)
             session.flush()
+
         return mapping
