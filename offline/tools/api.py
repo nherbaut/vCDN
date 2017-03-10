@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import logging
 import multiprocessing
@@ -53,7 +53,7 @@ def generate_sla_nodes(su, start, cdn, rs):
                 nodes_by_degree.pop(sn, None)
             size = rs.randint(int(match[0][0]), int(match[0][1]) + 1)
             cdn_nodes = weighted_shuffle(list(nodes_by_degree.keys()),
-                                         -1 * np.array(nodes_by_degree.values()), size, rs)
+                                         -1.0 * np.array(list(nodes_by_degree.values())), size, rs)
             logging.debug("random cdn nodes: %s" % " ".join(cdn_nodes))
 
     if start_nodes is None:
@@ -82,13 +82,12 @@ def clean_and_create_experiment(topo=('file', ('Geant2012.graphml', '10000')), s
 
 
 def embbed_service(args):
-    service_graph, sla = args
     session = Session()
-    service = Service(service_graph, sla, solver=ILPSolver())
-    session.add(service)
-    session.flush()
-    service.solve()
 
+    service_graph, sla_id = args
+    sla = session.query(Sla).filter(Sla.id == sla_id).one()
+    service = Service(service_graph, sla, solver=ILPSolver())
+    service.solve()
     global candidate_count
     candidate_count += 1
 
@@ -197,7 +196,7 @@ def optimize_sla(sla, vhg_count=None, vcdn_count=None,
         else:
             generators = factory.get_full_class_generator()
 
-    candidates_param = [(topo, sla) for generator in generators for topo in generator.get_service_topologies()]
+    candidates_param = [(topo, sla.id) for generator in generators for topo in generator.get_service_topologies()]
     logging.debug("%d candidate " % len(candidates_param))
 
     # sys.stdout.write("\n\t Service to embed :%d\n" % len(candidates_param))
@@ -207,7 +206,7 @@ def optimize_sla(sla, vhg_count=None, vcdn_count=None,
     # sys.stdout.write("\n\t Embedding services:%d\n" % len(candidates_param))
     services = pool.map(embbed_service, candidates_param)
 
-    #services = [embbed_service(param) for param in candidates_param]
+    # services = [embbed_service(param) for param in candidates_param]
     # sys.stdout.write(" done!\n")
 
     services = [x for x in services if x.mapping is not None]

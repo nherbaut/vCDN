@@ -1,13 +1,13 @@
 import os
 import re
 import subprocess
+import time
 
 from jinja2 import Environment, PackageLoader
-from sqlalchemy import or_, and_
 from sqlalchemy.orm.exc import NoResultFound
 
 from ..core.mapping import Mapping
-from ..time.persistence import Session, Edge, ServiceEdge, ServiceNode, NodeMapping, EdgeMapping, Node
+from ..time.persistence import Session, NodeMapping, EdgeMapping, Node
 
 OPTIM_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../optim')
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
@@ -21,7 +21,7 @@ template_optim_debug = env.get_template('batch-debug.sh')
 
 class ILPSolver(object):
     @classmethod
-    def __solve_ILP(cls, service_id, path):
+    def __solve_ILP(cls, service, path):
         '''
         solve without rewriting intermedia files
         :return: a mapping
@@ -66,13 +66,10 @@ class ILPSolver(object):
                     try:
                         node = session.query(Node).filter(Node.name == matches[0][0]).one()
                         snode_id = matches[0][1]
-                        service_node_id = session.query("ServiceNode.id").filter(
-                            and_(ServiceNode.service_id == service_id,
-                                 ServiceNode.name == snode_id)).one()[0]
-                        nodeMapping = NodeMapping(node_id=node.id, service_node_id=service_node_id,
-                                                  service_id=service_id)
-                        nodes_sols.append(nodeMapping)
+                        service_node = next(x for x in service.serviceNodes if x.name == snode_id)
 
+                        node_mapping = NodeMapping(node=node, service_node=service_node, service=service)
+                        nodes_sols.append(node_mapping)
                         continue
                     except NoResultFound as e:
                         print(e)
@@ -82,28 +79,28 @@ class ILPSolver(object):
                 if (len(matches) > 0):
                     node_1, node_2, snode_1, snode_2, value = matches[0]
 
-                    node_1 = session.query(Node).filter(Node.name == node_1).one()
-                    node_2 = session.query(Node).filter(Node.name == node_2).one()
+                    node_1 = next(x for x in service.sla.substrate.nodes if x.name == node_1)
+                    node_2 = next(x for x in service.sla.substrate.nodes if x.name == node_2)
 
-                    edge = session.query(Edge).filter(or_(and_(Edge.node_1 == node_1, Edge.node_2 == node_2),
-                                                          and_(Edge.node_1 == node_2, Edge.node_2 == node_1))).one()
-                    snode_1 = session.query(ServiceNode).filter(
-                        and_(ServiceNode.service_id == service_id, ServiceNode.name == snode_1)).one()
-                    snode_2 = session.query(ServiceNode).filter(
-                        and_(ServiceNode.service_id == service_id, ServiceNode.name == snode_2)).one()
-                    sedge_id = session.query(ServiceEdge.id).filter(
-                        and_(ServiceEdge.node_1_id == snode_1.id, ServiceEdge.node_2_id == snode_2.id,
-                             ServiceEdge.service_id == service_id)).one()[0]
+                    edge = next(
+                        x for x in service.sla.substrate.edges if (x.node_1 == node_1 and x.node_2 == node_2) or (
+                            x.node_1 == node_2 and x.node_2 == node_1))
 
-                    edge_mapping = EdgeMapping(edge_id=edge.id, serviceEdge_id=sedge_id)
+                    snode_1 = next(x for x in service.serviceNodes if x.name == snode_1)
+                    snode_2 = next(x for x in service.serviceNodes if x.name == snode_2)
+                    sedge = next(
+                        x for x in service.serviceEdges if x.node_1_id == snode_1.id and x.node_2_id == snode_2.id)
+
+                    edge_mapping = EdgeMapping(edge=edge, serviceEdge=sedge)
                     edges_sol.append(edge_mapping)
+                    continue
 
                 matches = re.findall("^objective value: *([0-9\.]*)$", line)
-                if (len(matches) > 0):
+                if len(matches) > 0:
                     objective_function = float(matches[0])
                     continue
-            mapping = Mapping(node_mappings=nodes_sols, edge_mappings=edges_sol, objective_function=objective_function)
-            return mapping
+        mapping = Mapping(node_mappings=nodes_sols, edge_mappings=edges_sol, objective_function=objective_function)
+        return mapping
 
     @classmethod
     def cleanup(cls):
@@ -138,7 +135,6 @@ class ILPSolver(object):
 
     @classmethod
     def write_service_topology(cls, service_graph, path):
-
         if not os.path.exists(os.path.join(RESULTS_FOLDER, path)):
             os.makedirs(os.path.join(RESULTS_FOLDER, path))
 
@@ -193,20 +189,15 @@ class ILPSolver(object):
         :param substrate:
         :return: a mapping or None in case of Failure
         '''
-        path = str(service.id)
-        session = Session()
+        path = str(int(round(time.time() * 1000)))
 
         ILPSolver.write_substrate_topology(substrate, path=path)
         ILPSolver.write_service_topology(service.service_graph, path=path)
-        mapping = self.__solve_ILP(service_id=service.id, path=path)
+        mapping = self.__solve_ILP(service, path=path)
 
         if mapping is not None:
             service.mapping = mapping
-            #session.add(service)
             mapping.substrate = substrate
             mapping.service = service
-            session.add(mapping)
-            #session.add(service)
-            session.flush()
 
         return mapping

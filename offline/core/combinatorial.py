@@ -56,7 +56,7 @@ def generate_problem_combinaisons(problem):
         return [[problem[0]]]
     elif problem[1] == 2:  # solving the pb for 2
 
-        for i in range(1, problem[0] / 2 + 1):
+        for i in range(1, int(problem[0] / 2 + 1)):
             res.append([i, problem[0] - i])
         return res
     else:

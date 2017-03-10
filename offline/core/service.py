@@ -183,8 +183,6 @@ class Service(Base):
         return best_service
 
     def __init__(self, service_graph, sla, solver=ILPSolver()):
-        print("toptop")
-
         self.sla = sla
         self.service_graph = service_graph
         self.solver = solver
@@ -194,8 +192,9 @@ class Service(Base):
             snode = ServiceNode(name=node, cpu=cpu, sla_id=self.sla.id, bw=bw)
             self.serviceNodes.append(snode)
         for node_1, node_2, bandwidth in self.service_graph.get_service_edges():
-            snode_1 = filter(lambda x: x.sla_id == self.sla.id and x.name == node_1, self.serviceNodes)[0]
-            snode_2 = filter(lambda x: x.sla_id == self.sla.id and x.name == node_2, self.serviceNodes)[0]
+            snode_1 = next(x for x in self.serviceNodes if x.sla_id == self.sla.id and x.name == node_1)
+            snode_2 = next(x for x in self.serviceNodes if x.sla_id == self.sla.id and x.name == node_2)
+
             sedge = ServiceEdge(node_1=snode_1, node_2=snode_2, bandwidth=bandwidth, sla_id=self.sla.id,
                                 service_id=self.id)
             self.serviceEdges.append(sedge)
@@ -205,12 +204,8 @@ class Service(Base):
         Solve the service according to specs
         :return: nothing, service.mapping may be initialized with an actual possible mapping
         """
-        session = Session()
-
         self.solver.solve(self, self.sla.substrate)
-        if self.mapping is not None:
-            session.add(self.mapping)
-        else:
+        if self.mapping is None:
             logging.warning("mapping failed for slas %s" % (" ".join(str(sla.id) for sla in self.slas)))
 
     def __compute_vhg_vcdn_assignment__(self):
