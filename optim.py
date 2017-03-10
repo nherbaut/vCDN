@@ -9,12 +9,11 @@ import shutil
 import subprocess
 import sys
 from argparse import RawTextHelpFormatter
-import shutil
 
 from offline.time.plottingDB import plotsol_from_db
 from offline.tools.api import clean_and_create_experiment, optimize_sla, create_sla, generate_sla_nodes
 
-#LOGGING CONFIGURATION
+# LOGGING CONFIGURATION
 root = logging.getLogger()
 root.setLevel(logging.DEBUG)
 ch = logging.StreamHandler(sys.stderr)
@@ -24,10 +23,42 @@ ch.setFormatter(formatter)
 root.addHandler(ch)
 
 
+def compute_mapping(substrate_topology, start_mapped_nodes, cdn_mapped_nodes, service_bandwidth_demand, vhg_count,
+                    vcdn_count, is_automatic_mode, disable_heuristic, seed):
+    '''
+
+    :param substrate_topology:
+    :param start_mapped_nodes:
+    :param cdn_mapped_nodes:
+    :param service_bandwidth_demand:
+    :param vhg_count:
+    :param vcdn_count:
+    :param is_automatic_mode:
+    :param disable_heuristic:
+    :param seed:
+    :return: best service and the # of candidates examined
+    '''
+    # get the random generator and the substrate
+    rs, su = clean_and_create_experiment(substrate_topology, seed)
+
+    # generate the mapped nodes according to the stubstrate and the args
+    start_nodes, cdn_nodes = generate_sla_nodes(su, start_mapped_nodes, cdn_mapped_nodes, rs)
+
+    # from the mapped node, generate the SLA
+    sla = create_sla(start_nodes, cdn_nodes, service_bandwidth_demand, su=su, rs=rs)
+
+    # compute the best mapping
+    service, count_embedding = optimize_sla(sla, vhg_count=vhg_count,
+                                            vcdn_count=vcdn_count,
+                                            automatic=is_automatic_mode, use_heuristic=not disable_heuristic)
+
+    return service, count_embedding
+
+
 def handle_no_embedding(topo, seed, dest_folder, is_json_requested, is_plot_requested):
     rs, su = clean_and_create_experiment(topo, seed)
 
-    if is_json_requested: #dumps json to stdout (base64 encoded)
+    if is_json_requested:  # dumps json to stdout (base64 encoded)
         topo = su.get_json()
         if args.b64:
             sys.stdout.write(base64.b64encode(json.dumps(topo)))
@@ -35,7 +66,7 @@ def handle_no_embedding(topo, seed, dest_folder, is_json_requested, is_plot_requ
             sys.stdout.write(json.dumps(topo))
         sys.stdout.flush()
 
-    if is_plot_requested: #display the plot with external image viewer
+    if is_plot_requested:  # display the plot with external image viewer
         plotsol_from_db(service_link_linewidth=5, net=True, substrate=su)
         subprocess.Popen(
             ["neato", os.path.join(RESULTS_FOLDER, "./substrate.dot"), "-Tsvg", "-o",
@@ -103,30 +134,20 @@ parser.add_argument('--base64', help='display json results in base64', dest="b64
 
 args = parser.parse_args()
 
+if args.auto is False and (args.vhg is None or args.vcdn is None):
+    parser.error('please specify --vhg and --vcdn args if not automatic calculation')
+elif args.auto is True and (args.vhg is not None or args.vcdn is not None):
+    parser.error("can't specify vhg count of vcdn count in --auto mode")
+
 # no embedding ==> just senting the topology infos
 if args.disable_embedding:
     handle_no_embedding(args.topo, args.seed, args.dest_folder, is_json_requested=args.json,
                         is_plot_requested=args.plot)
 else:
 
-    if args.auto is False and (args.vhg is None or args.vcdn is None):
-        parser.error('please specify --vhg and --vcdn args if not automatic calculation')
-    elif args.auto is True and (args.vhg is not None or args.vcdn is not None):
-        parser.error("can't specify vhg count of vcdn count in --auto mode")
-
-    # get the random generator and the substrate
-    rs, su = clean_and_create_experiment(args.topo, args.seed)
-
-    # generate the mapped nodes according to the stubstrate and the args
-    start_nodes, cdn_nodes = generate_sla_nodes(su, args.start, args.cdn, rs)
-
-    # from the mapped node, generate the SLA
-    sla = create_sla(start_nodes, cdn_nodes, args.sourcebw, su=su, rs=rs)
-
-    # compute the best mapping
-    service, count_embedding = optimize_sla(sla, vhg_count=args.vhg,
-                                            vcdn_count=args.vcdn,
-                                            automatic=args.auto, use_heuristic=not args.disable_heuristic)
+    service, count_candidates = compute_mapping(args.topo, args.start, args.cdn, args.sourcebw, args.vhg, args.vcdn,
+                                                args.auto,
+                                                args.disable_heuristic, args.seed)
     # if a mapping is available
     if service.mapping is not None:
         if args.json:
@@ -147,17 +168,16 @@ else:
                 f.write("%d,%d\n" % (service.service_graph.get_vhg_count(), service.service_graph.get_vcdn_count()))
 
             print(("Successfull mapping w price: \t %lf in \t %d embedding \t winner is %d (%d,%d)" % (
-                service.mapping.objective_function, count_embedding, service.id, service.service_graph.get_vhg_count(),
+                service.mapping.objective_function, count_candidates, service.id, service.service_graph.get_vhg_count(),
                 service.service_graph.get_vcdn_count())))
 
         if args.plot:
-            plot_folder=os.path.join(RESULTS_FOLDER, "plot")
-            #cleanup plot folder
+            plot_folder = os.path.join(RESULTS_FOLDER, "plot")
+            # cleanup plot folder
             if os.path.exists(plot_folder):
                 shutil.rmtree(plot_folder)
             os.makedirs(plot_folder)
-            print("%s"%plot_folder)
-
+            print("%s" % plot_folder)
 
             plotsol_from_db(service_link_linewidth=5, net=False, service=service,
                             dest_folder=plot_folder)
@@ -177,6 +197,3 @@ else:
         else:
             print("failed to compute mapping")
             exit(-1)
-
-
-
