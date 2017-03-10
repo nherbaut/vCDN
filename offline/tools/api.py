@@ -11,8 +11,8 @@ from numpy.random import RandomState
 
 from ..core.ilpsolver import ILPSolver
 from ..core.service import Service
-from ..core.service_topo_generator import FullServiceTopoGenerator
-from ..core.service_topo_heuristic import HeuristicServiceTopoGenerator
+from ..core.full_service_gaph_generator import FullServiceGraphGenerator
+from ..core.reduced_service_graph_generator import HeuristicServiceGraphGenerator
 from ..core.sla import Sla, SlaNodeSpec
 from ..core.sla import weighted_shuffle
 from ..core.substrate import Substrate
@@ -147,14 +147,14 @@ class ServiceGraphGeneratorFactory:
     def get_reduced_class_generator(self, solver, max_vhg_count=10, max_vcdn_count=10):
 
         if self.automatic is False:
-            return [HeuristicServiceTopoGenerator(sla=self.sla, vhg_count=self.vhg_count, vcdn_count=self.vcdn_count,
-                                                  solver=solver)]
+            return [HeuristicServiceGraphGenerator(sla=self.sla, vhg_count=self.vhg_count, vcdn_count=self.vcdn_count,
+                                                   solver=solver)]
         else:
             topo_containers = []
             for vhg_count in range(1, min(max_vhg_count, len(self.sla.get_start_nodes())) + 1):
                 for vcdn_count in range(1, min(max_vcdn_count, vhg_count) + 1):
-                    topo_container = HeuristicServiceTopoGenerator(sla=self.sla, vhg_count=vhg_count,
-                                                                   vcdn_count=vcdn_count, solver=solver)
+                    topo_container = HeuristicServiceGraphGenerator(sla=self.sla, vhg_count=vhg_count,
+                                                                    vcdn_count=vcdn_count, solver=solver)
                     topo_containers.append(topo_container)
             return topo_containers
 
@@ -162,23 +162,23 @@ class ServiceGraphGeneratorFactory:
         if self.automatic is True:
             return self.__get_full_class_generator_automatic(disable_isomorph_check=True)
         else:
-            return [FullServiceTopoGenerator(sla=self.sla, vhg_count=self.vhg_count, vcdn_count=self.vcdn_count,
-                                             disable_isomorph_check=True)]
+            return [FullServiceGraphGenerator(sla=self.sla, vhg_count=self.vhg_count, vcdn_count=self.vcdn_count,
+                                              disable_isomorph_check=True)]
 
     def get_full_class_generator_filtered(self, ):
         if self.automatic is True:
             return self.__get_full_class_generator_automatic(disable_isomorph_check=False)
         else:
-            return [FullServiceTopoGenerator(sla=self.sla, vhg_count=self.vhg_count, vcdn_count=self.vcdn_count,
-                                             disable_isomorph_check=False)]
+            return [FullServiceGraphGenerator(sla=self.sla, vhg_count=self.vhg_count, vcdn_count=self.vcdn_count,
+                                              disable_isomorph_check=False)]
 
     def __get_full_class_generator_automatic(self, disable_isomorph_check=True):
         topo_containers = []
         for vhg_count in range(1, len(self.sla.get_start_nodes()) + 1):
             for vcdn_count in range(1, vhg_count + 1):
-                topo_container = FullServiceTopoGenerator(sla=self.sla, vhg_count=vhg_count,
-                                                          vcdn_count=vcdn_count,
-                                                          disable_isomorph_check=disable_isomorph_check)
+                topo_container = FullServiceGraphGenerator(sla=self.sla, vhg_count=vhg_count,
+                                                           vcdn_count=vcdn_count,
+                                                           disable_isomorph_check=disable_isomorph_check)
                 topo_containers.append(topo_container)
         return topo_containers
 

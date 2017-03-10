@@ -45,7 +45,7 @@ class LoggingPool(ThreadPool):
 from sqlalchemy import Column, Integer, ForeignKey
 from sqlalchemy.orm import relationship
 
-from offline.core.service_topo_heuristic import HeuristicServiceTopoGenerator
+from offline.core.reduced_service_graph_generator import HeuristicServiceGraphGenerator
 from ..core.ilpsolver import ILPSolver
 from ..core.sla import Sla, SlaNodeSpec
 from ..time.persistence import ServiceNode, ServiceEdge, Base
@@ -243,9 +243,9 @@ class Service(Base):
         merged_new = self.get_merged_sla(self.slas)
 
         # create the service topology from the new merged sla
-        self.service_graph = HeuristicServiceTopoGenerator(sla=merged_new, vhg_count=self.vhg_count,
-                                                           vcdn_count=self.vcdn_count,
-                                                           hint_node_mappings=self.mapping.node_mappings)
+        self.service_graph = HeuristicServiceGraphGenerator(sla=merged_new, vhg_count=self.vhg_count,
+                                                            vcdn_count=self.vcdn_count,
+                                                            hint_node_mappings=self.mapping.node_mappings)
 
         # retreive info on the new service.
         edges_from_new_topo = {(node_1, node_2): bw for node_1, node_2, bw in self.service_graph.dump_edges()}

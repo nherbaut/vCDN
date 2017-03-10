@@ -4,8 +4,8 @@ import copy
 import networkx as nx
 from networkx import shortest_path
 
-from offline.core.service_topo import AbstractServiceTopoGenerator, get_all_possible_edges, get_nodes_by_type
-from offline.core.topo_instance import ServiceGraph
+from offline.core.service_graph_generator import AbstractServiceGraphGenerator, get_all_possible_edges, get_nodes_by_type
+from offline.core.service_graph import ServiceGraph
 from offline.pricing.generator import get_vmg_calculator, get_vcdn_calculator
 
 
@@ -13,10 +13,10 @@ class IsomorphicServiceException(BaseException):
     pass
 
 
-class FullServiceTopoGenerator(AbstractServiceTopoGenerator):
+class FullServiceGraphGenerator(AbstractServiceGraphGenerator):
     def __init__(self, sla, vhg_count, vcdn_count, hint_node_mappings=None, disable_isomorph_check=False):
         self.disable_isomorph_check = disable_isomorph_check
-        super(FullServiceTopoGenerator, self).__init__(sla, vhg_count, vcdn_count, hint_node_mappings)
+        super(FullServiceGraphGenerator, self).__init__(sla, vhg_count, vcdn_count, hint_node_mappings)
 
     def compute_service_topos(self, substrate, mapped_start_nodes, mapped_cdn_nodes, vhg_count, vcdn_count, delay):
 

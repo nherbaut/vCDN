@@ -7,15 +7,15 @@ import networkx as nx
 from networkx import shortest_path
 
 from offline.core.combinatorial import get_node_clusters, get_vhg_cdn_mapping
-from offline.core.service_topo import AbstractServiceTopoGenerator, get_nodes_by_type
-from offline.core.topo_instance import ServiceGraph
+from offline.core.service_graph_generator import AbstractServiceGraphGenerator, get_nodes_by_type
+from offline.core.service_graph import ServiceGraph
 from offline.pricing.generator import get_vmg_calculator, get_vcdn_calculator
 from offline.time.persistence import Session
 
 
-class HeuristicServiceTopoGenerator(AbstractServiceTopoGenerator):
+class HeuristicServiceGraphGenerator(AbstractServiceGraphGenerator):
     def __init__(self, sla, vhg_count, vcdn_count, solver):
-        super(HeuristicServiceTopoGenerator, self).__init__(sla, vhg_count, vcdn_count)
+        super(HeuristicServiceGraphGenerator, self).__init__(sla, vhg_count, vcdn_count)
         self.solver = solver
 
     def compute_service_topos(self, substrate, mapped_start_nodes, mapped_cdn_nodes, vhg_count, vcdn_count, delay):

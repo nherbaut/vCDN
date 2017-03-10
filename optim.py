@@ -119,9 +119,6 @@ else:
                                             vcdn_count=args.vcdn,
                                             automatic=args.auto, use_heuristic=not args.disable_heuristic)
 
-    if os.path.exists("winner"):
-        shutil.rmtree("winner")
-    shutil.copytree(os.path.join(RESULTS_FOLDER, str(service.id)), "winner")
 
     if service.mapping is not None:
 
