@@ -49,7 +49,7 @@ parser.add_argument('--spvhg-disable', help="Disable grouping vhg by shortest pa
 
 parser.add_argument('--vhgpa-disable', help="Disable grouping vhg by shortest path", dest='vhgpa',
                     action='store_true')
-parser.add_argument("--__solve-disable", help="no try to find solution", dest='solve_disable', action='store_true')
+parser.add_argument("--solve-disable", help="no try to find solution", dest='solve_disable', action='store_true')
 
 args = parser.parse_args()
 dry = args.dry
@@ -65,7 +65,7 @@ session.add(su)
 su.write(path=RESULTS_PATH )
 
 if args.solve_disable:
-    print("Not tried to find a solution (--__solve-disable)")
+    print("Not tried to find a solution (--solve-disable)")
     print("finish")
     exit(0)
 
@@ -90,7 +90,7 @@ if service.mapping is not None:
     exit(0)
 else:
     sys.stdout.write("failure\n")
-    # mapping = __solve(service, su,allow_violations=True)
+    # mapping = solve(service, su,allow_violations=True)
     # if mapping:
     #    for index, violation in enumerate(mapping.violations,start=1):
     #        print("violation %d : %s" % (index,violation))

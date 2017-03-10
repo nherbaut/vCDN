@@ -2,16 +2,15 @@ import logging
 import multiprocessing
 import os
 import sys
+import traceback
 from collections import Counter
 from multiprocessing.pool import ThreadPool
 
-import traceback
-from multiprocessing.pool import Pool
-import multiprocessing
 
 # Shortcut to multiprocessing's logger
 def error(msg, *args):
     return multiprocessing.get_logger().error(msg, *args)
+
 
 class LogExceptions(object):
     def __init__(self, callable):
@@ -32,6 +31,7 @@ class LogExceptions(object):
         # It was fine, give a normal answer
         return result
 
+
 class LoggingPool(ThreadPool):
     def map(self, func, iterable, chunksize=None):
         '''
@@ -39,11 +39,10 @@ class LoggingPool(ThreadPool):
         '''
         assert self._state == RUN
         print("coucoucoucou")
-        return ThreadPool.map_async(self,LogExceptions(func), iterable, chunksize).get()
+        return ThreadPool.map_async(self, LogExceptions(func), iterable, chunksize).get()
 
 
 from sqlalchemy import Column, Integer, ForeignKey
-from sqlalchemy import and_
 from sqlalchemy.orm import relationship
 
 from offline.core.service_topo_heuristic import HeuristicServiceTopoGenerator
@@ -185,40 +184,23 @@ class Service(Base):
 
     def __init__(self, service_graph, sla, solver=ILPSolver()):
         print("toptop")
-        session = Session()
 
         self.sla = sla
         self.service_graph = service_graph
         self.solver = solver
-        session.add(self)
-        session.flush()
-
         # print("%s"%self.service_graph)
         # copy stuff from the service_graph down to the Service itself for solving
         for node, cpu, bw in self.service_graph.get_service_nodes():
-            assert self.id is not None
-            snode = ServiceNode(name=node, cpu=cpu, sla_id=self.sla.id, bw=bw, service_id=self.id)
-            session.add(snode)
+            snode = ServiceNode(name=node, cpu=cpu, sla_id=self.sla.id, bw=bw)
+            self.serviceNodes.append(snode)
         for node_1, node_2, bandwidth in self.service_graph.get_service_edges():
-            snode_1 = session.query(ServiceNode).filter(
-                and_(ServiceNode.sla_id == self.sla.id, ServiceNode.service_id == self.id,
-                     ServiceNode.name == node_1)).one()
-            snode_2 = session.query(ServiceNode).filter(
-                and_(ServiceNode.sla_id == self.sla.id, ServiceNode.service_id == self.id,
-                     ServiceNode.name == node_2)).one()
-
+            snode_1 = filter(lambda x: x.sla_id == self.sla.id and x.name == node_1, self.serviceNodes)[0]
+            snode_2 = filter(lambda x: x.sla_id == self.sla.id and x.name == node_2, self.serviceNodes)[0]
             sedge = ServiceEdge(node_1=snode_1, node_2=snode_2, bandwidth=bandwidth, sla_id=self.sla.id,
                                 service_id=self.id)
-            session.add(sedge)
+            self.serviceEdges.append(sedge)
 
-        session.flush()
-
-        self.__solve()
-
-        session.flush()
-        print("~toptop")
-
-    def __solve(self):
+    def solve(self):
         """
         Solve the service according to specs
         :return: nothing, service.mapping may be initialized with an actual possible mapping

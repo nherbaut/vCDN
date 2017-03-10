@@ -83,7 +83,12 @@ def clean_and_create_experiment(topo=('file', ('Geant2012.graphml', '10000')), s
 
 def embbed_service(args):
     service_graph, sla = args
+    session = Session()
     service = Service(service_graph, sla, solver=ILPSolver())
+    session.add(service)
+    session.flush()
+    service.solve()
+
     global candidate_count
     candidate_count += 1
 
@@ -201,7 +206,6 @@ def optimize_sla(sla, vhg_count=None, vcdn_count=None,
     pool = ThreadPool(multiprocessing.cpu_count() - 1)
     # sys.stdout.write("\n\t Embedding services:%d\n" % len(candidates_param))
     services = pool.map(embbed_service, candidates_param)
-
 
     #services = [embbed_service(param) for param in candidates_param]
     # sys.stdout.write(" done!\n")
