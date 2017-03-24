@@ -1,3 +1,4 @@
+import copy
 import os
 import re
 import subprocess
@@ -47,21 +48,35 @@ def save_node_mapping(substrate, service, nodes_sols, snode, node):
     nodes_sols.append(node_mapping)
 
 
-class DummySolver(object):
+class GeneticSolver(object):
     def __init__(self, rs):
         self.rs = rs
+        self.dummy_solver = DummySolver()
+
+    def solve(self, service, substrate):
+        mappings = []
+        for i in range(0, 500):
+            mappings.append(self.dummy_solver.solve(service, substrate))
+
+
+class DummySolver(object):
+    def __init__(self, rs, mapping={}):
+        self.rs = rs
+        self.mapping = mapping
 
     def solve(self, service, substrate):
 
-        service_graph = service.service_graph
+        service_graph = copy.copy(service.service_graph)
 
         starters = service_graph.get_starters_data()
 
         nodes_sols = []
         edges_sol = []
+        computed_mapping = {x[0]: x[1]["mapping"] for x in
+                            (service_graph.get_starters(data=True) + service_graph.get_cdn(data=True))}
 
         # write the mapping for pre-mapped nodes
-        for sname, snode_name, _ in starters :
+        for sname, snode_name, _ in starters:
             node = next(x for x in substrate.nodes if x.name == snode_name)
             service_node = next(x for x in service.serviceNodes if x.name == sname)
             node_mapping = NodeMapping(node=node, service_node=service_node, service=service)
@@ -79,11 +94,16 @@ class DummySolver(object):
             # while it's not mapped
             while mapped is not True:
                 result_bag = []
-                # pick random node
-                if service_graph.get_substrate_mapping(snode_name) is None:
-                    random_mapped_node = self.rs.choice(avail_node_with_enough_cpu, replace=False)
+                # if service graph does not already contain mapping (unmapped nodes for examples)
+                if computed_mapping.get(snode_name, None) is None:
+                    print("mapping for %s is NOT already known" % snode_name)
+                    hint = self.mapping.get(snode_name, None)
+                    if hint is None:
+                        # no hint=> random
+                        random_mapped_node = self.rs.choice(avail_node_with_enough_cpu, replace=False)
                 else:
-                    tnode_name = service_graph.get_substrate_mapping(snode_name)
+                    print("mapping for %s is already known" % snode_name)
+                    tnode_name = computed_mapping.get(snode_name, None)
                     random_mapped_node = next((node for node in substrate.nodes if node.name == tnode_name))
 
                 # print("random mapped node: %s" % random_mapped_node )
@@ -99,7 +119,7 @@ class DummySolver(object):
 
                     # compute the shortest path between the two nodes (mapped, and random)
                     steps = nx.shortest_path(constraints_sub, random_mapped_node.name,
-                                             service_graph.get_substrate_mapping(snode1))
+                                             computed_mapping.get(snode1, None))
                     # add each topo edge belonging to the shortest path to the mapping
                     for tnode_to_add_to_mapping1, tnode_to_add_to_mapping2 in list(zip(steps, steps[1:])):
                         em = get_edge_mapping(tnode_to_add_to_mapping1, tnode_to_add_to_mapping2, service, snode1,
@@ -110,7 +130,7 @@ class DummySolver(object):
                     mapped = True
             # update mapping info in service_graph
             for node_mapping in filter(lambda x: isinstance(x, NodeMapping), result_bag):
-                service_graph.nx_service_graph.node[node_mapping.service_node.name]["mapping"] = node_mapping.node.name
+                computed_mapping[node_mapping.service_node.name] = node_mapping.node.name
                 nodes_sols.append(node_mapping)
 
             edges_sol += filter(lambda x: isinstance(x, EdgeMapping), result_bag)
