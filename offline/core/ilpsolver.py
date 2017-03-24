@@ -54,35 +54,42 @@ class DummySolver(object):
     def solve(self, service, substrate):
 
         service_graph = service.service_graph
-        cdns = service_graph.get_CDN_data()
+
         starters = service_graph.get_starters_data()
 
         nodes_sols = []
         edges_sol = []
 
         # write the mapping for pre-mapped nodes
-        for sname, snomde_name, _ in starters + cdns:
-            node = next(x for x in substrate.nodes if x.name == snomde_name)
+        for sname, snode_name, _ in starters :
+            node = next(x for x in substrate.nodes if x.name == snode_name)
             service_node = next(x for x in service.serviceNodes if x.name == sname)
             node_mapping = NodeMapping(node=node, service_node=service_node, service=service)
             nodes_sols.append(node_mapping)
 
         avail_nodes = substrate.nodes
         # for each unmapped node
-        for snomde_name, snode_attr in [(snomde_name, snode_attr) for snomde_name, snode_attr in
-                                        (service_graph.get_vhg(data=True) + service_graph.get_vcdn(data=True))]:
+        for snode_name, snode_attr in [(snode_name, snode_attr) for snode_name, snode_attr in
+                                       (service_graph.get_vhg(data=True) + service_graph.get_vcdn(
+                                           data=True) + service_graph.get_cdn(data=True))]:
             mapped = False
-            avail_node_with_enough_cpu = sorted(list(filter(lambda x: x.cpu_capacity > snode_attr["cpu"], avail_nodes)),key=lambda x:x.name)
+            avail_node_with_enough_cpu = sorted(list(filter(lambda x: x.cpu_capacity > snode_attr["cpu"], avail_nodes)),
+                                                key=lambda x: x.name)
 
             # while it's not mapped
             while mapped is not True:
                 result_bag = []
                 # pick random node
-                random_mapped_node = self.rs.choice(avail_node_with_enough_cpu, replace=False)
-                #print("random mapped node: %s" % random_mapped_node )
-                result_bag.append(get_node_mapping(random_mapped_node, service, snomde_name))
+                if service_graph.get_substrate_mapping(snode_name) is None:
+                    random_mapped_node = self.rs.choice(avail_node_with_enough_cpu, replace=False)
+                else:
+                    tnode_name = service_graph.get_substrate_mapping(snode_name)
+                    random_mapped_node = next((node for node in substrate.nodes if node.name == tnode_name))
+
+                # print("random mapped node: %s" % random_mapped_node )
+                result_bag.append(get_node_mapping(random_mapped_node, service, snode_name))
                 # for each service node on the left of this one, supposedly mapped
-                for snode1, snode2, sedge_attr in service_graph.get_left_edges(snomde_name):
+                for snode1, snode2, sedge_attr in service_graph.get_left_edges(snode_name):
                     # remove topo edge that can handle service bw demand
                     bw = sedge_attr["bandwidth"]
                     constraints_sub = substrate.get_nxgraph().copy()
@@ -94,13 +101,12 @@ class DummySolver(object):
                     steps = nx.shortest_path(constraints_sub, random_mapped_node.name,
                                              service_graph.get_substrate_mapping(snode1))
                     # add each topo edge belonging to the shortest path to the mapping
-                    # print("@@@@@@@@@@@@@%s"%list(zip(steps, steps[1:])))
                     for tnode_to_add_to_mapping1, tnode_to_add_to_mapping2 in list(zip(steps, steps[1:])):
                         em = get_edge_mapping(tnode_to_add_to_mapping1, tnode_to_add_to_mapping2, service, snode1,
                                               snode2)
                         # print(em)
                         result_bag.append(em)
-                        #print(em)
+                        # print(em)
                     mapped = True
             # update mapping info in service_graph
             for node_mapping in filter(lambda x: isinstance(x, NodeMapping), result_bag):

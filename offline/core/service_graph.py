@@ -36,7 +36,7 @@ class ServiceGraph:
             yield left_node, node, self.nx_service_graph[left_node][node]
 
     def get_substrate_mapping(self,node):
-        return self.nx_service_graph.node[node]["mapping"]
+        return self.nx_service_graph.node[node].get("mapping",None)
 
     def get_type_from_node(self, node):
         return self.nx_service_graph.node[node]["type"]
@@ -66,8 +66,8 @@ class ServiceGraph:
     def get_vcdn(self, data=False):
         return get_nodes_by_type("VCDN", self.nx_service_graph, data)
 
-    def get_cdn(self):
-        return get_nodes_by_type("CDN", self.nx_service_graph)
+    def get_cdn(self,data=False):
+        return get_nodes_by_type("CDN", self.nx_service_graph,data)
 
     def get_starters(self):
         return get_nodes_by_type("S", self.nx_service_graph)
