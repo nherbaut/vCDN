@@ -7,7 +7,6 @@ import numpy as np
 import re
 
 
-rs = np.random.RandomState()
 
 
 class TopoDB(Topo):

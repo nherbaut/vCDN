@@ -39,9 +39,10 @@ def generate_sla_nodes(su, start, cdn, rs):
     if len(start) == 1:
         match = re.findall("RAND\(([0-9]+),([0-9]+)\)", start[0])
         if len(match) == 1:
-            nodes_by_bw = su.get_nodes_by_bw()
+            # get nodes by bandwidth, sorted
+            nodes_by_bw = sorted(su.get_nodes_by_bw().items(), key=lambda x: x[0])
             size = rs.randint(int(match[0][0]), int(match[0][1]) + 1)
-            start_nodes = weighted_shuffle(list(nodes_by_bw.keys()), list(nodes_by_bw.values()), size, rs)
+            start_nodes = weighted_shuffle([x[0] for x in nodes_by_bw], [x[1] for x in nodes_by_bw], size, rs)
             logging.debug("random start nodes: %s" % " ".join(start_nodes))
 
     cdn_nodes = None
@@ -52,9 +53,13 @@ def generate_sla_nodes(su, start, cdn, rs):
             # remove starters from possible cdn list
             for sn in start_nodes:
                 nodes_by_degree.pop(sn, None)
+
+            nodes_by_degree = sorted(nodes_by_degree.items(), key=lambda x: x[0])
             size = rs.randint(int(match[0][0]), int(match[0][1]) + 1)
-            cdn_nodes = weighted_shuffle(list(nodes_by_degree.keys()),
-                                         -1.0 * np.array(list(nodes_by_degree.values())), size, rs)
+
+            cdn_nodes = weighted_shuffle([x[0] for x in nodes_by_degree],
+                                         -1.0 * np.array([x[1] for x in nodes_by_degree]),
+                                         size, rs)
             logging.debug("random cdn nodes: %s" % " ".join(cdn_nodes))
 
     if start_nodes is None:
@@ -84,9 +89,9 @@ def clean_and_create_experiment(topo=('file', ('Geant2012.graphml', '10000')), s
 
 def embbed_service(args):
     session = Session()
-    service_graph, sla_id = args
+    service_graph, sla_id, solver = args
     sla = session.query(Sla).filter(Sla.id == sla_id).one()
-    service = Service(service_graph, sla, solver=ILPSolver())
+    service = Service(service_graph, sla, solver)
     service.solve()
     global candidate_count
     candidate_count += 1
@@ -124,7 +129,7 @@ def create_sla(starts, cdns, sourcebw, topo=None, su=None, seed=0):
 
     for cdn in cdns:
         ns = SlaNodeSpec(topoNode=session.query(Node).filter(Node.name == cdn).one(), type="cdn",
-                         attributes={"bandwidth": 1})
+                         attributes={"bandwidth": 0})
         sla_node_specs.append(ns)
 
     sla = Sla(substrate=su, delay=200, max_cdn_to_use=1, tenant_id=tenant.id, sla_node_specs=sla_node_specs)
@@ -230,8 +235,8 @@ def optimize_sla(sla, vhg_count=None, vcdn_count=None,
 def create_adhoc_sla(sla, service_graph):
     session = Session()
     su = Substrate.from_service_graph(service_graph)
-    for mapped_node in service_graph.get_cdn()+service_graph.get_starters():
-        service_graph.set_node_mapping(mapped_node,mapped_node)
+    for mapped_node in service_graph.get_cdn() + service_graph.get_starters():
+        service_graph.set_node_mapping(mapped_node, mapped_node)
     session.add(su)
     session.expunge(sla)
     make_transient(sla)
@@ -243,9 +248,9 @@ def create_adhoc_sla(sla, service_graph):
     return sla
 
 
-def optimize_sla_benchmark(sla, vhg_count=None, vcdn_count=None,
+def optimize_sla_benchmark(sla, solver, vhg_count=None, vcdn_count=None,
                            automatic=True, use_heuristic=True, isomorph_check=True,
-                           max_vhg_count=10, max_vcdn_count=100, solver=ILPSolver()):
+                           max_vhg_count=10, max_vcdn_count=100, ):
     factory = ServiceGraphGeneratorFactory(sla, automatic, vhg_count=vhg_count, vcdn_count=vcdn_count)
     if use_heuristic:
         generators = factory.get_reduced_class_generator(solver=solver, max_vhg_count=max_vhg_count,
@@ -256,10 +261,11 @@ def optimize_sla_benchmark(sla, vhg_count=None, vcdn_count=None,
         else:
             generators = factory.get_full_class_generator()
 
-    candidates_param = [(topo, sla.id) for generator in generators for topo in generator.get_service_topologies()]
+    candidates_param = [(topo, sla.id, solver) for generator in generators for topo in
+                        generator.get_service_topologies()]
 
-    #candidates_param = [(topo, create_adhoc_sla(sla, topo).id) for topo, sla in candidates_param]
-    #candidates_param = [(topo, create_adhoc_sla(sla,topo).id) for generator in generators for topo in generator.get_service_topologies()]
+    # candidates_param = [(topo, create_adhoc_sla(sla, topo).id) for topo, sla in candidates_param]
+    # candidates_param = [(topo, create_adhoc_sla(sla,topo).id) for generator in generators for topo in generator.get_service_topologies()]
     logging.debug("%d candidate " % len(candidates_param))
 
     # sys.stdout.write("\n\t Service to embed :%d\n" % len(candidates_param))

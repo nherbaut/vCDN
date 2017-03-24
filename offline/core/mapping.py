@@ -8,7 +8,6 @@ from sqlalchemy import and_
 from sqlalchemy.orm import relationship, aliased
 
 from ..time.persistence import Base, Session, Edge, Node
-from ..core.substrate import Substrate
 
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
 PRICING_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../pricing')
@@ -27,6 +26,15 @@ class Mapping(Base):
     substrate = relationship("Substrate", cascade="none")
 
     objective_function = Column(Float)
+
+    def __str__(self):
+        print("NODES")
+        for nm in self.node_mappings:
+            print(nm)
+
+        print("EDGES")
+        for em in self.edge_mappings:
+            print(em)
 
     def to_json(self):
         session = Session()
@@ -95,6 +103,9 @@ class Mapping(Base):
 
     def get_vhg_mapping(self):
         return [x for x in self.node_mappings if "VHG" in x.service_node_id]
+
+    def update_objective_function(self):
+        self.objective_function = self.get_objective_function()
 
     def get_objective_function(self):
         '''

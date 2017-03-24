@@ -13,7 +13,7 @@ from mininet.node import RemoteController, OVSSwitch
 
 from simulator.topoloader import loadTopo
 
-rs = np.random.RandomState()
+
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'offline/results')
 
 parser = argparse.ArgumentParser(description='1 iteration for solver')

@@ -44,14 +44,17 @@ class AbstractServiceGraphGenerator(object):
                 # print "\n\n"+"\n".join([str(n[0])+"->"+str(n[1]["bandwidth"]) for n in sorted(service.nodes(data=True),key=lambda x:x[0])])
 
 
-def get_nodes_by_type(type, graph):
+def get_nodes_by_type(type, graph,data=False):
     '''
 
     :param type: "VHG"
     :param graph:
     :return: ["VHG1","VHG2"]
     '''
-    return sorted([n[0] for n in graph.nodes(data=True) if n[1].get("type") == type])
+    if not data :
+        return sorted([n[0] for n in graph.nodes(data=True) if n[1].get("type") == type])
+    else:
+        return sorted([n for n in graph.nodes(data=True) if n[1].get("type") == type])
 
 
 def get_all_possible_edge_for_2_lists(left, right, all_rights_are_mandatory=True):

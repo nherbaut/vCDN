@@ -4,7 +4,6 @@ import operator
 from itertools import tee
 
 import networkx as nx
-import numpy.random
 from haversine import haversine
 from networkx.readwrite import json_graph
 from pygraphml import GraphMLParser
@@ -53,8 +52,22 @@ class Substrate(Base):
     nodes = relationship("Node", secondary=substrate_to_node, cascade="all")
     edges = relationship("Edge", secondary=substrate_to_edge, cascade="all")
 
+    def get_closest_node(self, n1, targets, weight=None):
+        '''
+
+        :param n1: a node on the substrate
+        :param targets: several other nodes on the substrate
+        :param weight: optional weight the implement the "closest" logic
+        :return: the one node amongst the targets to be the closests
+        '''
+        return \
+        min([(target, nx.shortest_path_length(self.get_nxgraph(), n1, target, weight=weight)) for target in targets],
+            key=lambda x: x[1])[0]
+
     def get_nxgraph(self):
         g = nx.Graph()
+        for node in self.nodes:
+            g.add_node(node.name, attr_dict={"cpu": node.cpu_capacity})
         for edge in self.edges:
             g.add_edge(edge.node_1.name, edge.node_2.name, attr_dict={"bandwidth": edge.bandwidth, "delay": edge.delay})
         return g
@@ -116,7 +129,7 @@ class Substrate(Base):
         return cls.fromGrid(width=width, height=height, bw=bw, delay=delay, cpu=cpu)
 
     @classmethod
-    def fromSpec(cls, specs, rs=numpy.random.RandomState()):
+    def fromSpec(cls, specs, rs):
         if specs[0] == "jsonfile":
             return cls.__fromJson(list(specs[1]))
         elif specs[0] == "grid":
@@ -147,7 +160,7 @@ class Substrate(Base):
                  for node1, node2, data in g.edges(data=True)
                  ]
 
-        session=Session()
+        session = Session()
         session.add_all(edges)
         session.add_all(nodes)
         session.flush()

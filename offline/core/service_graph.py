@@ -1,3 +1,5 @@
+import networkx as nx
+
 from offline.core.service_graph_generator import get_nodes_by_type
 
 
@@ -7,7 +9,7 @@ class ServiceGraph:
     '''
 
     def __init__(self, nx_service_graph, delay_path, delay_routes, delay):
-        self.nx_service_graph = nx_service_graph
+        self.nx_service_graph = nx_service_graph.copy()
         self.delay_paths = delay_path
         self.delay_routes = delay_routes
         self.delay = delay
@@ -19,17 +21,50 @@ class ServiceGraph:
                              hint_node_mappings=None):
         raise NotImplementedError("Must override methodB")
 
+    def get_left_nodes(self, node, data=False):
+        if not data:
+            return set(
+                [n for n in self.nx_service_graph.nodes() for item in self.nx_service_graph[n].items() if
+                 item[0] == node])
+        else:
+            return [(n, self.nx_service_graph.node[n]) for n in self.nx_service_graph.nodes() for item in
+                    self.nx_service_graph[n].items() if
+                    item[0] == node]
+
+    def get_left_edges(self, node):
+        for left_node in  self.get_left_nodes(node):
+            yield left_node, node, self.nx_service_graph[left_node][node]
+
+    def get_substrate_mapping(self,node):
+        return self.nx_service_graph.node[node]["mapping"]
+
+    def get_type_from_node(self, node):
+        return self.nx_service_graph.node[node]["type"]
+
+    @classmethod
+    def get_left_type_from_type(cls, atype):
+        if atype == "S":
+            return None
+        elif atype == "VHG":
+            return "S"
+        elif atype == "CDN":
+            return "VHG"
+        elif atype == "VCDN":
+            return "VHG"
+        else:
+            return None
+
     def get_vhg_count(self):
         return len(self.get_vhg())
 
     def get_vcdn_count(self):
         return len(self.get_vcdn())
 
-    def get_vhg(self):
-        return get_nodes_by_type("VHG", self.nx_service_graph)
+    def get_vhg(self, data=False):
+        return get_nodes_by_type("VHG", self.nx_service_graph, data)
 
-    def get_vcdn(self):
-        return get_nodes_by_type("VCDN", self.nx_service_graph)
+    def get_vcdn(self, data=False):
+        return get_nodes_by_type("VCDN", self.nx_service_graph, data)
 
     def get_cdn(self):
         return get_nodes_by_type("CDN", self.nx_service_graph)
@@ -37,10 +72,14 @@ class ServiceGraph:
     def get_starters(self):
         return get_nodes_by_type("S", self.nx_service_graph)
 
-    def set_node_mapping(self,service_node_name,phyisical_node_name):
-        self.nx_service_graph.node[service_node_name]["mapping"]=phyisical_node_name
+    def set_node_mapping(self, service_node_name, phyisical_node_name):
+        self.nx_service_graph.node[service_node_name]["mapping"] = phyisical_node_name
 
     def get_starters_data(self):
+        '''
+
+        :return: a list of tuple with (name, mapping, bandwith)
+        '''
         return [(s, self.nx_service_graph.node[s]["mapping"], self.nx_service_graph.node[s]["bandwidth"]) for s in
                 get_nodes_by_type("S", self.nx_service_graph)]
 
@@ -57,6 +96,24 @@ class ServiceGraph:
         for node in self.nx_service_graph.nodes(data=True):
             if node[0] in cdns:
                 yield node[0], node[1].get("cpu", 0)
+
+    def get_closest_node(self, n1, targets, weight=None):
+        return \
+            min([(target, nx.shortest_path_length(self.nx_service_graph, n1, target, weight=weight)) for target in
+                 targets],
+                key=lambda x: x[1])[0]
+
+    def get_max_bw_between_nodes(self, n1, n2):
+        if n1 == n2:
+            return 0
+        elif n2 in self.nx_service_graph[n1]:
+            return self.nx_service_graph[n1][n2]["bandwidth"]
+        elif n1 in self.nx_service_graph[n2]:
+            return self.nx_service_graph[n2][n1]["bandwidth"]
+        else:
+            path_nodes = nx.shortest_path(self.nx_service_graph, n1, n2)
+            return max([self.get_max_bw_between_nodes(segment[0], segment[1]) for segment in
+                        list(zip(path_nodes, path_nodes[1:]))])
 
     def dump_edges(self):
         '''

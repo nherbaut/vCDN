@@ -46,7 +46,6 @@ from sqlalchemy import Column, Integer, ForeignKey
 from sqlalchemy.orm import relationship
 
 from offline.core.reduced_service_graph_generator import HeuristicServiceGraphGenerator
-from ..core.ilpsolver import ILPSolver
 from ..core.sla import Sla, SlaNodeSpec
 from ..time.persistence import ServiceNode, ServiceEdge, Base
 from ..time.persistence import Session
@@ -182,7 +181,7 @@ class Service(Base):
 
         return best_service
 
-    def __init__(self, service_graph, sla, solver=ILPSolver()):
+    def __init__(self, service_graph, sla, solver):
         self.sla = sla
         self.service_graph = service_graph
         self.solver = solver
@@ -205,8 +204,10 @@ class Service(Base):
         :return: nothing, service.mapping may be initialized with an actual possible mapping
         """
         self.solver.solve(self, self.sla.substrate)
+
         if self.mapping is None:
             logging.warning("mapping failed for sla %s" % self.sla.id)
+
 
     def __compute_vhg_vcdn_assignment__(self):
 

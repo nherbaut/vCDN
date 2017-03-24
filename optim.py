@@ -10,6 +10,7 @@ import subprocess
 import sys
 from argparse import RawTextHelpFormatter
 
+from offline.core.ilpsolver import ILPSolver, DummySolver
 from offline.time.plottingDB import plotsol_from_db
 from offline.tools.api import clean_and_create_experiment, create_sla, generate_sla_nodes, optimize_sla_benchmark
 
@@ -24,7 +25,7 @@ root.addHandler(ch)
 
 
 def handle_embedding(substrate_topology, start_mapped_nodes, cdn_mapped_nodes, service_bandwidth_demand, vhg_count,
-                     vcdn_count, is_automatic_mode, disable_heuristic, seed):
+                     vcdn_count, is_automatic_mode, disable_heuristic, seed, solver_type):
     '''
 
     :param substrate_topology:
@@ -47,11 +48,16 @@ def handle_embedding(substrate_topology, start_mapped_nodes, cdn_mapped_nodes, s
     # from the mapped node, generate the SLA
     sla = create_sla(start_nodes, cdn_nodes, service_bandwidth_demand, su=su)
 
+    if solver_type == "dummy":
+        solver = DummySolver(rs=rs)
+    else:
+        solver = ILPSolver()
+
     # compute the best mapping
-    winner_service, count_embedding = optimize_sla_benchmark(sla, vhg_count=vhg_count,
+    winner_service, count_embedding = optimize_sla_benchmark(sla, solver, vhg_count=vhg_count,
                                                              vcdn_count=vcdn_count,
                                                              automatic=is_automatic_mode,
-                                                             use_heuristic=not disable_heuristic)
+                                                             use_heuristic=not disable_heuristic, )
 
     return winner_service, count_embedding
 
@@ -115,7 +121,7 @@ parser.add_argument('--start', metavar='S', type=str, nargs='+', help='a list of
 parser.add_argument('--cdn', metavar='CDN', type=str, nargs='+', help='a list of CDN (eg. 0505)', )
 
 parser.add_argument('--vhg', type=int, help='vhg count (eg. 2)', default=None)
-parser.add_argument('--seed', type=int, help='seed for random number generation', default=1)
+parser.add_argument('--seed', type=int, help='seed for random number generation', required=True)
 parser.add_argument('--vcdn', type=int, help='vcdn count (eg. 1)', default=None)
 parser.add_argument('--auto', dest='auto', action='store_true', help='automatic vhg vcdn count', default=False)
 
@@ -132,6 +138,7 @@ parser.add_argument('--disable-heuristic', dest="disable_heuristic", action="sto
 parser.add_argument('--dest_folder', help="destination folder for restults", default=RESULTS_FOLDER)
 parser.add_argument('--json', help='display json results in stdout', dest="json", action="store_true")
 parser.add_argument('--base64', help='display json results in base64', dest="b64", action="store_true")
+parser.add_argument('--solver_type', help="type of solver to use eg. dummy or ILP", default="ILP")
 
 args = parser.parse_args()
 
@@ -148,7 +155,7 @@ else:
 
     service, count_candidates = handle_embedding(args.topo, args.start, args.cdn, args.sourcebw, args.vhg, args.vcdn,
                                                  args.auto,
-                                                 args.disable_heuristic, args.seed)
+                                                 args.disable_heuristic, args.seed, solver_type=args.solver_type)
     # if a mapping is available
     if service.mapping is not None:
         if args.json:

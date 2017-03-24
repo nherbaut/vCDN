@@ -3,11 +3,12 @@ import re
 import subprocess
 import time
 
+import networkx as nx
 from jinja2 import Environment, PackageLoader
 from sqlalchemy.orm.exc import NoResultFound
 
 from ..core.mapping import Mapping
-from ..time.persistence import Session, NodeMapping, EdgeMapping
+from ..time.persistence import NodeMapping, EdgeMapping
 
 OPTIM_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../optim')
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
@@ -19,6 +20,106 @@ template_optim = env.get_template('optim.zpl.tpl')
 template_optim_debug = env.get_template('batch-debug.sh')
 
 
+def get_node_mapping(node, service, snode_id):
+    service_node = next(x for x in service.serviceNodes if x.name == snode_id)
+    node_mapping = NodeMapping(node=node, service_node=service_node, service=service)
+    return node_mapping
+
+
+def get_edge_mapping(node_1, node_2, service, snode_1, snode_2):
+    node_1 = next(x for x in service.sla.substrate.nodes if x.name == node_1)
+    node_2 = next(x for x in service.sla.substrate.nodes if x.name == node_2)
+    edge = next(
+        x for x in service.sla.substrate.edges if (x.node_1 == node_1 and x.node_2 == node_2) or (
+            x.node_1 == node_2 and x.node_2 == node_1))
+    snode_1 = next(x for x in service.serviceNodes if x.name == snode_1)
+    snode_2 = next(x for x in service.serviceNodes if x.name == snode_2)
+    sedge = next(
+        x for x in service.serviceEdges if x.node_1_id == snode_1.id and x.node_2_id == snode_2.id)
+    edge_mapping = EdgeMapping(edge=edge, serviceEdge=sedge)
+    return edge_mapping
+
+
+def save_node_mapping(substrate, service, nodes_sols, snode, node):
+    node = next(x for x in substrate.nodes if x.name == node)
+    service_node = next(x for x in service.serviceNodes if x.name == snode)
+    node_mapping = NodeMapping(node=node, service_node=service_node, service=service)
+    nodes_sols.append(node_mapping)
+
+
+class DummySolver(object):
+    def __init__(self, rs):
+        self.rs = rs
+
+    def solve(self, service, substrate):
+
+        service_graph = service.service_graph
+        cdns = service_graph.get_CDN_data()
+        starters = service_graph.get_starters_data()
+
+        nodes_sols = []
+        edges_sol = []
+
+        # write the mapping for pre-mapped nodes
+        for sname, snomde_name, _ in starters + cdns:
+            node = next(x for x in substrate.nodes if x.name == snomde_name)
+            service_node = next(x for x in service.serviceNodes if x.name == sname)
+            node_mapping = NodeMapping(node=node, service_node=service_node, service=service)
+            nodes_sols.append(node_mapping)
+
+        avail_nodes = substrate.nodes
+        # for each unmapped node
+        for snomde_name, snode_attr in [(snomde_name, snode_attr) for snomde_name, snode_attr in
+                                        (service_graph.get_vhg(data=True) + service_graph.get_vcdn(data=True))]:
+            mapped = False
+            avail_node_with_enough_cpu = sorted(list(filter(lambda x: x.cpu_capacity > snode_attr["cpu"], avail_nodes)),key=lambda x:x.name)
+
+            # while it's not mapped
+            while mapped is not True:
+                result_bag = []
+                # pick random node
+                random_mapped_node = self.rs.choice(avail_node_with_enough_cpu, replace=False)
+                #print("random mapped node: %s" % random_mapped_node )
+                result_bag.append(get_node_mapping(random_mapped_node, service, snomde_name))
+                # for each service node on the left of this one, supposedly mapped
+                for snode1, snode2, sedge_attr in service_graph.get_left_edges(snomde_name):
+                    # remove topo edge that can handle service bw demand
+                    bw = sedge_attr["bandwidth"]
+                    constraints_sub = substrate.get_nxgraph().copy()
+                    for topo_node1, topo_node2, topo_attr in substrate.get_nxgraph().edges(data=True):
+                        if topo_attr["bandwidth"] < bw:
+                            constraints_sub.remove_edge(topo_node1, topo_node2)
+
+                    # compute the shortest path between the two nodes (mapped, and random)
+                    steps = nx.shortest_path(constraints_sub, random_mapped_node.name,
+                                             service_graph.get_substrate_mapping(snode1))
+                    # add each topo edge belonging to the shortest path to the mapping
+                    # print("@@@@@@@@@@@@@%s"%list(zip(steps, steps[1:])))
+                    for tnode_to_add_to_mapping1, tnode_to_add_to_mapping2 in list(zip(steps, steps[1:])):
+                        em = get_edge_mapping(tnode_to_add_to_mapping1, tnode_to_add_to_mapping2, service, snode1,
+                                              snode2)
+                        # print(em)
+                        result_bag.append(em)
+                        #print(em)
+                    mapped = True
+            # update mapping info in service_graph
+            for node_mapping in filter(lambda x: isinstance(x, NodeMapping), result_bag):
+                service_graph.nx_service_graph.node[node_mapping.service_node.name]["mapping"] = node_mapping.node.name
+                nodes_sols.append(node_mapping)
+
+            edges_sol += filter(lambda x: isinstance(x, EdgeMapping), result_bag)
+
+        mapping = Mapping(node_mappings=nodes_sols, edge_mappings=edges_sol, objective_function=0)
+        mapping.update_objective_function()
+
+        if mapping is not None:
+            service.mapping = mapping
+            mapping.substrate = substrate
+            mapping.service = service
+
+        return mapping
+
+
 class ILPSolver(object):
     @classmethod
     def __solve_ILP(cls, service, path):
@@ -26,8 +127,6 @@ class ILPSolver(object):
         solve without rewriting intermedia files
         :return: a mapping
         '''
-
-        session = Session()
 
         if not os.path.exists(os.path.join(RESULTS_FOLDER, path)):
             os.makedirs(os.path.join(RESULTS_FOLDER, path))
@@ -71,12 +170,8 @@ class ILPSolver(object):
                 if (len(matches) > 0):
                     try:
                         node = next(x for x in service.sla.substrate.nodes if x.name == matches[0][0])
-
                         snode_id = matches[0][1]
-                        service_node = next(x for x in service.serviceNodes if x.name == snode_id)
-
-                        node_mapping = NodeMapping(node=node, service_node=service_node, service=service)
-                        nodes_sols.append(node_mapping)
+                        nodes_sols.append(get_node_mapping(node, service, snode_id))
                         continue
                     except NoResultFound as e:
                         print(e)
@@ -85,21 +180,7 @@ class ILPSolver(object):
                 matches = re.findall("^y\$(.*)\$(.*)\$(.*)\$([^ \t]+) +([^ \t]+)", line)
                 if (len(matches) > 0):
                     node_1, node_2, snode_1, snode_2, value = matches[0]
-
-                    node_1 = next(x for x in service.sla.substrate.nodes if x.name == node_1)
-                    node_2 = next(x for x in service.sla.substrate.nodes if x.name == node_2)
-
-                    edge = next(
-                        x for x in service.sla.substrate.edges if (x.node_1 == node_1 and x.node_2 == node_2) or (
-                            x.node_1 == node_2 and x.node_2 == node_1))
-
-                    snode_1 = next(x for x in service.serviceNodes if x.name == snode_1)
-                    snode_2 = next(x for x in service.serviceNodes if x.name == snode_2)
-                    sedge = next(
-                        x for x in service.serviceEdges if x.node_1_id == snode_1.id and x.node_2_id == snode_2.id)
-
-                    edge_mapping = EdgeMapping(edge=edge, serviceEdge=sedge)
-                    edges_sol.append(edge_mapping)
+                    edges_sol.append(get_edge_mapping(node_1, node_2, service, snode_1, snode_2))
                     continue
 
                 matches = re.findall("^objective value: *([0-9\.]*)$", line)
@@ -203,6 +284,7 @@ class ILPSolver(object):
         mapping = self.__solve_ILP(service, path=path)
 
         if mapping is not None:
+            mapping.update_objective_function()
             service.mapping = mapping
             mapping.substrate = substrate
             mapping.service = service

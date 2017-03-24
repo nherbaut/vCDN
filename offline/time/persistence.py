@@ -94,6 +94,9 @@ class NodeMapping(Base):
     service_node = relationship('ServiceNode', cascade="save-update")
     node = relationship('Node', cascade="save-update")
 
+    def __str__(self):
+        return "%s-->%s"%(self.service_node.name,self.node.name)
+
 
 class EdgeMapping(Base):
     __tablename__ = "EdgeMapping"
@@ -105,6 +108,9 @@ class EdgeMapping(Base):
 
     serviceEdge_id = Column(Integer, ForeignKey('ServiceEdge.id'), nullable=False)
     serviceEdge = relationship("ServiceEdge", cascade="save-update")
+
+    def __str__(self):
+        return "%s-%s ~~> %s-%s"%(self.serviceEdge.node_1.name,self.serviceEdge.node_2.name,self.edge.node_1.name,self.edge.node_2.name)
 
     @classmethod
     def backward(cls, edgeMapping):
