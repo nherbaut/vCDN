@@ -10,12 +10,12 @@ import numpy as np
 from numpy.random import RandomState
 from sqlalchemy.orm.session import make_transient
 
+from offline.core.utils import weighted_shuffle
 from ..core.full_service_gaph_generator import FullServiceGraphGenerator
 from ..core.ilpsolver import ILPSolver
 from ..core.reduced_service_graph_generator import HeuristicServiceGraphGenerator
 from ..core.service import Service
 from ..core.sla import Sla, SlaNodeSpec
-from offline.core.utils import weighted_shuffle
 from ..core.substrate import Substrate
 from ..time.persistence import Session, Base, engine, drop_all, Tenant, Node
 
@@ -92,7 +92,12 @@ def embbed_service(args):
     service_graph, sla_id, solver = args
     sla = session.query(Sla).filter(Sla.id == sla_id).one()
     service = Service(service_graph, sla, solver)
-    service.solve()
+    mapping = service.solve()
+    if mapping is not None:
+        mapping.substrate = sla.substrate
+        mapping.service = service
+        service.mapping = mapping
+    session.flush()
     global candidate_count
     candidate_count += 1
     return service
@@ -188,7 +193,6 @@ class ServiceGraphGeneratorFactory:
                                                            vcdn_count=vcdn_count,
                                                            disable_isomorph_check=disable_isomorph_check)
                 yield topo_container
-
 
 
 def optimize_sla(sla, vhg_count=None, vcdn_count=None,

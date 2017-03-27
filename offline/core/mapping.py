@@ -123,8 +123,8 @@ class Mapping(Base):
             net_cost = float(f.read())
 
         sum_cpu = sum(
-            [node_mapping.service_node.cpu * vhg_cpu_price if node_mapping.service_node.is_vhg() else vcdn_cpu_price for
-             node_mapping
+            [node_mapping.service_node.cpu *
+             (vhg_cpu_price if node_mapping.service_node.is_vhg() else vcdn_cpu_price) for node_mapping
              in self.node_mappings])
 
         sum_bw = sum([edge_mapping.serviceEdge.bandwidth for edge_mapping in self.edge_mappings]) * net_cost

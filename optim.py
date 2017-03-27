@@ -10,7 +10,9 @@ import subprocess
 import sys
 from argparse import RawTextHelpFormatter
 
-from offline.core.ilpsolver import ILPSolver, DummySolver, GeneticSolver
+from offline.core.ilpsolver import ILPSolver
+from offline.core.dummy_solver import DummySolver
+from offline.core.genetic_solver import GeneticSolver
 from offline.time.plottingDB import plotsol_from_db
 from offline.tools.api import clean_and_create_experiment, create_sla, generate_sla_nodes, optimize_sla_benchmark
 

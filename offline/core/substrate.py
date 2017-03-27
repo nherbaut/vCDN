@@ -286,7 +286,7 @@ class Substrate(Base):
                 node = Node(name=str("%02d%02d" % (i, j)), cpu_capacity=cpu)
                 nodes.append(node)
                 session.add(node)
-                session.flush()
+
 
         for i in range(1, width + 1):
             for j in range(1, height + 1):
@@ -310,7 +310,7 @@ class Substrate(Base):
 
             for edge in edges:
                 session.add(edge)
-                session.flush()
+        session.flush()
 
         return cls(edges, nodes, )
 

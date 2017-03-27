@@ -203,9 +203,10 @@ class Service(Base):
         Solve the service according to specs
         :return: nothing, service.mapping may be initialized with an actual possible mapping
         """
-        self.solver.solve(self, self.sla.substrate)
+        mapping=self.solver.solve(self, self.sla.substrate)
         if self.mapping is None:
             logging.warning("mapping failed for sla %s" % self.sla.id)
+        return mapping
 
 
     def __compute_vhg_vcdn_assignment__(self):
