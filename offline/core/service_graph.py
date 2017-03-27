@@ -75,7 +75,7 @@ class ServiceGraph:
     def set_node_mapping(self, service_node_name, phyisical_node_name):
         self.nx_service_graph.node[service_node_name]["mapping"] = phyisical_node_name
 
-    def get_starters_data(self):
+    def get_starter_triple(self):
         '''
 
         :return: a list of tuple with (name, mapping, bandwith)
@@ -83,7 +83,7 @@ class ServiceGraph:
         return [(s, self.nx_service_graph.node[s]["mapping"], self.nx_service_graph.node[s]["bandwidth"]) for s in
                 get_nodes_by_type("S", self.nx_service_graph)]
 
-    def get_CDN_data(self):
+    def get_cdn_triple(self):
         return [(s, self.nx_service_graph.node[s]["mapping"], self.nx_service_graph.node[s]["bandwidth"]) for s in
                 get_nodes_by_type("CDN", self.nx_service_graph)]
 

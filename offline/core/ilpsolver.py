@@ -5,9 +5,10 @@ import subprocess
 import time
 
 import networkx as nx
+import numpy as np
 from jinja2 import Environment, PackageLoader
 from sqlalchemy.orm.exc import NoResultFound
-
+from ..core.utils import weighted_shuffle
 from ..core.mapping import Mapping
 from ..time.persistence import NodeMapping, EdgeMapping
 
@@ -25,6 +26,10 @@ def get_node_mapping(node, service, snode_id):
     service_node = next(x for x in service.serviceNodes if x.name == snode_id)
     node_mapping = NodeMapping(node=node, service_node=service_node, service=service)
     return node_mapping
+
+
+from functools import lru_cache
+
 
 
 def get_edge_mapping(node_1, node_2, service, snode_1, snode_2):
@@ -51,31 +56,113 @@ def save_node_mapping(substrate, service, nodes_sols, snode, node):
 class GeneticSolver(object):
     def __init__(self, rs):
         self.rs = rs
-        self.dummy_solver = DummySolver()
 
     def solve(self, service, substrate):
+        score_history = []
+        pool_size = 20
+        selection_size = 5
+        mutation_rate = 0.5
+        number_parents = 2
+        min_iterations = 5
+        max_identical_results = 3
         mappings = []
-        for i in range(0, 500):
-            mappings.append(self.dummy_solver.solve(service, substrate))
+        # initial generation
+        dummy_solver = DummySolver(rs=self.rs)
+        for i in range(0, pool_size):
+            mapping=dummy_solver.solve(service, substrate)
+            mappings.append(mapping)
+
+
+        min_of_new = 0
+        min_of_old = 0
+        iteration = 0
+        try:
+            while len(score_history) < min_iterations or not all(
+                            score_history[-1] == item for item in score_history[-max_identical_results:]):
+
+                print("iteration %d / old:%lf   new:%lf" % (iteration, min_of_old, min_of_new))
+
+                # selection "fitness proportionate selection"
+                #mappings_best_breads = list(weighted_shuffle(mappings, [-2000*mapping.objective_function for mapping in mappings],                                                    selection_size, self.rs))
+                mappings_best_breads = sorted(mappings, key=lambda x: x.objective_function)[0:selection_size]
+
+                # get genotypes
+                parent_genotypes = [{nm.service_node.name: nm.node.name for nm in parent.node_mappings if
+                                     nm.service_node.is_vhg() or nm.service_node.is_vcdn()} for parent in
+                                    mappings_best_breads]
+                # cross-over
+                children = []
+                loci = sorted(parent_genotypes[0].keys())
+                while len(children) < pool_size:
+                    child = {}
+                    parents = self.rs.choice(parent_genotypes, size=number_parents, replace=False)
+
+                    cross_overs = sorted(self.rs.randint(0, len(loci), len(parents) - 1))
+                    cross_over_zones = np.split(loci, cross_overs)
+                    for index, cos in enumerate(cross_over_zones):
+                        for locus in cos:
+                            child[locus] = parents[index][locus]
+                    children.append(child)
+
+                # mutate
+                for child in children:
+                    for locus, gene in sorted(child.items(),key=lambda x:x[0]):
+                        if self.rs.uniform() <= mutation_rate:
+                            child[locus] = self.rs.choice(sorted([node.name for node in substrate.nodes]))
+                        else:
+                            child[locus] = gene
+
+                children += parent_genotypes
+                mappings = []
+                # children computation
+                for child in children:
+                    dummy_solver = DummySolver(rs=self.rs, additional_node_mapping=child)
+                    mapping = dummy_solver.solve(service, substrate)
+                    if mapping is not None:
+
+                        mappings.append(mapping)
+
+                mappings = mappings + mappings_best_breads
+                min_of_old = min_of_new
+                min_of_new = min(mappings, key=lambda x: x.objective_function).objective_function
+                score_history.append(min_of_new)
+        except KeyboardInterrupt as ie:
+            print("OK...")
+
+        mapping = sorted(mappings, key=lambda x: x.objective_function)[0]
+
+        if mapping is not None:
+            service.mapping = mapping
+            mapping.substrate = substrate
+            mapping.service = service
+
+        return mapping
 
 
 class DummySolver(object):
-    def __init__(self, rs, mapping={}):
+    def __init__(self, rs, additional_node_mapping={}):
         self.rs = rs
-        self.mapping = mapping
+        self.additional_node_mapping = additional_node_mapping
 
     def solve(self, service, substrate):
 
-        service_graph = copy.copy(service.service_graph)
+        service_graph = service.service_graph
+        starters = service_graph.get_starter_triple()
+        substrate_graph = substrate.get_nxgraph()
+        additional_node_mapping = copy.copy(self.additional_node_mapping)
 
-        starters = service_graph.get_starters_data()
+        for snode, tnode, _ in service_graph.get_cdn_triple():
+            additional_node_mapping[snode] = tnode
 
         nodes_sols = []
         edges_sol = []
+        # addinv mapping we already know about, like mapped nodes and provided mapping
         computed_mapping = {x[0]: x[1]["mapping"] for x in
                             (service_graph.get_starters(data=True) + service_graph.get_cdn(data=True))}
+        for k, v in self.additional_node_mapping.items():
+            computed_mapping[k] = v
 
-        # write the mapping for pre-mapped nodes
+            # write the mapping for pre-mapped nodes
         for sname, snode_name, _ in starters:
             node = next(x for x in substrate.nodes if x.name == snode_name)
             service_node = next(x for x in service.serviceNodes if x.name == sname)
@@ -96,13 +183,10 @@ class DummySolver(object):
                 result_bag = []
                 # if service graph does not already contain mapping (unmapped nodes for examples)
                 if computed_mapping.get(snode_name, None) is None:
-                    print("mapping for %s is NOT already known" % snode_name)
-                    hint = self.mapping.get(snode_name, None)
-                    if hint is None:
-                        # no hint=> random
-                        random_mapped_node = self.rs.choice(avail_node_with_enough_cpu, replace=False)
+                    # print("mapping for %s is NOT already known" % snode_name)
+                    random_mapped_node = self.rs.choice(avail_node_with_enough_cpu, replace=False)
                 else:
-                    print("mapping for %s is already known" % snode_name)
+                    # print("mapping for %s is already known" % snode_name)
                     tnode_name = computed_mapping.get(snode_name, None)
                     random_mapped_node = next((node for node in substrate.nodes if node.name == tnode_name))
 
@@ -112,8 +196,8 @@ class DummySolver(object):
                 for snode1, snode2, sedge_attr in service_graph.get_left_edges(snode_name):
                     # remove topo edge that can handle service bw demand
                     bw = sedge_attr["bandwidth"]
-                    constraints_sub = substrate.get_nxgraph().copy()
-                    for topo_node1, topo_node2, topo_attr in substrate.get_nxgraph().edges(data=True):
+                    constraints_sub = substrate_graph.copy()
+                    for topo_node1, topo_node2, topo_attr in substrate_graph.edges(data=True):
                         if topo_attr["bandwidth"] < bw:
                             constraints_sub.remove_edge(topo_node1, topo_node2)
 
@@ -128,6 +212,7 @@ class DummySolver(object):
                         result_bag.append(em)
                         # print(em)
                     mapped = True
+
             # update mapping info in service_graph
             for node_mapping in filter(lambda x: isinstance(x, NodeMapping), result_bag):
                 computed_mapping[node_mapping.service_node.name] = node_mapping.node.name
@@ -265,12 +350,12 @@ class ILPSolver(object):
 
                 # write constraints on CDN placement
         with open(os.path.join(RESULTS_FOLDER, path, "CDN.nodes.data"), mode) as f:
-            for node, mapping, bw in service_graph.get_CDN_data():
+            for node, mapping, bw in service_graph.get_cdn_triple():
                 f.write("%s %s\n" % (node, mapping))
 
         # write constraints on starter placement
         with open(os.path.join(RESULTS_FOLDER, path, "starters.nodes.data"), mode) as f:
-            for s, mapping, bw in service_graph.get_starters_data():
+            for s, mapping, bw in service_graph.get_starter_triple():
                 f.write("%s %s %lf\n" % (s, mapping, bw))
 
         # write the names of the VHG Nodes

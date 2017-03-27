@@ -1,19 +1,14 @@
+import numpy as np
 import scipy
 import scipy.integrate as integrate
-
-import numpy as np
 from sqlalchemy import Column, Integer, DateTime, Float, ForeignKey, String, PickleType
 from sqlalchemy.orm import relationship
 
+from offline.core.utils import weighted_shuffle
 from ..time.persistence import Node
 from ..time.persistence import Session, Base
 
 tcp_win = 65535.0
-
-
-# http://nicky.vanforeest.com/probability/weightedRandomShuffling/weighted.html
-def weighted_shuffle(a, w, size, rs):
-    return rs.choice(a, size=size, p=np.array(w).astype(float) / np.sum(w), replace=False)
 
 
 def concurrentUsers(t, m, sigma, duration):

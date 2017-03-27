@@ -1,6 +1,9 @@
 import time
 import sys
 
+import numpy as np
+
+
 class timed(object):
     '''
     decorator used to print execution time and stats on a simulation
@@ -67,3 +70,7 @@ def green(arg):
 
 def col(arg, colr=bcolors.ENDC):
     return colr + str(arg) + bcolors.ENDC
+
+
+def weighted_shuffle(population, population_weights, size, rs):
+    return rs.choice(population, size=size, p=np.array(population_weights).astype(float) / np.sum(population_weights), replace=False)

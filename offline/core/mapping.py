@@ -105,9 +105,9 @@ class Mapping(Base):
         return [x for x in self.node_mappings if "VHG" in x.service_node_id]
 
     def update_objective_function(self):
-        self.objective_function = self.get_objective_function()
+        self.objective_function = self.__get_objective_function()
 
-    def get_objective_function(self):
+    def __get_objective_function(self):
         '''
 
         :return: the obejctive function as computed by the nodes and edges mapping

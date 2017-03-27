@@ -10,7 +10,7 @@ import subprocess
 import sys
 from argparse import RawTextHelpFormatter
 
-from offline.core.ilpsolver import ILPSolver, DummySolver
+from offline.core.ilpsolver import ILPSolver, DummySolver, GeneticSolver
 from offline.time.plottingDB import plotsol_from_db
 from offline.tools.api import clean_and_create_experiment, create_sla, generate_sla_nodes, optimize_sla_benchmark
 
@@ -50,6 +50,8 @@ def handle_embedding(substrate_topology, start_mapped_nodes, cdn_mapped_nodes, s
 
     if solver_type == "dummy":
         solver = DummySolver(rs=rs)
+    elif solver_type == "genetic":
+        solver = GeneticSolver(rs=rs)
     else:
         solver = ILPSolver()
 
@@ -185,7 +187,7 @@ else:
             if os.path.exists(plot_folder):
                 shutil.rmtree(plot_folder)
             os.makedirs(plot_folder)
-            print("%s" % plot_folder)
+            print("plotting service (%s) with mapping (%s)" % (str(service.id), str(service.mapping.id)))
 
             plotsol_from_db(service_link_linewidth=5, net=False, service=service,
                             dest_folder=plot_folder)

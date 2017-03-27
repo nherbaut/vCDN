@@ -204,7 +204,6 @@ class Service(Base):
         :return: nothing, service.mapping may be initialized with an actual possible mapping
         """
         self.solver.solve(self, self.sla.substrate)
-
         if self.mapping is None:
             logging.warning("mapping failed for sla %s" % self.sla.id)
 
@@ -280,4 +279,4 @@ class Service(Base):
                 session.delete(sn)
                 session.flush()
 
-        self.mapping.objective_function = self.mapping.get_objective_function()
+        self.mapping.objective_function = self.mapping.__get_objective_function()

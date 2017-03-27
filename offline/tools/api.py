@@ -15,7 +15,7 @@ from ..core.ilpsolver import ILPSolver
 from ..core.reduced_service_graph_generator import HeuristicServiceGraphGenerator
 from ..core.service import Service
 from ..core.sla import Sla, SlaNodeSpec
-from ..core.sla import weighted_shuffle
+from offline.core.utils import weighted_shuffle
 from ..core.substrate import Substrate
 from ..time.persistence import Session, Base, engine, drop_all, Tenant, Node
 
@@ -187,8 +187,8 @@ class ServiceGraphGeneratorFactory:
                 topo_container = FullServiceGraphGenerator(sla=self.sla, vhg_count=vhg_count,
                                                            vcdn_count=vcdn_count,
                                                            disable_isomorph_check=disable_isomorph_check)
-                topo_containers.append(topo_container)
-        return topo_containers
+                yield topo_container
+
 
 
 def optimize_sla(sla, vhg_count=None, vcdn_count=None,
