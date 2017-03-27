@@ -26,6 +26,16 @@ def generate_node_mapping(node, service, snode_id):
 
 
 def generate_edge_mapping(node_1, node_2, service, snode_1, snode_2):
+    edge, sedge = prepare_edge_mapping(node_1, node_2, service, snode_1, snode_2)
+    edge_mapping = EdgeMapping(edge=edge, serviceEdge=sedge)
+    return edge_mapping
+
+
+import functools
+
+
+@functools.lru_cache(maxsize=None)
+def prepare_edge_mapping(node_1, node_2, service, snode_1, snode_2):
     node_1 = next(x for x in service.sla.substrate.nodes if x.name == node_1)
     node_2 = next(x for x in service.sla.substrate.nodes if x.name == node_2)
     edge = next(
@@ -35,8 +45,7 @@ def generate_edge_mapping(node_1, node_2, service, snode_1, snode_2):
     snode_2 = next(x for x in service.serviceNodes if x.name == snode_2)
     sedge = next(
         x for x in service.serviceEdges if x.node_1_id == snode_1.id and x.node_2_id == snode_2.id)
-    edge_mapping = EdgeMapping(edge=edge, serviceEdge=sedge)
-    return edge_mapping
+    return edge, sedge
 
 
 def save_node_mapping(substrate, service, nodes_sols, snode, node):
