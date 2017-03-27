@@ -59,7 +59,7 @@ class ILPSolver(object):
     @classmethod
     def __solve_ILP(cls, service, path):
         '''
-        solve without rewriting intermedia files
+        generate_mapping without rewriting intermedia files
         :return: a mapping
         '''
 

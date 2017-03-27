@@ -9,7 +9,7 @@ class GeneticSolver(object):
 
     def solve(self, service, substrate):
         # FINE TUNING
-        pool_size = 50
+        pool_size = 100
         selection_size = 20
         mutation_rate = 0.3
         number_parents = 2
@@ -68,7 +68,7 @@ class GeneticSolver(object):
                 mappings = []
                 # children computation
                 for child in children:
-                    dummy_solver = DummySolver(rs=self.rs, additional_node_mapping=child)
+                    dummy_solver.additional_node_mapping = child
                     mapping = dummy_solver.solve(service, substrate)
                     if mapping is not None:
                         mappings.append(mapping)

@@ -1,4 +1,5 @@
 import copy
+from functools import lru_cache
 
 import networkx as nx
 
@@ -11,12 +12,22 @@ class DummySolver(object):
     def __init__(self, rs, additional_node_mapping={}):
         self.rs = rs
         self.additional_node_mapping = additional_node_mapping
+        self.substrate_graph = None
+        self.substrate_cache = None
 
     def solve(self, service, substrate):
 
+        if self.substrate_cache is None or not self.substrate_cache == substrate:
+            self.substrate_cache = substrate
+            self.substrate_graph = None
+
+        if self.substrate_graph is None or not self.substrate_graph.edges() == self.substrate_graph.edges():
+            self.substrate_graph = self.substrate_cache.get_nxgraph()
+            self.get_constrained_shortest_path.cache_clear()
+
         service_graph = service.service_graph
         starters = service_graph.get_starter_triple()
-        substrate_graph = substrate.get_nxgraph()
+        self.substrate_graph = substrate.get_nxgraph()
         additional_node_mapping = copy.copy(self.additional_node_mapping)
 
         for snode, tnode, _ in service_graph.get_cdn_triple():
@@ -64,14 +75,8 @@ class DummySolver(object):
                 for snode1, snode2, sedge_attr in service_graph.get_left_edges(snode_name):
                     # remove topo edge that can handle service bw demand
                     bw = sedge_attr["bandwidth"]
-                    constraints_sub = substrate_graph.copy()
-                    for topo_node1, topo_node2, topo_attr in substrate_graph.edges(data=True):
-                        if topo_attr["bandwidth"] < bw:
-                            constraints_sub.remove_edge(topo_node1, topo_node2)
 
-                    # compute the shortest path between the two nodes (mapped, and random)
-                    steps = nx.shortest_path(constraints_sub, random_mapped_node.name,
-                                             computed_mapping.get(snode1, None))
+                    steps = self.get_constrained_shortest_path(bw, random_mapped_node.name, computed_mapping[snode1])
                     # add each topo edge belonging to the shortest path to the mapping
                     for tnode_to_add_to_mapping1, tnode_to_add_to_mapping2 in list(zip(steps, steps[1:])):
                         em = generate_edge_mapping(tnode_to_add_to_mapping1, tnode_to_add_to_mapping2, service, snode1,
@@ -79,7 +84,7 @@ class DummySolver(object):
                         # print(em)
                         result_bag.append(em)
                         # print(em)
-                    mapped = True
+                mapped = True
 
             # update mapping info in service_graph
             for node_mapping in filter(lambda x: isinstance(x, NodeMapping), result_bag):
@@ -92,3 +97,14 @@ class DummySolver(object):
         mapping.update_objective_function()
 
         return mapping
+
+    @lru_cache(maxsize=None)
+    def get_constrained_shortest_path(self, bw, random_mapped_node_name, target_node_name):
+        constraints_sub = self.substrate_graph
+        for topo_node1, topo_node2, topo_attr in self.substrate_graph.edges(data=True):
+            if topo_attr["bandwidth"] < bw:
+                constraints_sub.remove_edge(topo_node1, topo_node2)
+
+        # compute the shortest path between the two nodes (mapped, and random)
+        steps = nx.shortest_path(constraints_sub, random_mapped_node_name, target_node_name)
+        return steps

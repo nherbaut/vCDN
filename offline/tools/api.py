@@ -92,7 +92,7 @@ def embbed_service(args):
     service_graph, sla_id, solver = args
     sla = session.query(Sla).filter(Sla.id == sla_id).one()
     service = Service(service_graph, sla, solver)
-    mapping = service.solve()
+    mapping = service.generate_mapping()
     if mapping is not None:
         mapping.substrate = sla.substrate
         mapping.service = service

@@ -198,13 +198,13 @@ class Service(Base):
                                 service_id=self.id)
             self.serviceEdges.append(sedge)
 
-    def solve(self):
+    def generate_mapping(self):
         """
         Solve the service according to specs
-        :return: nothing, service.mapping may be initialized with an actual possible mapping
+        :return: a mapping or None is case of failure
         """
         mapping=self.solver.solve(self, self.sla.substrate)
-        if self.mapping is None:
+        if mapping is None:
             logging.warning("mapping failed for sla %s" % self.sla.id)
         return mapping
 
@@ -216,7 +216,7 @@ class Service(Base):
         self.sla.max_cdn_to_use = 0
         self.sla.sla_node_specs = [x for x in self.sla.sla_node_specs if x.type == "cdn"]
 
-        mapping = self.solver.solve(self)
+        mapping = self.solver.generate_mapping(self)
         if mapping is None:
             vhg_hints = None
         else:

@@ -16,7 +16,7 @@ class TestServiceGraphGeneratorFactory(TestCase):
         for generator in generators:
             for topology in generator.get_service_topologies():
                 service=Service(topology,sla,solver)
-                service.solve()
+                service.generate_mapping()
 
     def test_genetic(self):
         rs, su = clean_and_create_experiment()
@@ -27,7 +27,7 @@ class TestServiceGraphGeneratorFactory(TestCase):
         generators = factory.get_full_class_generator()
         topology=next(next(generators).get_service_topologies())
         service = Service(topology, sla, solver)
-        service.solve()
+        service.generate_mapping()
 
 
 
