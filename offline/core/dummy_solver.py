@@ -17,17 +17,19 @@ class DummySolver(object):
 
     def solve(self, service, substrate):
 
+        #optim
         if self.substrate_cache is None or not self.substrate_cache == substrate:
             self.substrate_cache = substrate
             self.substrate_graph = None
 
+        # optim
         if self.substrate_graph is None or not self.substrate_graph.edges() == self.substrate_graph.edges():
             self.substrate_graph = self.substrate_cache.get_nxgraph()
             self.get_constrained_shortest_path.cache_clear()
 
         service_graph = service.service_graph
         starters = service_graph.get_starter_triple()
-        self.substrate_graph = substrate.get_nxgraph()
+
         additional_node_mapping = copy.copy(self.additional_node_mapping)
 
         for snode, tnode, _ in service_graph.get_cdn_triple():
