@@ -15,7 +15,7 @@ from offline.core.dummy_solver import DummySolver
 from offline.core.genetic_solver import GeneticSolver
 from offline.time.plottingDB import plotsol_from_db
 from offline.tools.api import clean_and_create_experiment, create_sla, generate_sla_nodes, optimize_sla_benchmark
-
+import time
 # LOGGING CONFIGURATION
 root = logging.getLogger()
 root.setLevel(logging.DEBUG)
@@ -144,6 +144,9 @@ parser.add_argument('--json', help='display json results in stdout', dest="json"
 parser.add_argument('--base64', help='display json results in base64', dest="b64", action="store_true")
 parser.add_argument('--solver_type', help="type of solver to use eg. dummy or ILP", default="ILP")
 
+
+reference_time= time.process_time()
+
 args = parser.parse_args()
 
 if args.auto is False and (args.vhg is None or args.vcdn is None):
@@ -182,6 +185,8 @@ else:
             print(("Successfull mapping w price: \t %lf in \t %d embedding \t winner is %d (%d,%d)" % (
                 service.mapping.objective_function, count_candidates, service.id, service.service_graph.get_vhg_count(),
                 service.service_graph.get_vcdn_count())))
+            print("all-in-one:%lf,%s,%lf,%s"%(time.process_time()-reference_time,args.topo[1][0],service.mapping.objective_function,args.solver_type))
+
 
         if args.plot:
             plot_folder = os.path.join(RESULTS_FOLDER, "plot")
@@ -199,6 +204,7 @@ else:
             subprocess.Popen(["eog", os.path.join(args.dest_folder, "service_graph.svg")]).wait()
 
             shutil.copy(os.path.join(plot_folder, "./substrate.dot"), os.path.join(args.dest_folder, "substrate.dot"))
+
         exit(0)
     else:
         if args.json:

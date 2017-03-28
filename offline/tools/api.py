@@ -275,11 +275,11 @@ def optimize_sla_benchmark(sla, solver, vhg_count=None, vcdn_count=None,
     # sys.stdout.write("\n\t Service to embed :%d\n" % len(candidates_param))
 
     # print("%d param to optimize" % len(candidates_param))
-    # pool = ThreadPool(multiprocessing.cpu_count() - 1)
+    pool = ThreadPool(multiprocessing.cpu_count() - 1)
     # sys.stdout.write("\n\t Embedding services:%d\n" % len(candidates_param))
-    # services = pool.map(embbed_service, candidates_param)
+    services = pool.map(embbed_service, candidates_param)
 
-    services = [embbed_service(param) for param in candidates_param]
+    # services = [embbed_service(param) for param in candidates_param]
     # sys.stdout.write(" done!\n")
 
     services = [x for x in services if x.mapping is not None]

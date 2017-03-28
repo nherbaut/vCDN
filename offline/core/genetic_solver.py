@@ -1,3 +1,5 @@
+import time
+
 import numpy as np
 
 from offline.core.dummy_solver import DummySolver
@@ -9,7 +11,8 @@ class GeneticSolver(object):
 
     def solve(self, service, substrate):
         # FINE TUNING
-        pool_size = 100
+        pool_size = 50
+        max_time_seconds = 5
         selection_size = 20
         mutation_rate = 0.3
         number_parents = 2
@@ -27,10 +30,11 @@ class GeneticSolver(object):
             mappings.append(mapping)
 
         min_of_new = 0
-
+        reference_time = time.process_time()
         try:
-            while len(score_history) > max_iterations or len(score_history) < min_iterations or not all(
-                            score_history[-1] == item for item in score_history[-max_identical_results:]):
+            # (time.process_time() - reference_time) < max_time_seconds and\
+            while len(score_history) < max_iterations or (len(score_history) < min_iterations and not all(
+                        score_history[-1] == item for item in score_history[-max_identical_results:])):
 
                 # print("iteration %d / old:%lf   new:%lf" % (iteration, min_of_old, min_of_new))
 
