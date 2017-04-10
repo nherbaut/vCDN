@@ -46,12 +46,15 @@ nherbaut@nherbaut-laptop:~/workspace/simuservice$ ls -l ./output/
 total 12
 -rw-r--r-- 1 root root  628 avril 11 00:02 mapping.json
 -rw-r--r-- 1 root root   16 avril 11 00:02 price.data
+-rw-r--r-- 1 root root 23516 avril 11 00:50 service_graph.svg
 -rw-r--r-- 1 root root 3440 avril 11 00:02 substrate.json
+service_graph.svg
 ```
 
 * price.data contain the best price for the requested embedding
 * mapping.json contains the mapping between the service graph and the topology
 * substrate.json contains the original topology
+* a svg representation of the embedding
 
 ### Get the Substrate topology info in the STDOUT
 
