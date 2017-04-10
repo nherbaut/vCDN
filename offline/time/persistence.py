@@ -1,14 +1,13 @@
 import os
-
+import logging
 from sqlalchemy import Column, Integer, String, ForeignKey, Float
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
 from sqlalchemy.orm import *
 from sqlalchemy.orm import sessionmaker
 
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
-
+ENGINE_TYPE = "sqlite"
 Base = declarative_base()
 
 
@@ -95,7 +94,7 @@ class NodeMapping(Base):
     node = relationship('Node', cascade="save-update")
 
     def __str__(self):
-        return "%s-->%s"%(self.service_node.name,self.node.name)
+        return "%s-->%s" % (self.service_node.name, self.node.name)
 
 
 class EdgeMapping(Base):
@@ -110,7 +109,8 @@ class EdgeMapping(Base):
     serviceEdge = relationship("ServiceEdge", cascade="save-update")
 
     def __str__(self):
-        return "%s-%s ~~> %s-%s"%(self.serviceEdge.node_1.name,self.serviceEdge.node_2.name,self.edge.node_1.name,self.edge.node_2.name)
+        return "%s-%s ~~> %s-%s" % (
+        self.serviceEdge.node_1.name, self.serviceEdge.node_2.name, self.edge.node_1.name, self.edge.node_2.name)
 
     @classmethod
     def backward(cls, edgeMapping):
@@ -122,9 +122,13 @@ class EdgeMapping(Base):
 if not os.path.exists(RESULTS_FOLDER):
     os.makedirs(RESULTS_FOLDER)
 
-# engine = create_engine('sqlite:///%s/res.db' % RESULTS_FOLDER, echo=True)
-# engine = create_engine('sqlite:///%s/res.db' % RESULTS_FOLDER)
-engine = create_engine('mysql+mysqldb://root:root@127.0.0.1/paper4', )
+if ENGINE_TYPE is None or ENGINE_TYPE == "sqlite":
+    logging.debug("we use SQLITE as a backend")
+    engine = create_engine('sqlite:///%s/res.db' % RESULTS_FOLDER)
+else:
+    logging.debug("we use MySQL as a backend (mysql+mysqldb://root:root@127.0.0.1/paper4)")
+    engine = create_engine('mysql+mysqldb://root:root@127.0.0.1/paper4', )
+
 session_factory = sessionmaker(bind=engine, autocommit=True)
 Session = scoped_session(session_factory)
 

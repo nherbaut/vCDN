@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 import argparse
 import base64
 import json
@@ -8,22 +7,17 @@ import os
 import shutil
 import subprocess
 import sys
+import time
 from argparse import RawTextHelpFormatter
+from functools import partial
 
-from offline.core.ilpsolver import ILPSolver
 from offline.core.dummy_solver import DummySolver
 from offline.core.genetic_solver import GeneticSolver
+from offline.core.ilpsolver import ILPSolver
 from offline.time.plottingDB import plotsol_from_db
-from offline.tools.api import clean_and_create_experiment, create_sla, generate_sla_nodes, optimize_sla_benchmark
-import time
-# LOGGING CONFIGURATION
-root = logging.getLogger()
-root.setLevel(logging.DEBUG)
-ch = logging.StreamHandler(sys.stderr)
-ch.setLevel(logging.DEBUG)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-ch.setFormatter(formatter)
-root.addHandler(ch)
+from offline.tools.api import clean_and_create_experiment, create_sla, generate_sla_nodes, optimize_sla
+
+
 
 
 def handle_embedding(substrate_topology, start_mapped_nodes, cdn_mapped_nodes, service_bandwidth_demand, vhg_count,
@@ -51,17 +45,20 @@ def handle_embedding(substrate_topology, start_mapped_nodes, cdn_mapped_nodes, s
     sla = create_sla(start_nodes, cdn_nodes, service_bandwidth_demand, su=su)
 
     if solver_type == "dummy":
-        solver = DummySolver(rs=rs)
+        solver = partial(DummySolver, rs=rs)
+
     elif solver_type == "genetic":
-        solver = GeneticSolver(rs=rs)
+        solver = partial(GeneticSolver, rs=rs)
+
     else:
-        solver = ILPSolver()
+
+        solver = ILPSolver
 
     # compute the best mapping
-    winner_service, count_embedding = optimize_sla_benchmark(sla, solver, vhg_count=vhg_count,
-                                                             vcdn_count=vcdn_count,
-                                                             automatic=is_automatic_mode,
-                                                             use_heuristic=not disable_heuristic, )
+    winner_service, count_embedding = optimize_sla(sla, solver=solver, vhg_count=vhg_count,
+                                                   vcdn_count=vcdn_count,
+                                                   automatic=is_automatic_mode,
+                                                   use_heuristic=not disable_heuristic)
 
     return winner_service, count_embedding
 
@@ -72,7 +69,7 @@ def handle_no_embedding(topo, seed, dest_folder, is_json_requested, is_plot_requ
     if is_json_requested:  # dumps json to stdout (base64 encoded)
         topo = su.get_json()
         if args.b64:
-            sys.stdout.write(base64.b64encode(json.dumps(topo)))
+            sys.stdout.write(base64.b64encode(json.dumps(topo).encode()))
         else:
             sys.stdout.write(json.dumps(topo))
         sys.stdout.flush()
@@ -89,6 +86,18 @@ def handle_no_embedding(topo, seed, dest_folder, is_json_requested, is_plot_requ
         subprocess.Popen(["eog", os.path.join(dest_folder, "service_graph.svg")]).wait()
 
 
+def get_json_mapping(service):
+    '''
+
+    :return: the mapping for the current service as a json string
+    '''
+    output = dict()
+    output["price"] = {'total_price': service.mapping.objective_function,
+                       "vhg_count": service.service_graph.get_vhg_count(),
+                       "vcdn_count": service.service_graph.get_vcdn_count()}
+    output["mapping"] = service.mapping.to_json()
+    return output
+
 # utility function for params
 def unpack(first, *rest):
     return first, rest
@@ -101,19 +110,20 @@ def valid_topo(topo_spec):
 
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'offline/results')
 
+
 logging.basicConfig(filename='simu.log', level="DEBUG", )
 
 parser = argparse.ArgumentParser(description='1 iteration for solver', epilog=
 
 """ Examples for different topologies:
-    \t sudo docker run nherbaut/simuservice --start 0101 0202 0303 --cdn 0505 --vhg 1 --vcdn 1  --topo=powerlaw,n, m, p, seed, bw, delay, cpu\n
-    \t sudo docker run nherbaut/simuservice --start 1 2 3 --cdn 93 --vhg 1 --vcdn 1 --topo=powerlaw,100,2,0.3,1,1000000000,20,200\n\n\n
-    \t sudo docker run nherbaut/simuservice --start 0101 0202 0303 --cdn 0505 --vhg 1 --vcdn 1  --topo=erdos_renyi,n, p, seed, bw, delay, cpu\n
-    \t sudo docker run nherbaut/simuservice --start 1 2 3 --cdn 10 --vhg 1 --vcdn 1 --topo=erdos_renyi,20,0.3,1,1000000000,20,200\n\n\n
-    \t sudo docker run nherbaut/simuservice --start 0101 0202 0303 --cdn 0505 --vhg 1 --vcdn 1  --topo=grid,width, height, bw, delay, cpu\n
-    \t sudo docker run nherbaut/simuservice --start 0101 0202 0303 --cdn 0505 --vhg 1 --vcdn 1 --topo=grid,5,5,1000000000,10,1000\n\n\n
-    \t sudo docker run nherbaut/simuservice --start 22  --cdn 38 --vhg 1 --vcdn 1 --topo=file,file,cpu\n
-    \t sudo docker run nherbaut/simuservice --start 22  --cdn 38 --vhg 1 --vcdn 1 --topo=file,Geant2012.graphml,10000
+    \t sudo docker run nherbaut/simuservice --start 0101 0202 0303 --cdn 0505 --vhg 1 --vcdn 1 --sourcebw 100000000 --topo=powerlaw,n, m, p, seed, bw, delay, cpu\n
+    \t sudo docker run nherbaut/simuservice --start 1 2 3 --cdn 93 --vhg 1 --vcdn 1 --sourcebw 100000000 --topo=powerlaw,100,2,0.3,1,1000000000,20,200\n\n\n
+    \t sudo docker run nherbaut/simuservice --start 0101 0202 0303 --cdn 0505 --vhg 1 --vcdn 1 --sourcebw 100000000 --topo=erdos_renyi,n, p, seed, bw, delay, cpu\n
+    \t sudo docker run nherbaut/simuservice --start 1 2 3 --cdn 10 --vhg 1 --vcdn 1 --sourcebw 100000000 --topo=erdos_renyi,20,0.3,1,1000000000,20,200\n\n\n
+    \t sudo docker run nherbaut/simuservice --start 0101 0202 0303 --cdn 0505 --vhg 1 --vcdn 1  --sourcebw 100000000 --topo=grid,width, height, bw, delay, cpu\n
+    \t sudo docker run nherbaut/simuservice --start 0101 0202 0303 --cdn 0505 --vhg 1 --vcdn 1 --sourcebw 100000000 --topo=grid,5,5,1000000000,10,1000\n\n\n
+    \t sudo docker run nherbaut/simuservice --start 22  --cdn 38 --vhg 1 --vcdn 1 --sourcebw 100000000 --topo=file,file,cpu\n
+    \t sudo docker run nherbaut/simuservice --start 22  --cdn 38 --vhg 1 --vcdn 1 --sourcebw 100000000 --topo=file,Geant2012.graphml,10000
 
 
     """, formatter_class=RawTextHelpFormatter)
@@ -125,7 +135,7 @@ parser.add_argument('--start', metavar='S', type=str, nargs='+', help='a list of
 parser.add_argument('--cdn', metavar='CDN', type=str, nargs='+', help='a list of CDN (eg. 0505)', )
 
 parser.add_argument('--vhg', type=int, help='vhg count (eg. 2)', default=None)
-parser.add_argument('--seed', type=int, help='seed for random number generation', required=True)
+parser.add_argument('--seed', type=int, help='seed for random number generation', default=0)
 parser.add_argument('--vcdn', type=int, help='vcdn count (eg. 1)', default=None)
 parser.add_argument('--auto', dest='auto', action='store_true', help='automatic vhg vcdn count', default=False)
 
@@ -144,8 +154,7 @@ parser.add_argument('--json', help='display json results in stdout', dest="json"
 parser.add_argument('--base64', help='display json results in base64', dest="b64", action="store_true")
 parser.add_argument('--solver_type', help="type of solver to use eg. dummy or ILP", default="ILP")
 
-
-reference_time= time.process_time()
+reference_time = time.process_time()
 
 args = parser.parse_args()
 
@@ -166,12 +175,9 @@ else:
     # if a mapping is available
     if service.mapping is not None:
         if args.json:
-            output = dict()
-            output["price"] = {'total_price': service.mapping.objective_function, "vhg_count": service.vhg_count,
-                               "vcdn_count": service.vcdn_count}
-            output["mapping"] = service.mapping.to_json()
+            output=get_json_mapping(service)
             if args.b64:
-                sys.stdout.write(base64.b64encode(json.dumps(output)))
+                sys.stdout.write(base64.b64encode(json.dumps(output).encode()))
             else:
                 sys.stdout.write(json.dumps(output))
 
@@ -182,11 +188,19 @@ else:
                 f.write("%lf\n" % service.mapping.objective_function)
                 f.write("%d,%d\n" % (service.service_graph.get_vhg_count(), service.service_graph.get_vcdn_count()))
 
-            print(("Successfull mapping w price: \t %lf in \t %d embedding \t winner is %d (%d,%d)" % (
+            with open(os.path.join(args.dest_folder, "mapping.json"), "w") as f:
+                f.write(json.dumps(get_json_mapping(service)))
+
+            with open(os.path.join(args.dest_folder, "substrate.json"), "w") as f:
+                f.write(json.dumps(service.sla.substrate.get_json()))
+
+
+            logging.debug(("Successfull mapping w price: \t %lf in \t %d embedding \t winner is %d (%d,%d)" % (
                 service.mapping.objective_function, count_candidates, service.id, service.service_graph.get_vhg_count(),
                 service.service_graph.get_vcdn_count())))
-            print("all-in-one:%lf,%s,%lf,%s"%(time.process_time()-reference_time,args.topo[1][0],service.mapping.objective_function,args.solver_type))
-
+            logging.debug("all-in-one-results:%lf,%s,%lf,%s" % (
+                time.process_time() - reference_time, args.topo[1][0], service.mapping.objective_function,
+                args.solver_type))
 
         if args.plot:
             plot_folder = os.path.join(RESULTS_FOLDER, "plot")

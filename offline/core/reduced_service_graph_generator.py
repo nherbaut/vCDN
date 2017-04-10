@@ -16,11 +16,11 @@ from offline.time.persistence import Session
 class HeuristicServiceGraphGenerator(AbstractServiceGraphGenerator):
     def __init__(self, sla, vhg_count, vcdn_count, solver):
         super(HeuristicServiceGraphGenerator, self).__init__(sla, vhg_count, vcdn_count)
-        self.solver = solver
+        self.solver = solver()
 
     def compute_service_topos(self, substrate, mapped_start_nodes, mapped_cdn_nodes, vhg_count, vcdn_count, delay):
 
-        session = Session()
+
         service_graphs_partial = self.__compute_service_topos(substrate, mapped_start_nodes, mapped_cdn_nodes,
                                                               vhg_count,
                                                               vcdn_count, delay,

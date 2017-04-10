@@ -56,6 +56,25 @@ def save_node_mapping(substrate, service, nodes_sols, snode, node):
 
 
 class ILPSolver(object):
+
+    def solve(self, service, substrate):
+        '''
+        try to map the provided service on the substrate
+        :param service:
+        :param substrate:
+        :return: a mapping or None in case of Failure
+        '''
+        path = os.path.join("ILP", str(int(round(time.time() * 1000))))
+
+        ILPSolver.write_substrate_topology(substrate, path=path)
+        ILPSolver.write_service_topology(service.service_graph, path=path)
+        mapping = self.__solve_ILP(service, path=path)
+
+        if mapping is not None:
+            mapping.update_objective_function()
+
+        return mapping
+
     @classmethod
     def __solve_ILP(cls, service, path):
         '''
@@ -205,20 +224,4 @@ class ILPSolver(object):
             for apath, s1, s2 in service_graph.dump_delay_routes():
                 f.write("%s %s %s\n" % (apath, s1, s2))
 
-    def solve(self, service, substrate):
-        '''
-        try to map the provided service on the substrate
-        :param service:
-        :param substrate:
-        :return: a mapping or None in case of Failure
-        '''
-        path = os.path.join("ILP", str(int(round(time.time() * 1000))))
 
-        ILPSolver.write_substrate_topology(substrate, path=path)
-        ILPSolver.write_service_topology(service.service_graph, path=path)
-        mapping = self.__solve_ILP(service, path=path)
-
-        if mapping is not None:
-            mapping.update_objective_function()
-
-        return mapping

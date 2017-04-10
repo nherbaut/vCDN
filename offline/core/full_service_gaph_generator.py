@@ -100,7 +100,7 @@ class FullServiceGraphGenerator(AbstractServiceGraphGenerator):
                     service_graph_clone.node[vhg]["cpu"] = vcdn_calc(service_graph_clone.node[vhg]["bandwidth"])
 
                 delay_path = {}
-                delay_route = collections.defaultdict(lambda: [])
+                delay_route = collections.defaultdict(dict)
                 for vcdn in get_nodes_by_type("VCDN", service_graph_clone):
                     for s in get_nodes_by_type("S", service_graph_clone):
                         try:
@@ -115,6 +115,8 @@ class FullServiceGraphGenerator(AbstractServiceGraphGenerator):
                 # logging.debug("so far, %d services" % len(services))
 
                 accepted_service_graphs.append(service_graph_clone)
+
+                print("Matrix:\n%s\n\n"%nx.adjacency_matrix(service_graph_clone))
                 yield [ServiceGraph(service_graph_clone, delay_path, delay_route, delay)]
 
             except IsomorphicServiceException as e:

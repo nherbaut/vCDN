@@ -4,7 +4,7 @@ import logging
 import multiprocessing
 import os
 import re
-from multiprocessing.pool import ThreadPool
+from multiprocessing.pool import ThreadPool, Pool
 
 import numpy as np
 from numpy.random import RandomState
@@ -91,7 +91,7 @@ def embbed_service(args):
     session = Session()
     service_graph, sla_id, solver = args
     sla = session.query(Sla).filter(Sla.id == sla_id).one()
-    service = Service(service_graph, sla, solver)
+    service = Service(service_graph, sla, solver())
     mapping = service.generate_mapping()
     if mapping is not None:
         mapping.substrate = sla.substrate
@@ -208,7 +208,7 @@ def optimize_sla(sla, vhg_count=None, vcdn_count=None,
         else:
             generators = factory.get_full_class_generator()
 
-    candidates_param = [(topo, sla.id) for generator in generators for topo in generator.get_service_topologies()]
+    candidates_param = [(topo, sla.id, solver) for generator in generators for topo in generator.get_service_topologies()]
     logging.debug("%d candidate " % len(candidates_param))
 
     # sys.stdout.write("\n\t Service to embed :%d\n" % len(candidates_param))
@@ -218,7 +218,7 @@ def optimize_sla(sla, vhg_count=None, vcdn_count=None,
     # sys.stdout.write("\n\t Embedding services:%d\n" % len(candidates_param))
     services = pool.map(embbed_service, candidates_param)
 
-    # services = [embbed_service(param) for param in candidates_param]
+    #services = [embbed_service(param) for param in candidates_param]
     # sys.stdout.write(" done!\n")
 
     services = [x for x in services if x.mapping is not None]
@@ -252,46 +252,3 @@ def create_adhoc_sla(sla, service_graph):
     return sla
 
 
-def optimize_sla_benchmark(sla, solver, vhg_count=None, vcdn_count=None,
-                           automatic=True, use_heuristic=True, isomorph_check=True,
-                           max_vhg_count=10, max_vcdn_count=100, ):
-    factory = ServiceGraphGeneratorFactory(sla, automatic, vhg_count=vhg_count, vcdn_count=vcdn_count)
-    if use_heuristic:
-        generators = factory.get_reduced_class_generator(solver=solver, max_vhg_count=max_vhg_count,
-                                                         max_vcdn_count=max_vcdn_count)
-    else:
-        if isomorph_check:
-            generators = factory.get_full_class_generator_filtered()
-        else:
-            generators = factory.get_full_class_generator()
-
-    candidates_param = [(topo, sla.id, solver) for generator in generators for topo in
-                        generator.get_service_topologies()]
-
-    # candidates_param = [(topo, create_adhoc_sla(sla, topo).id) for topo, sla in candidates_param]
-    # candidates_param = [(topo, create_adhoc_sla(sla,topo).id) for generator in generators for topo in generator.get_service_topologies()]
-    logging.debug("%d candidate " % len(candidates_param))
-
-    # sys.stdout.write("\n\t Service to embed :%d\n" % len(candidates_param))
-
-    # print("%d param to optimize" % len(candidates_param))
-    pool = ThreadPool(multiprocessing.cpu_count() - 1)
-    # sys.stdout.write("\n\t Embedding services:%d\n" % len(candidates_param))
-    services = pool.map(embbed_service, candidates_param)
-
-    # services = [embbed_service(param) for param in candidates_param]
-    # sys.stdout.write(" done!\n")
-
-    services = [x for x in services if x.mapping is not None]
-    services = sorted(services, key=lambda x: x.mapping.objective_function, )
-
-    for service in services:
-        logging.debug(
-            "%d %lf %d %d" % (service.id, service.mapping.objective_function, service.service_graph.get_vhg_count(),
-                              service.service_graph.get_vcdn_count()))
-
-    if len(services) > 0:
-        winner = services[0]
-        return winner, candidate_count
-    else:
-        raise ValueError("failed to compute valid mapping")

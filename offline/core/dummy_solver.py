@@ -1,6 +1,6 @@
 import copy
 from functools import lru_cache
-
+from threading import Thread,current_thread
 import networkx as nx
 
 from offline.core.ilpsolver import generate_node_mapping, generate_edge_mapping
@@ -17,15 +17,21 @@ class DummySolver(object):
 
     def solve(self, service, substrate):
 
+
         #optim
         if self.substrate_cache is None or not self.substrate_cache == substrate:
+
             self.substrate_cache = substrate
             self.substrate_graph = None
 
         # optim
         if self.substrate_graph is None or not self.substrate_graph.edges() == self.substrate_graph.edges():
+
             self.substrate_graph = self.substrate_cache.get_nxgraph()
             self.get_constrained_shortest_path.cache_clear()
+
+
+        assert(self.substrate_graph is not None)
 
         service_graph = service.service_graph
         starters = service_graph.get_starter_triple()
@@ -102,11 +108,12 @@ class DummySolver(object):
 
     @lru_cache(maxsize=None)
     def get_constrained_shortest_path(self, bw, random_mapped_node_name, target_node_name):
+        assert self.substrate_graph is not None
         constraints_sub = self.substrate_graph
         for topo_node1, topo_node2, topo_attr in self.substrate_graph.edges(data=True):
             if topo_attr["bandwidth"] < bw:
                 constraints_sub.remove_edge(topo_node1, topo_node2)
 
         # compute the shortest path between the two nodes (mapped, and random)
-        steps = nx.shortest_path(constraints_sub, random_mapped_node_name, target_node_name)
+        steps = nx.shortest_path(constraints_sub, random_mapped_node_name, target_node_name,weight="delay")
         return steps
