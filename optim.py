@@ -18,6 +18,15 @@ from offline.time.plottingDB import plotsol_from_db
 from offline.tools.api import clean_and_create_experiment, create_sla, generate_sla_nodes, optimize_sla
 
 
+def handle_plot(service, plot_folder=os.path.join(RESULTS_FOLDER, "plot")):
+    # cleanup plot folder
+    if os.path.exists(plot_folder):
+        shutil.rmtree(plot_folder)
+    os.makedirs(plot_folder)
+    print("plotting service (%s) with mapping (%s)" % (str(service.id), str(service.mapping.id)))
+
+    plotsol_from_db(service_link_linewidth=5, net=False, service=service,
+                    dest_folder=plot_folder)
 
 
 def handle_embedding(substrate_topology, start_mapped_nodes, cdn_mapped_nodes, service_bandwidth_demand, vhg_count,
@@ -98,6 +107,7 @@ def get_json_mapping(service):
     output["mapping"] = service.mapping.to_json()
     return output
 
+
 # utility function for params
 def unpack(first, *rest):
     return first, rest
@@ -109,7 +119,6 @@ def valid_topo(topo_spec):
 
 
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'offline/results')
-
 
 logging.basicConfig(filename='simu.log', level="DEBUG", )
 
@@ -175,7 +184,7 @@ else:
     # if a mapping is available
     if service.mapping is not None:
         if args.json:
-            output=get_json_mapping(service)
+            output = get_json_mapping(service)
             if args.b64:
                 sys.stdout.write(base64.b64encode(json.dumps(output).encode()))
             else:
@@ -194,6 +203,7 @@ else:
             with open(os.path.join(args.dest_folder, "substrate.json"), "w") as f:
                 f.write(json.dumps(service.sla.substrate.get_json()))
 
+            handle_plot(service,args.dest_folder)
 
             logging.debug(("Successfull mapping w price: \t %lf in \t %d embedding \t winner is %d (%d,%d)" % (
                 service.mapping.objective_function, count_candidates, service.id, service.service_graph.get_vhg_count(),
@@ -203,15 +213,7 @@ else:
                 args.solver_type))
 
         if args.plot:
-            plot_folder = os.path.join(RESULTS_FOLDER, "plot")
-            # cleanup plot folder
-            if os.path.exists(plot_folder):
-                shutil.rmtree(plot_folder)
-            os.makedirs(plot_folder)
-            print("plotting service (%s) with mapping (%s)" % (str(service.id), str(service.mapping.id)))
-
-            plotsol_from_db(service_link_linewidth=5, net=False, service=service,
-                            dest_folder=plot_folder)
+            handle_plot(service)
             subprocess.Popen(
                 ["neato", os.path.join(plot_folder, "./substrate.dot"), "-Tsvg", "-o",
                  os.path.join(args.dest_folder, "service_graph.svg")]).wait()
