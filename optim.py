@@ -17,6 +17,7 @@ from offline.core.ilpsolver import ILPSolver
 from offline.time.plottingDB import plotsol_from_db
 from offline.tools.api import clean_and_create_experiment, create_sla, generate_sla_nodes, optimize_sla
 
+RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'offline/results')
 
 def handle_plot(service, plot_folder=os.path.join(RESULTS_FOLDER, "plot")):
     # cleanup plot folder
@@ -118,7 +119,7 @@ def valid_topo(topo_spec):
     return name, spec
 
 
-RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'offline/results')
+
 
 logging.basicConfig(filename='simu.log', level="DEBUG", )
 
