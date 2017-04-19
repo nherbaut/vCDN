@@ -48,20 +48,19 @@ def shortest_path(node1, node2):
     return None
 
 
-def generate_problem_combinaisons(problem):
+def generate_problem_combinaisons(node_count, group_count):
     res = []
-    if problem[1] == problem[0]:  # trivial
-        return [[1 for x in range(1, problem[0] + 1)], ]
-    elif problem[1] == 1:  # also trivial
-        return [[problem[0]]]
-    elif problem[1] == 2:  # solving the pb for 2
-
-        for i in range(1, int(problem[0] / 2 + 1)):
-            res.append([i, problem[0] - i])
+    if group_count == node_count:  # trivial
+        return [[1 for x in range(1, node_count + 1)], ]
+    elif group_count == 1:  # also trivial
+        return [[node_count]]
+    elif group_count == 2:  # solving the pb for 2
+        for i in range(1, int(node_count / 2 + 1)):
+            res.append([i, node_count - i])
         return res
     else:
-        for i in range(1, problem[0] - problem[1] + 1):
-            for j in generate_problem_combinaisons([problem[0] - i, problem[1] - 1]):
+        for i in range(1, node_count - group_count + 1):
+            for j in generate_problem_combinaisons(node_count - i, group_count - 1):
                 res.append([i] + j)
         return res
 
@@ -213,7 +212,7 @@ def get_node_clusters(nodes, class_count, substrate):
 
     combinaisons = [[int(x) for x in x.split(" ")] for x in
                     set([" ".join([str(x) for x in (sorted(x))]) for x in
-                         generate_problem_combinaisons([len(nodes), class_count])])]
+                         generate_problem_combinaisons(len(nodes), class_count)])]
 
     min_score = sys.maxsize
     candidate = None
