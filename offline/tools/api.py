@@ -4,7 +4,7 @@ import logging
 import multiprocessing
 import os
 import re
-from multiprocessing.pool import ThreadPool, Pool
+from multiprocessing.pool import ThreadPool
 
 import numpy as np
 from numpy.random import RandomState
@@ -37,30 +37,51 @@ def generate_sla_nodes(su, start, cdn, rs):
 
     start_nodes = None
     if len(start) == 1:
-        match = re.findall("RAND\(([0-9]+),([0-9]+)\)", start[0])
-        if len(match) == 1:
+        matches = list(re.finditer("RAND\(([0-9]+),([0-9]+),?([^\)]+)?\)", start[0]))
+        if len(matches) > 0:
             # get nodes by bandwidth, sorted
-            nodes_by_bw = sorted(su.get_nodes_by_bw().items(), key=lambda x: x[0])
-            size = rs.randint(int(match[0][0]), int(match[0][1]) + 1)
-            start_nodes = weighted_shuffle([x[0] for x in nodes_by_bw], [x[1] for x in nodes_by_bw], size, rs)
+            start_nodes = []
+            for mmin, mmax, mfilter in [match.groups() for match in matches]:
+
+                if mfilter is not None:
+                    nodes_by_bw = sorted(filter(lambda x: mfilter in x[0], su.get_nodes_by_bw().items()),
+                                         key=lambda x: x[0])
+                else:
+                    nodes_by_bw = sorted(su.get_nodes_by_bw().items(), key=lambda x: x[0])
+
+                size = rs.randint(int(mmin), int(mmax) + 1)
+
+                for candidate in weighted_shuffle([x[0] for x in nodes_by_bw], [x[1] for x in nodes_by_bw], size, rs):
+                    start_nodes.append(str(candidate))
+
             logging.debug("random start nodes: %s" % " ".join(start_nodes))
 
     cdn_nodes = None
     if len(cdn) == 1:
-        match = re.findall("RAND\(([0-9]+),([0-9]+)\)", cdn[0])
-        if len(match) == 1:
-            nodes_by_degree = su.get_nodes_by_degree()
-            # remove starters from possible cdn list
-            for sn in start_nodes:
-                nodes_by_degree.pop(sn, None)
+        matches = list(re.finditer("RAND\(([0-9]+),([0-9]+),?([^\)]+)?\)", cdn[0]))
+        if len(matches) > 0:
+            cdn_nodes = []
+            for mmin, mmax, mfilter in [match.groups() for match in matches]:
 
-            nodes_by_degree = sorted(nodes_by_degree.items(), key=lambda x: x[0])
-            size = rs.randint(int(match[0][0]), int(match[0][1]) + 1)
+                if mfilter is not None:
+                    nodes_by_degree = dict(filter(lambda x: mfilter in x[0], su.get_nodes_by_degree().items()))
+                else:
+                    nodes_by_degree = su.get_nodes_by_degree()
 
-            cdn_nodes = weighted_shuffle([x[0] for x in nodes_by_degree],
-                                         -1.0 * np.array([x[1] for x in nodes_by_degree]),
-                                         size, rs)
-            logging.debug("random cdn nodes: %s" % " ".join(cdn_nodes))
+                # remove starters from possible cdn list
+                for sn in start_nodes:
+                    if sn in nodes_by_degree:
+                        del nodes_by_degree[sn]
+
+                nodes_by_degree = sorted(nodes_by_degree.items(), key=lambda x: x[0])
+                size = rs.randint(int(mmin), int(mmax) + 1)
+
+                for node in weighted_shuffle([x[0] for x in nodes_by_degree],
+                                             np.array([x[1] for x in nodes_by_degree]),
+                                             size, rs):
+                    cdn_nodes.append(str(node))
+                logging.debug("random cdn nodes: %s" % " ".join(cdn_nodes))
+            print("random cdn nodes: %s" % " ".join(cdn_nodes))
 
     if start_nodes is None:
         start_nodes = start
@@ -208,7 +229,8 @@ def optimize_sla(sla, vhg_count=None, vcdn_count=None,
         else:
             generators = factory.get_full_class_generator()
 
-    candidates_param = [(topo, sla.id, solver) for generator in generators for topo in generator.get_service_topologies()]
+    candidates_param = [(topo, sla.id, solver) for generator in generators for topo in
+                        generator.get_service_topologies()]
     logging.debug("%d candidate " % len(candidates_param))
 
     # sys.stdout.write("\n\t Service to embed :%d\n" % len(candidates_param))
@@ -218,7 +240,7 @@ def optimize_sla(sla, vhg_count=None, vcdn_count=None,
     # sys.stdout.write("\n\t Embedding services:%d\n" % len(candidates_param))
     services = pool.map(embbed_service, candidates_param)
 
-    #services = [embbed_service(param) for param in candidates_param]
+    # services = [embbed_service(param) for param in candidates_param]
     # sys.stdout.write(" done!\n")
 
     services = [x for x in services if x.mapping is not None]
@@ -250,5 +272,3 @@ def create_adhoc_sla(sla, service_graph):
     session.flush()
 
     return sla
-
-

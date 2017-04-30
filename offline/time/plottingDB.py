@@ -5,11 +5,15 @@ import subprocess
 
 import matplotlib.pyplot as plt
 import numpy
+import hashlib
 
 OPTIM_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../optim')
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
 
 x_resolution = 5
+
+def str2col(chain):
+    return "#%s" % hashlib.md5(bytes(chain.encode("ascii"))).hexdigest()[0:6]
 
 
 def plot_all_results(res, min_plot, max_plot, id=999):
@@ -168,19 +172,29 @@ def plotsol_from_db(**kwargs):
     edges = [(edge.node_1.name, edge.node_2.name, edge.bandwidth, edge.delay) for edge in su.edges]
 
     nodesdict = {node.name: node.cpu_capacity for node in su.nodes}
+    node_culters = {node.name.split("-")[0] for node in su.nodes}
 
     with open(os.path.join(dest_folder, "substrate.dot"), 'w') as f:
         f.write("graph{rankdir=LR;overlap = voronoi;\n\n\n\n subgraph{\n\n\n")
 
-        for node in list(nodesdict.items()):
-            if node[0] in starters_candiates:
-                color = "green1"
-            elif node[0] in cdn_candidates:
-                color = "red1"
-            else:
-                color = "black"
-            f.write("\"%s\" [shape=box,style=filled,fillcolor=white,color=%s,width=%f,fontsize=15,cpu=%s];\n" % (
-                node[0], color, 1,node[1]))
+        for index,cluster in enumerate(node_culters):
+
+            f.write("subgraph cluster_%d {\n"%index)
+
+            f.write('label = "%s";\n'%cluster)
+            f.write('style = filled;\n')
+            f.write('color="%s";\n'%str2col(str(index)))
+
+            for node in [node for node in nodesdict.items() if cluster in node[0]]:
+                if node[0] in starters_candiates:
+                    color = "green1"
+                elif node[0] in cdn_candidates:
+                    color = "red1"
+                else:
+                    color = "black"
+                f.write("\"%s\" [shape=box,style=filled,fillcolor=white,color=%s,width=%f,fontsize=15,cpu=%s];\n" % (
+                    node[0], color, 1,node[1]))
+            f.write("}")
 
         for edge in edges:
             f.write("\"%s\"--\"%s\" [penwidth=\"%d\",fontsize=15,len=2,label=\" \" id=\"%s--%s\",delay=%s,bw=%lf];\n " % (edge[0], edge[1], 3,edge[0], edge[1],edge[3],edge[2]))

@@ -154,30 +154,26 @@ class Substrate(Base):
     def from_vcdn(cls, specs):
 
         graphs = []
-        as_01 = nx.powerlaw_cluster_graph(30, 2, 0.2)
-        as_01=nx.relabel.relabel_nodes(as_01, {n: "AS01-%s" % n for n in as_01.nodes()})
+        cdns = {}
+        as_01 = nx.powerlaw_cluster_graph(30, 1, 0.2)
+        as_01 = nx.relabel.relabel_nodes(as_01, {n: "AS01-%s" % n for n in as_01.nodes()})
         graphs.append(as_01)
 
         ipxes = list(weighted_shuffle(as_01, list(as_01.degree().values())))
 
-        as_02 = nx.powerlaw_cluster_graph(5, 1, 0.2)
-        as_02=nx.relabel.relabel_nodes(as_02, {n: "AS02-%s" % n for n in as_02.nodes()})
-        graphs.append(as_02)
-
-        as_03 = nx.powerlaw_cluster_graph(5, 1, 0.2)
-        as_03=nx.relabel.relabel_nodes(as_03, {n: "AS03-%s" % n for n in as_03.nodes()})
-        graphs.append(as_03)
-
-        as_04 = nx.powerlaw_cluster_graph(5, 1, 0.2)
-        as_04=nx.relabel.relabel_nodes(as_04, {n: "AS04-%s" % n for n in as_04.nodes()})
-        graphs.append(as_04)
+        for i in range(1, 4):
+            cdn_id = "CDN%02d" % i
+            cdnas = nx.powerlaw_cluster_graph(3, 1, 1)
+            cdnas = nx.relabel.relabel_nodes(cdnas, {n: "%s-%02d" % (cdn_id, n) for n in cdnas.nodes()})
+            cdns[cdn_id] = cdnas
+            graphs.append(cdnas)
 
         g = functools.reduce(lambda x, y: nx.compose(x, y), graphs)
 
-        for i in range(2, 5):
-            target=ipxes.pop()
-            print("%s -> %s " % (target,"AS0%d-0" % i))
-            g.add_edge(ipxes.pop(), "AS0%d-0" % i)
+        print("%s"%g.nodes())
+
+        for cdn in cdns:
+            g.add_edge("%s-00" % cdn,ipxes.pop(),ipx=True)
 
         nodes = [Node(name=str(name), cpu_capacity=data.get("cpu", 99999)) for name, data in g.nodes(data=True)]
 

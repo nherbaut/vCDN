@@ -216,7 +216,7 @@ else:
         if args.plot:
             handle_plot(service)
             subprocess.Popen(
-                ["neato", os.path.join(args.dest_folder, "./substrate.dot"), "-Tsvg", "-o",
+                ["dot", os.path.join(args.dest_folder, "./substrate.dot"), "-Tsvg", "-o",
                  os.path.join(args.dest_folder, "service_graph.svg")]).wait()
             subprocess.Popen(["eog", os.path.join(args.dest_folder, "service_graph.svg")]).wait()
 
