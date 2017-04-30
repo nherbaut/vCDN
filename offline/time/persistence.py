@@ -7,7 +7,8 @@ from sqlalchemy.orm import *
 from sqlalchemy.orm import sessionmaker
 
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
-ENGINE_TYPE = "sqlite"
+#ENGINE_TYPE = "sqlite"
+ENGINE_TYPE = "mysql"
 Base = declarative_base()
 
 
@@ -122,12 +123,13 @@ class EdgeMapping(Base):
 if not os.path.exists(RESULTS_FOLDER):
     os.makedirs(RESULTS_FOLDER)
 
-if ENGINE_TYPE is None or ENGINE_TYPE == "sqlite":
-    logging.debug("we use SQLITE as a backend")
-    engine = create_engine('sqlite:///%s/res.db' % RESULTS_FOLDER)
+if ENGINE_TYPE is "sqlite":
+    engine = create_engine('sqlite:////home/nherbaut/res.db')
 else:
-    logging.debug("we use MySQL as a backend (mysql+mysqldb://root:root@127.0.0.1/paper4)")
-    engine = create_engine('mysql+mysqldb://root:root@127.0.0.1/paper4', )
+    engine = create_engine('mysql+mysqlconnector://root:root@127.0.0.1/paper4', )
+#engine = create_engine('sqlite:///%s/res.db' % RESULTS_FOLDER)
+
+
 
 session_factory = sessionmaker(bind=engine, autocommit=True)
 Session = scoped_session(session_factory)

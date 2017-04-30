@@ -4,13 +4,13 @@ MAINTAINER Nicolas Herbaut <nherbaut@labi.fr>
 RUN apt-get -y update && apt-get install -y build-essential libgmp3-dev libreadline6 libreadline6-dev python3-pip graphviz pkg-config zlib1g-dev libncurses5-dev bison flex python3 python3-dev libblas-dev liblapack-dev libatlas-base-dev gfortran libz-dev
 
 RUN mkdir /home/scip
-COPY ./resources/scipoptsuite-3.2.1.tgz /home/scip
+COPY ./resources/scipoptsuite-4.0.0.tgz /home/scip
 
-RUN cd /home/scip && tar  -zxvf scipoptsuite-3.2.1.tgz
-WORKDIR /home/scip/scipoptsuite-3.2.1
+RUN cd /home/scip && tar  -zxvf scipoptsuite-4.0.0.tgz
+WORKDIR /home/scip/scipoptsuite-4.0.0
 RUN make
-RUN make install INSTALLDIR=/usr/local
-ENV PATH /home/scip/scipoptsuite-3.2.1/scip-3.2.1/bin/:$PATH
+RUN make install INSTALLDIR=/usr/local SHARED=true
+ENV PATH /home/scip/scipoptsuite-4.0.0/scip-4.0.0/bin/:$PATH
 
 
 RUN echo "mysql-server mysql-server/root_password password root" | debconf-set-selections

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import functools
 import operator
 from itertools import tee
 
@@ -9,6 +10,7 @@ from networkx.readwrite import json_graph
 from pygraphml import GraphMLParser
 from sqlalchemy.schema import Table
 
+from offline.core.utils import weighted_shuffle
 from ..time.persistence import *
 
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
@@ -61,8 +63,9 @@ class Substrate(Base):
         :return: the one node amongst the targets to be the closests
         '''
         return \
-        min([(target, nx.shortest_path_length(self.get_nxgraph(), n1, target, weight=weight)) for target in targets],
-            key=lambda x: x[1])[0]
+            min([(target, nx.shortest_path_length(self.get_nxgraph(), n1, target, weight=weight)) for target in
+                 targets],
+                key=lambda x: x[1])[0]
 
     def get_nxgraph(self):
         g = nx.Graph()
@@ -142,8 +145,60 @@ class Substrate(Base):
             return cls.fromPowerLaw(list(specs[1]))
         elif specs[0] == "erdos_renyi":
             return cls.FromErdosRenyi(list(specs[1]))
+        elif specs[0] == "vcdn":
+            return cls.from_vcdn(list(specs[1]))
         else:
             raise ValueError("not a valid topology spec %s" % str(specs))
+
+    @classmethod
+    def from_vcdn(cls, specs):
+
+        graphs = []
+        as_01 = nx.powerlaw_cluster_graph(30, 2, 0.2)
+        as_01=nx.relabel.relabel_nodes(as_01, {n: "AS01-%s" % n for n in as_01.nodes()})
+        graphs.append(as_01)
+
+        ipxes = list(weighted_shuffle(as_01, list(as_01.degree().values())))
+
+        as_02 = nx.powerlaw_cluster_graph(5, 1, 0.2)
+        as_02=nx.relabel.relabel_nodes(as_02, {n: "AS02-%s" % n for n in as_02.nodes()})
+        graphs.append(as_02)
+
+        as_03 = nx.powerlaw_cluster_graph(5, 1, 0.2)
+        as_03=nx.relabel.relabel_nodes(as_03, {n: "AS03-%s" % n for n in as_03.nodes()})
+        graphs.append(as_03)
+
+        as_04 = nx.powerlaw_cluster_graph(5, 1, 0.2)
+        as_04=nx.relabel.relabel_nodes(as_04, {n: "AS04-%s" % n for n in as_04.nodes()})
+        graphs.append(as_04)
+
+        g = functools.reduce(lambda x, y: nx.compose(x, y), graphs)
+
+        for i in range(2, 5):
+            target=ipxes.pop()
+            print("%s -> %s " % (target,"AS0%d-0" % i))
+            g.add_edge(ipxes.pop(), "AS0%d-0" % i)
+
+        nodes = [Node(name=str(name), cpu_capacity=data.get("cpu", 99999)) for name, data in g.nodes(data=True)]
+
+        session = Session()
+        session.add_all(nodes)
+        session.flush()
+
+        edges = [Edge
+                 (node_1=session.query(Node).filter(Node.name == str(n1)).one(),
+                  node_2=session.query(Node).filter(Node.name == str(n2)).one(),
+                  bandwidth=data.get("bw", 1000 * 1000 * 1000),
+                  delay=data.get("delay", 1)
+                  )
+                 for n1, n2, data in g.edges(data=True)
+
+                 ]
+        session.add_all(edges)
+        session.flush()
+
+        return cls(edges, nodes
+                   )
 
     @classmethod
     def from_service_graph(cls, service_graph):
@@ -221,7 +276,7 @@ class Substrate(Base):
         p = float(p)
         seed = int(seed)
         g = nx.powerlaw_cluster_graph(n, m, p, seed)
-        session = Session()
+
         nodes = [Node(name=str(n), cpu_capacity=cpu) for n in g.nodes()]
 
         session.add_all(nodes)
@@ -286,7 +341,6 @@ class Substrate(Base):
                 node = Node(name=str("%02d%02d" % (i, j)), cpu_capacity=cpu)
                 nodes.append(node)
                 session.add(node)
-
 
         for i in range(1, width + 1):
             for j in range(1, height + 1):

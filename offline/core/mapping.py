@@ -3,29 +3,39 @@ import pickle
 
 import networkx as nx
 from networkx.readwrite import json_graph
+from rdflib import BNode
 from sqlalchemy import Column, Integer, Float, ForeignKey
 from sqlalchemy import and_
 from sqlalchemy.orm import relationship, aliased
-
+from rdflib import Graph, Literal, BNode, Namespace, RDF, URIRef
+from offline.core.semantic import open_triple_store, close_triple_store
 from ..time.persistence import Base, Session, Edge, Node
 
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
 PRICING_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../pricing')
+from sqlalchemy import event
+
 
 
 class Mapping(Base):
     __tablename__ = 'Mapping'
     id = Column(Integer, primary_key=True, autoincrement=True)
-
     service_id = Column(Integer, ForeignKey('Service.id'), nullable=True)
     substrate_id = Column(Integer, ForeignKey('Substrate.id'))
     service = relationship("Service", cascade="save-update", back_populates="mapping")
-
     node_mappings = relationship("NodeMapping", cascade="all")
     edge_mappings = relationship("EdgeMapping", cascade="all")
     substrate = relationship("Substrate", cascade="none")
 
     objective_function = Column(Float)
+
+    def save_assertion(self):
+        import inspect
+
+        graph = open_triple_store()
+        mapping=URIRef("object://%s/%d"%(self.__class__.__qualname__,self.id))
+        graph.add((mapping, RDF.type, Literal("%d"%self.id)))
+        close_triple_store(graph)
 
     def __str__(self):
         print("NODES")
@@ -148,3 +158,13 @@ class Mapping(Base):
                 res[nm.service_node.id] = (0, nm.service_node.cpu)
 
         return migration_costs_func([x for x in list(res.values()) if x[0] + x[1] != 0])
+
+
+
+
+
+# standard decorator style
+@event.listens_for(Mapping, 'after_insert')
+def receive_after_insert(mapper, connection, target):
+    "listen for the 'after_insert' event"
+    target.save_assertion()

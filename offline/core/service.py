@@ -281,3 +281,7 @@ class Service(Base):
                 session.flush()
 
         self.mapping.objective_function = self.mapping.__get_objective_function()
+
+
+
+

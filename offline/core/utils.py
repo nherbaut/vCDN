@@ -72,5 +72,8 @@ def col(arg, colr=bcolors.ENDC):
     return colr + str(arg) + bcolors.ENDC
 
 
-def weighted_shuffle(population, population_weights, size, rs):
+def weighted_shuffle(population, population_weights, size=-1, rs=np.random.RandomState()):
+    if size==-1:
+        size=len(population)
+
     return rs.choice(population, size=size, p=np.array(population_weights).astype(float) / np.sum(population_weights), replace=False)
