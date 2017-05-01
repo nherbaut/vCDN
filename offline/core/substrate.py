@@ -161,6 +161,7 @@ class Substrate(Base):
 
         ipxes = list(weighted_shuffle(as_01, list(as_01.degree().values())))
 
+        #cdn networks
         for i in range(1, 4):
             cdn_id = "CDN%02d" % i
             cdnas = nx.powerlaw_cluster_graph(3, 1, 1)
@@ -170,10 +171,14 @@ class Substrate(Base):
 
         g = functools.reduce(lambda x, y: nx.compose(x, y), graphs)
 
-        print("%s"%g.nodes())
 
-        for cdn in cdns:
-            g.add_edge("%s-00" % cdn,ipxes.pop(),ipx=True)
+        #transit/IPX
+        for index,cdn in enumerate(cdns,0):
+            as_con=ipxes.pop()
+            ipx="TRIPX%02d-00"%index
+            cdn_con="%s-00"%cdn
+            g.add_edge(as_con,ipx)
+            g.add_edge(ipx,cdn_con)
 
         nodes = [Node(name=str(name), cpu_capacity=data.get("cpu", 99999)) for name, data in g.nodes(data=True)]
 
