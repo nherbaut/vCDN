@@ -185,6 +185,7 @@ def plotsol_from_db(**kwargs):
             f.write('style = filled;\n')
             f.write('color="%s";\n'%str2col(str(index)))
 
+            #substrate node color
             for node in [node for node in nodesdict.items() if cluster in node[0]]:
                 if node[0] in starters_candiates:
                     color = "green1"
@@ -194,31 +195,36 @@ def plotsol_from_db(**kwargs):
                     color = "black"
                 f.write("\"%s\" [shape=box,style=filled,fillcolor=white,color=%s,width=%f,fontsize=15,cpu=%s];\n" % (
                     node[0], color, 1,node[1]))
+
+            #mapping nodes
+            for node in nodes_sol:
+                if cluster in node[0]:
+                    if "S0" not in node[1]:
+                        f.write("\"%s\"--\"%s\" [color=blue,len=1.5,label=\" \"  ];\n" % node)
+                        name = node[1]
+
+                        if "VHG" in node[1]:
+                            color = "azure1"
+                            shape = "circle"
+
+                        elif "vCDN".lower() in node[1].lower():
+                            color = "azure3"
+                            shape = "circle"
+                        elif "S" in node[1]:
+                            color = "green"
+                            shape = "doublecircle"
+                        else:
+                            color = "red"
+                            shape = "doublecircle"
+
+                        f.write("\"%s\" [shape=%s,fillcolor=%s,style=filled,fontsize=12];\n" % (name, shape, color))
+
             f.write("}")
 
         for edge in edges:
             f.write("\"%s\"--\"%s\" [penwidth=\"%d\",fontsize=15,len=2,label=\" \" id=\"%s--%s\",delay=%s,bw=%lf];\n " % (edge[0], edge[1], 3,edge[0], edge[1],edge[3],edge[2]))
 
-        for node in nodes_sol:
-            if "S0" not in node[1]:
-                f.write("\"%s\"--\"%s\" [color=blue,len=1.5,label=\" \"  ];\n" % node)
-                name = node[1]
 
-                if "VHG" in node[1]:
-                    color = "azure1"
-                    shape = "circle"
-
-                elif "vCDN".lower() in node[1].lower():
-                    color = "azure3"
-                    shape = "circle"
-                elif "S" in node[1]:
-                    color = "green"
-                    shape = "doublecircle"
-                else:
-                    color = "red"
-                    shape = "doublecircle"
-
-                f.write("\"%s\" [shape=%s,fillcolor=%s,style=filled,fontsize=12];\n" % (name, shape, color))
         f.write("}")
 
         f.write("\nsubgraph{\n edge[color=chartreuse,weight=0];\n")

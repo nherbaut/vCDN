@@ -1,5 +1,5 @@
 import os
-import logging
+
 from sqlalchemy import Column, Integer, String, ForeignKey, Float
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
@@ -7,7 +7,7 @@ from sqlalchemy.orm import *
 from sqlalchemy.orm import sessionmaker
 
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
-#ENGINE_TYPE = "sqlite"
+# ENGINE_TYPE = "sqlite"
 ENGINE_TYPE = "mysql"
 Base = declarative_base()
 
@@ -39,11 +39,13 @@ class Edge(Base):
     node_2_id = Column(Integer, ForeignKey("Node.id"))
     delay = Column(Float, )
     bandwidth = Column(Float, )
+    price_per_mbps = Column(Float, default=1)
     node_1 = relationship("Node", foreign_keys=node_1_id)
     node_2 = relationship("Node", foreign_keys=node_2_id)
 
     def __str__(self):
-        return "%s\t%s\t%e\t%e" % (self.node_1.name, self.node_2.name, self.bandwidth, self.delay)
+        return "%s\t%s\t%e\t%e\t%e" % (
+        self.node_1.name, self.node_2.name, self.bandwidth, self.delay, self.price_per_mbps)
 
 
 class ServiceNode(Base):
@@ -111,7 +113,7 @@ class EdgeMapping(Base):
 
     def __str__(self):
         return "%s-%s ~~> %s-%s" % (
-        self.serviceEdge.node_1.name, self.serviceEdge.node_2.name, self.edge.node_1.name, self.edge.node_2.name)
+            self.serviceEdge.node_1.name, self.serviceEdge.node_2.name, self.edge.node_1.name, self.edge.node_2.name)
 
     @classmethod
     def backward(cls, edgeMapping):
@@ -127,7 +129,7 @@ if ENGINE_TYPE is "sqlite":
     engine = create_engine('sqlite:////home/nherbaut/res.db')
 else:
     engine = create_engine('mysql+mysqlconnector://root:root@127.0.0.1/paper4', )
-#engine = create_engine('sqlite:///%s/res.db' % RESULTS_FOLDER)
+# engine = create_engine('sqlite:///%s/res.db' % RESULTS_FOLDER)
 
 
 
