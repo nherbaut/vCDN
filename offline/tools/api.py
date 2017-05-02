@@ -36,25 +36,30 @@ def generate_sla_nodes(su, start, cdn, rs):
     '''
 
     start_nodes = None
-    if len(start) == 1:
-        matches = list(re.finditer("RAND\(([0-9]+),([0-9]+),?([^\)]+)?\)", start[0]))
-        if len(matches) > 0:
-            # get nodes by bandwidth, sorted
-            start_nodes = []
-            for mmin, mmax, mfilter in [match.groups() for match in matches]:
+    assert len(start) > 0
+    matches = list(re.finditer("RAND\(([0-9]+),([0-9]+),?([^\)]+)?\)", start[0]))
+    if len(matches) > 0:
+        # get nodes by bandwidth, sorted
+        start_nodes = []
+        for mmin, mmax, mfilter in [match.groups() for match in matches]:
 
-                if mfilter is not None:
-                    nodes_by_bw = sorted(filter(lambda x: mfilter in x[0], su.get_nodes_by_bw().items()),
-                                         key=lambda x: x[0])
-                else:
-                    nodes_by_bw = sorted(su.get_nodes_by_bw().items(), key=lambda x: x[0])
+            if mfilter is not None:
+                nodes_by_bw = sorted(filter(lambda x: mfilter in x[0], su.get_nodes_by_bw().items()),
+                                     key=lambda x: x[0])
+            else:
+                nodes_by_bw = sorted(su.get_nodes_by_bw().items(), key=lambda x: x[0])
 
-                size = rs.randint(int(mmin), int(mmax) + 1)
+            size = rs.randint(int(mmin), int(mmax) + 1)
 
-                for candidate in weighted_shuffle([x[0] for x in nodes_by_bw], [x[1] for x in nodes_by_bw], size, rs):
-                    start_nodes.append(str(candidate))
+            if len(nodes_by_bw) == 0:
+                raise Exception("Failed to assign any start node")
 
-            logging.debug("random start nodes: %s" % " ".join(start_nodes))
+            for candidate in weighted_shuffle([x[0] for x in nodes_by_bw], [x[1] for x in nodes_by_bw], size, rs):
+                start_nodes.append(str(candidate))
+
+        logging.debug("random start nodes: %s" % " ".join(start_nodes))
+    else:
+        start_nodes = start
 
     cdn_nodes = None
     if len(cdn) == 1:
@@ -75,6 +80,9 @@ def generate_sla_nodes(su, start, cdn, rs):
 
                 nodes_by_degree = sorted(nodes_by_degree.items(), key=lambda x: x[0])
                 size = rs.randint(int(mmin), int(mmax) + 1)
+
+                if len(nodes_by_degree) == 0:
+                    raise Exception("Failed to assign any cdn node")
 
                 for node in weighted_shuffle([x[0] for x in nodes_by_degree],
                                              np.array([x[1] for x in nodes_by_degree]),

@@ -7,7 +7,7 @@ from sqlalchemy.orm import *
 from sqlalchemy.orm import sessionmaker
 
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../results')
-# ENGINE_TYPE = "sqlite"
+#ENGINE_TYPE = "sqlite"
 ENGINE_TYPE = "mysql"
 Base = declarative_base()
 

@@ -7,19 +7,33 @@ import networkx as nx
 from networkx import shortest_path
 
 from offline.core.combinatorial import get_node_clusters, get_vhg_cdn_mapping
-from offline.core.service_graph_generator import AbstractServiceGraphGenerator, get_nodes_by_type
+from offline.core.ilpsolver import ILPSolver
 from offline.core.service_graph import ServiceGraph
+from offline.core.service_graph_generator import AbstractServiceGraphGenerator, get_nodes_by_type
 from offline.pricing.generator import get_vmg_calculator, get_vcdn_calculator
-from offline.time.persistence import Session
+
+
+class ComposedServiceGraphGenerator(AbstractServiceGraphGenerator):
+    def __init__(self, sla, klass):
+        self.sla = sla
+        self.klass = klass
+
+    def get_service_topologies(self):
+        for vhg in range(1, len(self.sla.get_start_nodes()) + 1):
+            for vcdn in range(1, vhg + 1):
+                for topo in self.klass(sla=self.sla, vhg_count=vhg, vcdn_count=vcdn).get_service_topologies():
+                    yield topo
 
 
 class HeuristicServiceGraphGenerator(AbstractServiceGraphGenerator):
-    def __init__(self, sla, vhg_count, vcdn_count, solver):
+    def __init__(self, sla, vhg_count=None, vcdn_count=None, solver=None):
         super(HeuristicServiceGraphGenerator, self).__init__(sla, vhg_count, vcdn_count)
-        self.solver = solver()
+        if solver is not None:
+            self.solver = solver()
+        else:
+            self.solver = ILPSolver()
 
     def compute_service_topos(self, substrate, mapped_start_nodes, mapped_cdn_nodes, vhg_count, vcdn_count, delay):
-
 
         service_graphs_partial = self.__compute_service_topos(substrate, mapped_start_nodes, mapped_cdn_nodes,
                                                               vhg_count,
@@ -66,10 +80,6 @@ class HeuristicServiceGraphGenerator(AbstractServiceGraphGenerator):
 
         for i in range(1, vcdn_count + 1):
             nx_service_graph.add_node("VCDN%d" % i, type="VCDN", cpu=0, delay=delay, ratio=0.35, bandwidth=0)
-
-        for index, cdn in enumerate(mapped_cdn_nodes, start=1):
-            nx_service_graph.add_node("CDN%d" % index, type="CDN", cpu=0, ratio=0.65, name="CDN%d" % index, bandwidth=0,
-                                      mapping=cdn.topoNode.name)
 
         for key, slaNodeSpec in enumerate(mapped_start_nodes, start=1):
             nx_service_graph.add_node("S%d" % key, cpu=0, type="S", mapping=slaNodeSpec.topoNode.name, bandwidth=0)
@@ -134,7 +144,13 @@ class HeuristicServiceGraphGenerator(AbstractServiceGraphGenerator):
                                enumerate(mapped_cdn_nodes, start=1)]
                 for vhg, cdn in list(get_vhg_cdn_mapping(vhg_mapping, cdn_mapping, substrate).items()):
                     if vhg in nx_service_graph.node:
-                        nx_service_graph.add_edge(vhg, cdn, bandwidth=0, )
+                        nx_service_graph.add_edge(vhg, cdn, bandwidth=0, price_factor=0)
+
+                for index, cdn in enumerate(mapped_cdn_nodes, start=1):
+                    if "CDN%d" % index in nx_service_graph.nodes():
+                        nx_service_graph.add_node("CDN%d" % index, type="CDN", cpu=0, ratio=0.65, name="CDN%d" % index,
+                                                  bandwidth=0,
+                                                  mapping=cdn.topoNode.name)
 
         except:
             traceback.print_exc()

@@ -184,8 +184,8 @@ class ILPSolver(object):
 
         # write info on the edge
         with open(os.path.join(RESULTS_FOLDER, path, "service.edges.data"), mode) as f:
-            for start, end, bw in service_graph.dump_edges():
-                f.write("%s\t\t%s\t\t%lf\n" % (start.ljust(20), end, bw))
+            for start, end, bw, price_factor in service_graph.dump_edges():
+                f.write("%s\t\t%s\t\t%lf\t%lf\n" % (start.ljust(20), end, bw,price_factor))
 
         with open(os.path.join(RESULTS_FOLDER, path, "service.nodes.data"), mode) as f:
             for snode_id, cpu, bw in service_graph.get_service_nodes():

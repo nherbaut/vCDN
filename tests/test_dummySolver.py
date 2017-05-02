@@ -1,7 +1,8 @@
 import unittest
 from unittest import TestCase
 
-from offline.core.ilpsolver import DummySolver, GeneticSolver
+from offline.core.dummy_solver import DummySolver
+from offline.core.genetic_solver import GeneticSolver
 from offline.tools.api import *
 
 

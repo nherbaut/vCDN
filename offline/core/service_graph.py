@@ -69,8 +69,8 @@ class ServiceGraph:
     def get_cdn(self, data=False):
         return get_nodes_by_type("CDN", self.nx_service_graph, data)
 
-    def get_starters(self,data=False):
-        return get_nodes_by_type("S", self.nx_service_graph,data)
+    def get_starters(self, data=False):
+        return get_nodes_by_type("S", self.nx_service_graph, data)
 
     def set_node_mapping(self, service_node_name, phyisical_node_name):
         self.nx_service_graph.node[service_node_name]["mapping"] = phyisical_node_name
@@ -123,7 +123,7 @@ class ServiceGraph:
         for start, ends in list(self.nx_service_graph.edge.items()):
             for end in ends:
                 edge = self.nx_service_graph[start][end]
-                res.append((start, end, edge.get("bandwidth", 0)))
+                res.append((start, end, edge.get("bandwidth", 0), edge.get("price_factor", 1)))
         return res
 
     def get_service_CDN_edges(self):

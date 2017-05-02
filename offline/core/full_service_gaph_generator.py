@@ -14,7 +14,7 @@ class IsomorphicServiceException(BaseException):
 
 
 class FullServiceGraphGenerator(AbstractServiceGraphGenerator):
-    def __init__(self, sla, vhg_count, vcdn_count, hint_node_mappings=None, disable_isomorph_check=False):
+    def __init__(self, sla, vhg_count=None, vcdn_count=None, hint_node_mappings=None, disable_isomorph_check=False):
         self.disable_isomorph_check = disable_isomorph_check
         super(FullServiceGraphGenerator, self).__init__(sla, vhg_count, vcdn_count, hint_node_mappings)
 
@@ -116,7 +116,7 @@ class FullServiceGraphGenerator(AbstractServiceGraphGenerator):
 
                 accepted_service_graphs.append(service_graph_clone)
 
-                print("Matrix:\n%s\n\n"%nx.adjacency_matrix(service_graph_clone))
+                #print("Matrix:\n%s\n\n"%nx.adjacency_matrix(service_graph_clone))
                 yield [ServiceGraph(service_graph_clone, delay_path, delay_route, delay)]
 
             except IsomorphicServiceException as e:

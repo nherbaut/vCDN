@@ -19,6 +19,7 @@ from offline.tools.api import clean_and_create_experiment, create_sla, generate_
 
 RESULTS_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'offline/results')
 
+
 def handle_plot(service, plot_folder=os.path.join(RESULTS_FOLDER, "plot")):
     # cleanup plot folder
     if os.path.exists(plot_folder):
@@ -119,8 +120,6 @@ def valid_topo(topo_spec):
     return name, spec
 
 
-
-
 logging.basicConfig(filename='simu.log', level="DEBUG", )
 
 parser = argparse.ArgumentParser(description='1 iteration for solver', epilog=
@@ -204,8 +203,6 @@ else:
             with open(os.path.join(args.dest_folder, "substrate.json"), "w") as f:
                 f.write(json.dumps(service.sla.substrate.get_json()))
 
-            handle_plot(service,args.dest_folder)
-
             logging.debug(("Successfull mapping w price: \t %lf in \t %d embedding \t winner is %d (%d,%d)" % (
                 service.mapping.objective_function, count_candidates, service.id, service.service_graph.get_vhg_count(),
                 service.service_graph.get_vcdn_count())))
@@ -214,12 +211,11 @@ else:
                 args.solver_type))
 
         if args.plot:
-            handle_plot(service)
+            handle_plot(service, os.path.join(args.dest_folder, "plot"))
             subprocess.Popen(
-                ["neato", os.path.join(args.dest_folder, "./substrate.dot"), "-Tsvg", "-o",
-                 os.path.join(args.dest_folder, "service_graph.svg")]).wait()
-            subprocess.Popen(["eog", os.path.join(args.dest_folder, "service_graph.svg")]).wait()
-
+                ["neato", os.path.join(args.dest_folder, "plot", "./substrate.dot"), "-Tsvg", "-o",
+                 os.path.join(args.dest_folder, "plot", "service_graph.svg")]).wait()
+            subprocess.Popen(["eog", os.path.join(args.dest_folder, "plot", "service_graph.svg")]).wait()
 
         exit(0)
     else:

@@ -7,8 +7,12 @@ class AbstractServiceGraphGenerator(object):
         self.mapped_cdn_nodes = sla.get_cdn_nodes()
         self.sla_id = sla.id
         self.sla = sla
-        self.vhg_count = vhg_count
-        self.vcdn_count = vcdn_count
+        if vhg_count is None or vcdn_count is None:
+            self.vhg_count = len(sla.get_start_nodes())
+            self.vcdn_count = vhg_count
+        else:
+            self.vhg_count = vhg_count
+            self.vcdn_count = vcdn_count
         self.hint_node_mappings = hint_node_mappings
 
     def get_service_topologies(self):
@@ -44,14 +48,14 @@ class AbstractServiceGraphGenerator(object):
                 # print "\n\n"+"\n".join([str(n[0])+"->"+str(n[1]["bandwidth"]) for n in sorted(service.nodes(data=True),key=lambda x:x[0])])
 
 
-def get_nodes_by_type(type, graph,data=False):
+def get_nodes_by_type(type, graph, data=False):
     '''
 
     :param type: "VHG"
     :param graph:
     :return: ["VHG1","VHG2"]
     '''
-    if not data :
+    if not data:
         return sorted([n[0] for n in graph.nodes(data=True) if n[1].get("type") == type])
     else:
         return sorted([n for n in graph.nodes(data=True) if n[1].get("type") == type])

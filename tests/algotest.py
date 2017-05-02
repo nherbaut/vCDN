@@ -6,20 +6,19 @@ from algorun import *
 
 
 def equal_nodes(n1, n2):
-    print("for %s and %s" % (n1["name"], n2["name"]))
+
     if 'B' in n1["name"] and 'B' in n2["name"]:
-        print("%s %s can be the same" % (n1["name"], n2["name"]))
+
         return False
     else:
-        print("%s %s not the same" % (n1["name"], n2["name"]))
+
         return True
 
 
 class AlgoTest(unittest.TestCase):
 
 
-    def test_all_iso(self):
-        print("%d",len(list(get_all_isobase(6,6))))
+
 
 
 
@@ -210,5 +209,5 @@ class AlgoTest(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    #unittest.main()
-    print("%d", len(list(get_all_isobase(9, 9))))
+    unittest.main()
+

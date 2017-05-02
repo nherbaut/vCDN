@@ -62,73 +62,31 @@ minimize cost:
     sum <u,v> in Et             :(sum <i,j> in ES:(y[u,v,i,j] * bwS[i,j] * netCost[v,u]))+
 	sum <vhg> in VHG_LABEL      :(cpuCost_vHG*cpuS[vhg])+
 	sum <vcdn> in VCDN_LABEL    :(cpuCost_vCDN*cpuS[vcdn]);
-	#sum <cdn> in CDN_LABEL: 	sum <vhg,ccdn> in { <vhg,ccdn> in VCDN_INCOMING_LINKS with ccdn==cdn}: 	   x[i,j]*bwN[i] * 10000000;
 
 
 subto everyNodeIsMapped:
-	forall <j> in NS \ CDN_LABEL:
+	forall <j> in NS:
 		sum<i> in N: x[i,j]==1;
 
-
-
-subto popRes:
+subto pop_has_enough_resources:
 	forall <i> in N:
 		sum<j> in NS: x[i,j]*cpuS[j] <= cpu[i];
 
-		
-subto bwSubstrate:
+subto subtrate_has_enough_bandwidth:
    forall <u,v> in E:
        sum<i,j> in ES: (y[u,v,i,j]+y[v,u,i,j]) * bwS[i,j] <= bw[u,v];
 
-
-
-
-subto E2EdelayConstraint:
+subto end_to_end_delay_constraints:
   forall <service,delay> in SERVICE_PATHS_DELAY:
     forall <k,i,j> in {<k,i,j>  in SERVICE_PATHS with k==service}:
      (sum <u,v> in E:y[u,v,i,j]*delays[u,v] + sum <u,v> in Et: y[u,v,i,j]*delays[v,u])<= delay;
 
-
-
 subto flowconservation:
-   forall <i,j> in {<i,j> in ES\CDN_LINKS }:
+   forall <i,j> in {<i,j> in ES }:
       forall <u> in N:
          sum<v> in {<v> in N with <u,v> in (E union Et)}: (y[u, v, i, j] - y[v, u, i,j]) == x[u,i]-x[u,j];
 
-
-subto noloop:
-	forall <i,j> in {<i,j> in ES  with i != j}:
-		forall <u,v> in (E union Et):
-			y[u, v, i, j] + y[v, u, i,j] <= 1;
-			
-subto noBigloop:
-	forall <i,j> in {<i,j> in ES  with i != j}:
-		forall <u> in N:
-			sum <v> in delta(u):
-			  y[u,v,i,j] <= 1;
-		
-
-subto sources:
-    forall <name,id> in STARTERS_MAPPING:
+subto mapped_nodes_are_mapped:
+    forall <name,id> in STARTERS_MAPPING union CDN_MAPPING:
         x[id,name]==1;
 
-subto cdnMaybe:
-    forall <name,id> in CDN_MAPPING:
-        x[id,name]<=1;
-
-subto cdnNo:
-    forall <name,id> in {<name,id> in (CDN_LABEL cross  N) \ CDN_MAPPING}:
-        x[id,name]==0;
-
-subto flowconservation_cdn:
-   forall <i,j> in {<i,j> in CDN_LINKS  with i != j}:
-      forall <u> in N:
-         sum<v> in {<v> in N with <u,v> in (E union Et)}: (y[u, v, i, j] - y[v, u, i,j]) ==( (x[u,i]-x[u,j]));
-
-subto bwSubstrate_cdn:
-   forall <u,v> in E:
-       sum<i,j> in CDN_LINKS: (y[u,v,i,j]+y[v,u,i,j]) * bwS[i,j] <= bw[u,v];
-
-subto bwtSubstrate_cdn:
-   forall <u,v> in Et:
-       sum<i,j> in CDN_LINKS: (y[u,v,i,j]+y[v,u,i,j]) * bwS[i,j] <= bwt[u,v];
