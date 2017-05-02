@@ -120,9 +120,6 @@ subto cdnNo:
     forall <name,id> in {<name,id> in (CDN_LABEL cross  N) \ CDN_MAPPING}:
         x[id,name]==0;
 
-
-
-
 subto flowconservation_cdn:
    forall <i,j> in {<i,j> in CDN_LINKS  with i != j}:
       forall <u> in N:

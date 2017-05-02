@@ -282,6 +282,7 @@ class Substrate(Base):
 
         nodes = [Node(name=str(n), cpu_capacity=cpu) for n in g.nodes()]
 
+        session = Session()
         session.add_all(nodes)
         session.flush()
 
@@ -313,6 +314,7 @@ class Substrate(Base):
         g = nx.erdos_renyi_graph(n, p, seed)
 
         g = nx.relabel.relabel_nodes(g, {n: "%s-%02d" % ("ER", n) for n in g.nodes()})
+
         session = Session()
         nodes = [Node(name=str(n), cpu_capacity=cpu) for n in g.nodes()]
 
@@ -377,7 +379,7 @@ class Substrate(Base):
 
     @classmethod
     def fromGraph(cls, rs, args):
-        session = Session()
+
         file, cpu = args
         parser = GraphMLParser()
 
@@ -386,7 +388,7 @@ class Substrate(Base):
         nodes_from_g = {str(n.id): n for n in gp.nodes()}
         for nn in gp.nodes():
             if "d30" in nn.attributes():
-                g.add_node(nn.id, cpu_capacity=cpu, name=nn.attributes()["d30"].value.replace(" ","_"))
+                g.add_node(nn.id, cpu_capacity=cpu, name=nn.attributes()["d30"].value.replace(" ", "_"))
 
         for e in gp.edges():
             if "d42" in e.attributes() and isOK(nodes_from_g[str(e.node1.id)], nodes_from_g[str(e.node2.id)]):
@@ -396,7 +398,7 @@ class Substrate(Base):
                 node_2 = e.node2.id
                 g.add_edge(node_1, node_2, bandwidth=bandwidth, delay=delay)
 
-        g=max(nx.connected_component_subgraphs(g), key=len)
+        g = max(nx.connected_component_subgraphs(g), key=len)
 
         mapping = {k: "%s-%s" % ("GT", v["name"]) for k, v in g.nodes(data=True)}
         g = nx.relabel.relabel_nodes(g, mapping)
@@ -407,8 +409,7 @@ class Substrate(Base):
         session.add_all(nodes)
         session.flush()
 
-        nodes_by_name={node.name:node for node in nodes}
-
+        nodes_by_name = {node.name: node for node in nodes}
 
         edges = [Edge
                  (node_1_id=nodes_by_name[str(e[0])].id,
@@ -421,7 +422,6 @@ class Substrate(Base):
                  ]
         session.add_all(edges)
         session.flush()
-
 
         return cls(edges, nodes)
 
