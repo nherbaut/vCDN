@@ -81,7 +81,6 @@ def generate_sla_nodes(su, start, cdn, rs):
                                              size, rs):
                     cdn_nodes.append(str(node))
                 logging.debug("random cdn nodes: %s" % " ".join(cdn_nodes))
-            print("random cdn nodes: %s" % " ".join(cdn_nodes))
 
     if start_nodes is None:
         start_nodes = start

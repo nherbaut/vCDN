@@ -161,7 +161,7 @@ class Substrate(Base):
 
         ipxes = list(weighted_shuffle(as_01, list(as_01.degree().values())))
 
-        #cdn networks
+        # cdn networks
         for i in range(1, 4):
             cdn_id = "CDN%02d" % i
             cdnas = nx.powerlaw_cluster_graph(3, 1, 1)
@@ -171,14 +171,13 @@ class Substrate(Base):
 
         g = functools.reduce(lambda x, y: nx.compose(x, y), graphs)
 
-
-        #transit/IPX
-        for index,cdn in enumerate(cdns,0):
-            as_con=ipxes.pop()
-            ipx="TRIPX%02d-00"%index
-            cdn_con="%s-00"%cdn
-            g.add_edge(as_con,ipx)
-            g.add_edge(ipx,cdn_con)
+        # transit/IPX
+        for index, cdn in enumerate(cdns, 0):
+            as_con = ipxes.pop()
+            ipx = "TRIPX%02d-00" % index
+            cdn_con = "%s-00" % cdn
+            g.add_edge(as_con, ipx)
+            g.add_edge(ipx, cdn_con)
 
         nodes = [Node(name=str(name), cpu_capacity=data.get("cpu", 99999)) for name, data in g.nodes(data=True)]
 
@@ -279,6 +278,8 @@ class Substrate(Base):
         seed = int(seed)
         g = nx.powerlaw_cluster_graph(n, m, p, seed)
 
+        g = nx.relabel.relabel_nodes(g, {n: "%s-%02d" % ("PL", n) for n in g.nodes()})
+
         nodes = [Node(name=str(n), cpu_capacity=cpu) for n in g.nodes()]
 
         session.add_all(nodes)
@@ -310,6 +311,8 @@ class Substrate(Base):
         p = float(p)
         seed = int(seed)
         g = nx.erdos_renyi_graph(n, p, seed)
+
+        g = nx.relabel.relabel_nodes(g, {n: "%s-%02d" % ("ER", n) for n in g.nodes()})
         session = Session()
         nodes = [Node(name=str(n), cpu_capacity=cpu) for n in g.nodes()]
 
@@ -338,9 +341,11 @@ class Substrate(Base):
         edges = []
         nodes = []
 
+        name_pattern = "GR-%02d%02d"
+
         for i in range(1, width + 1):
             for j in range(1, height + 1):
-                node = Node(name=str("%02d%02d" % (i, j)), cpu_capacity=cpu)
+                node = Node(name=str(name_pattern % (i, j)), cpu_capacity=cpu)
                 nodes.append(node)
                 session.add(node)
 
@@ -348,18 +353,18 @@ class Substrate(Base):
             for j in range(1, height + 1):
 
                 if j + 1 <= height:
-                    edge = Edge(node_1=session.query(Node).filter(Node.name == "%02d%02d" % (i, j)).one(),
-                                node_2=session.query(Node).filter(Node.name == "%02d%02d" % (i, j + 1)).one(),
+                    edge = Edge(node_1=session.query(Node).filter(Node.name == name_pattern % (i, j)).one(),
+                                node_2=session.query(Node).filter(Node.name == name_pattern % (i, j + 1)).one(),
                                 bandwidth=bw, delay=delay)
                     edges.append(edge)
                 if i + 1 <= width:
-                    edge = Edge(node_1=session.query(Node).filter(Node.name == "%02d%02d" % (i, j)).one(),
-                                node_2=session.query(Node).filter(Node.name == "%02d%02d" % (i + 1, j)).one(),
+                    edge = Edge(node_1=session.query(Node).filter(Node.name == name_pattern % (i, j)).one(),
+                                node_2=session.query(Node).filter(Node.name == name_pattern % (i + 1, j)).one(),
                                 bandwidth=bw, delay=delay)
                     edges.append(edge)
                 if j + 1 <= height and i + 1 <= width:
-                    edge = Edge(node_1=session.query(Node).filter(Node.name == "%02d%02d" % (i, j)).one(),
-                                node_2=session.query(Node).filter(Node.name == "%02d%02d" % (i + 1, j + 1)).one(),
+                    edge = Edge(node_1=session.query(Node).filter(Node.name == name_pattern % (i, j)).one(),
+                                node_2=session.query(Node).filter(Node.name == name_pattern % (i + 1, j + 1)).one(),
                                 bandwidth=bw,
                                 delay=delay)
                     edges.append(edge)
@@ -376,34 +381,47 @@ class Substrate(Base):
         file, cpu = args
         parser = GraphMLParser()
 
-        g = parser.parse(os.path.join(DATA_FOLDER, file))
-        nodes = [Node(name=str(n.id), cpu_capacity=cpu) for n in g.nodes()]
-        nodes_from_g = {str(n.id): n for n in g.nodes()}
+        gp = parser.parse(os.path.join(DATA_FOLDER, file))
+        g = nx.Graph()
+        nodes_from_g = {str(n.id): n for n in gp.nodes()}
+        for nn in gp.nodes():
+            if "d30" in nn.attributes():
+                g.add_node(nn.id, cpu_capacity=cpu, name=nn.attributes()["d30"].value.replace(" ","_"))
+
+        for e in gp.edges():
+            if "d42" in e.attributes() and isOK(nodes_from_g[str(e.node1.id)], nodes_from_g[str(e.node2.id)]):
+                bandwidth = float(e.attributes()["d42"].value)
+                delay = get_delay(nodes_from_g[str(e.node1.id)], nodes_from_g[str(e.node2.id)])
+                node_1 = e.node1.id
+                node_2 = e.node2.id
+                g.add_edge(node_1, node_2, bandwidth=bandwidth, delay=delay)
+
+        g=max(nx.connected_component_subgraphs(g), key=len)
+
+        mapping = {k: "%s-%s" % ("GT", v["name"]) for k, v in g.nodes(data=True)}
+        g = nx.relabel.relabel_nodes(g, mapping)
+
+        session = Session()
+        nodes = [Node(name=str(n), cpu_capacity=cpu) for n in g.nodes()]
+
         session.add_all(nodes)
         session.flush()
 
-        edges = [Edge
-                 (node_1=session.query(Node).filter(Node.name == str(e.node1.id)).one(),
-                  node_2=session.query(Node).filter(Node.name == str(e.node2.id)).one(),
-                  bandwidth=float(e.attributes()["d42"].value),
-                  delay=get_delay(nodes_from_g[str(e.node1.id)], nodes_from_g[str(e.node2.id)])
-                  )
+        nodes_by_name={node.name:node for node in nodes}
 
-                 for e in g.edges() if
-                 "d42" in e.attributes()
-                 and isOK(nodes_from_g[str(e.node1.id)], nodes_from_g[str(e.node2.id)])
+
+        edges = [Edge
+                 (node_1_id=nodes_by_name[str(e[0])].id,
+                  node_2_id=nodes_by_name[str(e[1])].id,
+                  bandwidth=e[2]["bandwidth"],
+                  delay=e[2]["delay"]
+                  )
+                 for e in g.edges(data=True)
+
                  ]
         session.add_all(edges)
         session.flush()
 
-        # filter out nodes for which we have edges
-        valid_nodes = list(set([e.node_1.name for e in edges] + [e.node_2.name for e in edges]))
-        nodes = list(set([n for n in nodes if str(n.name) in valid_nodes]))
-
-        session.add_all(nodes)
-        session.flush()
-        session.add_all(edges)
-        session.flush()
 
         return cls(edges, nodes)
 

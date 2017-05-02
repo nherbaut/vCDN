@@ -35,6 +35,8 @@ param delays[E] := read "{{ dir }}/substrate.edges.data" as "<1s,2s> 4n";
 
 param bwS[ES] := read "{{ dir }}/service.edges.data" as "<1s,2s> 3n";
 param bw[E] := read "{{ dir }}/substrate.edges.data" as "<1s,2s> 3n";
+param netCost[E] := read "{{ dir }}/substrate.edges.data" as "<1s,2s> 4n";
+
 param bwt[Et] := read "{{ dir }}/substrate.edges.data" as "<2s,1s> 3n";
 param bwN[NS] := read "{{ dir }}/service.nodes.data" as "<1s> 3n";
 param source := read "{{ dir }}/starters.nodes.data" as "2s" use 1;
@@ -44,8 +46,7 @@ param source := read "{{ dir }}/starters.nodes.data" as "2s" use 1;
 param cpuCost_vHG := read "{{ pricing_dir }}/vmg/pricing_for_one_instance.properties" as "1n" use 1;
 param cpuCost_vCDN := read "{{ pricing_dir }}/cdn/pricing_for_one_instance.properties" as "1n" use 1;
 
-#param netCost := read "{{ pricing_dir }}/net.cost.data" as "1n" use 1;
-param netCost := read "{{ pricing_dir }}/net.cost.data" as "1n" use 1;
+
 
 
 
@@ -57,9 +58,10 @@ do forall <i> in NS
     do print i, bwN[i];
 
 minimize cost:
-    sum <u,v> in E union Et:(sum <i,j> in ES:(y[u,v,i,j] * bwS[i,j] * netCost))+
-	sum<vhg> in VHG_LABEL:(cpuCost_vHG*cpuS[vhg])+
-	sum<vcdn> in VCDN_LABEL:(cpuCost_vCDN*cpuS[vcdn]);
+    sum <u,v> in E              :(sum <i,j> in ES:(y[u,v,i,j] * bwS[i,j] * netCost[u,v]))+
+    sum <u,v> in Et             :(sum <i,j> in ES:(y[u,v,i,j] * bwS[i,j] * netCost[v,u]))+
+	sum <vhg> in VHG_LABEL      :(cpuCost_vHG*cpuS[vhg])+
+	sum <vcdn> in VCDN_LABEL    :(cpuCost_vCDN*cpuS[vcdn]);
 	#sum <cdn> in CDN_LABEL: 	sum <vhg,ccdn> in { <vhg,ccdn> in VCDN_INCOMING_LINKS with ccdn==cdn}: 	   x[i,j]*bwN[i] * 10000000;
 
 

@@ -25,7 +25,7 @@ class Tenant(Base):
 class Node(Base):
     __tablename__ = "Node"
     id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String(16), )
+    name = Column(String(32), )
     cpu_capacity = Column(Float, )
 
     def __str__(self):
