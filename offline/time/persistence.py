@@ -44,7 +44,7 @@ class Edge(Base):
     node_2 = relationship("Node", foreign_keys=node_2_id)
 
     def __str__(self):
-        return "%s\t%s\t%e\t%e\t%e" % (
+        return "%20s\t%20s\t%e\t%e\t%e" % (
         self.node_1.name, self.node_2.name, self.bandwidth, self.delay, self.price_per_mbps)
 
 

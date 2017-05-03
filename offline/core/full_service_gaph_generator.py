@@ -100,7 +100,7 @@ class FullServiceGraphGenerator(AbstractServiceGraphGenerator):
                     service_graph_clone.node[vhg]["cpu"] = vcdn_calc(service_graph_clone.node[vhg]["bandwidth"])
 
                 delay_path = {}
-                delay_route = collections.defaultdict(dict)
+                delay_route = collections.defaultdict(lambda: [])
                 for vcdn in get_nodes_by_type("VCDN", service_graph_clone):
                     for s in get_nodes_by_type("S", service_graph_clone):
                         try:
