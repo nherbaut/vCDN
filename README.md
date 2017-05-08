@@ -59,3 +59,11 @@ ma
 mv
 ```
 
+# graphs from the paper
+
+Graphs can be obtained using the following specs:
+
+```
+mode: average	sampling: 120s
+[15] AVG.USERS.ALL 	[16] AVG.USERS.CDN 	[17] AVG.USERS.MUCDN 	[18] AVG.USERS.VCDN 
+```
