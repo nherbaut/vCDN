@@ -11,13 +11,13 @@ from offline.tools.api import *
 
 class TestFullSGFenerator(TestCase):
     def test_dummy(self):
-        rs, su = clean_and_create_experiment()
-        start_nodes, cdn_nodes = generate_sla_nodes(su, ["RAND(3,3)"], ["RAND(2,2)"], rs)
+        rs, su = clean_and_create_experiment(topo=("vcdn",[(0)]))
+        start_nodes, cdn_nodes = generate_sla_nodes(su, ["RAND(4,4,AS01)"], ["RAND(1,1,CDN01) RAND(1,1,CDN02) RAND(1,1,CDN03)"], rs)
         sla = create_sla(start_nodes, cdn_nodes, 10000000, su=su)
-        # sgg= FullServiceGraphGenerator(sla, 2, 2)
+        sgg= FullServiceGraphGenerator(sla, 2, 2)
 
-        klass = partial(HeuristicServiceGraphGenerator, solver=ILPSolver)
-        #klass = partial(FullServiceGraphGenerator, disable_isomorph_check=False)
+        #klass = partial(HeuristicServiceGraphGenerator, solver=ILPSolver)
+        klass = partial(FullServiceGraphGenerator, disable_isomorph_check=False)
         sgg = ComposedServiceGraphGenerator(sla, klass)
         for index, sgt in enumerate(sgg.get_service_topologies()):
 

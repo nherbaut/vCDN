@@ -190,7 +190,7 @@ class Substrate(Base):
                   node_2=session.query(Node).filter(Node.name == str(n2)).one(),
                   bandwidth=data.get("bw", 1000 * 1000 * 1000),
                   delay=data.get("delay", 1),
-                  price_per_mbps=50000 if "TRIPX02" in n2 or "TRIPX00" in n2 else 2000
+                  price_per_mbps=5000 if "TRIPX02" in n1 or "TRIPX01" in n1 else 1
                   )
                  for n1, n2, data in g.edges(data=True)
                 ]

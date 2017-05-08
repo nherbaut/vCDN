@@ -206,6 +206,9 @@ else:
             logging.debug(("Successfull mapping w price: \t %lf in \t %d embedding \t winner is %d (%d,%d)" % (
                 service.mapping.objective_function, count_candidates, service.id, service.service_graph.get_vhg_count(),
                 service.service_graph.get_vcdn_count())))
+            print(("Successfull mapping w price: \t %lf in \t %d embedding \t winner is %d (%d,%d)" % (
+                service.mapping.objective_function, count_candidates, service.id, service.service_graph.get_vhg_count(),
+                service.service_graph.get_vcdn_count())))
             logging.debug("all-in-one-results:%lf,%s,%lf,%s" % (
                 time.process_time() - reference_time, args.topo[1][0], service.mapping.objective_function,
                 args.solver_type))
