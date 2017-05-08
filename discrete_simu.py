@@ -275,7 +275,7 @@ setup_nodes(g)
 #exit(-1)
 # print("graph saved in graphml")
 
-:= ContentHistory(windows=POPULAR_WINDOWS_SIZE, count=POPULAR_HISTORY_COUNT)
+contentHistory= ContentHistory(windows=POPULAR_WINDOWS_SIZE, count=POPULAR_HISTORY_COUNT)
 
 content_draw = get_content_generator(rs, zipf_param, contentHistory, 5000000, 1, content_duration)
 
